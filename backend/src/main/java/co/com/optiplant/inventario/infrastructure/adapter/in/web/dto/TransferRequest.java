@@ -2,14 +2,18 @@ package co.com.optiplant.inventario.infrastructure.adapter.in.web.dto;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class TransferRequest {
     @NotNull(message = "Sucursal Origen obligatoria")
     private Long originBranchId;
@@ -24,6 +28,8 @@ public class TransferRequest {
 
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class TransferItem {
         @NotNull(message = "Producto obligatorio")
         private Long productId;

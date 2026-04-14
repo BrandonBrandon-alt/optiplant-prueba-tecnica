@@ -2,14 +2,18 @@ package co.com.optiplant.inventario.infrastructure.adapter.in.web.dto;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SaleRequest {
     @NotNull(message = "El ID de la sucursal es obligatorio")
     private Long branchId;
@@ -22,6 +26,8 @@ public class SaleRequest {
 
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class SaleItem {
         @NotNull(message = "Product ID es obligatorio")
         private Long productId;
