@@ -13,6 +13,7 @@ import co.com.optiplant.inventario.infrastructure.adapter.out.persistence.reposi
 import co.com.optiplant.inventario.infrastructure.adapter.out.persistence.repository.LocalInventoryRepository;
 import co.com.optiplant.inventario.infrastructure.adapter.out.persistence.repository.ProductRepository;
 import co.com.optiplant.inventario.infrastructure.adapter.out.persistence.repository.UserRepository;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,17 +28,20 @@ public class InventoryUseCase {
     private final ProductRepository productRepository;
     private final BranchRepository branchRepository;
     private final UserRepository userRepository;
+    private final StockAlertUseCase stockAlertUseCase;
 
     public InventoryUseCase(LocalInventoryRepository inventoryRepository,
                             InventoryMovementRepository movementRepository,
                             ProductRepository productRepository,
                             BranchRepository branchRepository,
-                            UserRepository userRepository) {
+                            UserRepository userRepository,
+                            @Lazy StockAlertUseCase stockAlertUseCase) {
         this.inventoryRepository = inventoryRepository;
         this.movementRepository = movementRepository;
         this.productRepository = productRepository;
         this.branchRepository = branchRepository;
         this.userRepository = userRepository;
+        this.stockAlertUseCase = stockAlertUseCase;
     }
 
     @Transactional(readOnly = true)
@@ -94,8 +98,8 @@ public class InventoryUseCase {
                 .build();
 
         movementRepository.save(movement);
-        
-        // TODO: En Fase Adicional, aquí invocaremos el "Sistema de Alertas Inteligentes" 
-        // si localInventory.getCantidadActual() < localInventory.getStockMinimo().
+
+        // Evaluar si el stock cayó por debajo del umbral mínimo y generar alerta si es necesario
+        stockAlertUseCase.evaluateAndCreate(localInventory);
     }
 }
