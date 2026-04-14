@@ -1,0 +1,75 @@
+version: "3.8"
+
+services:
+  # 1. Base de Datos
+  db:
+    image: postgres:16-alpine
+    container_name: optiplant-db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - optiplant-network
+
+  # 2. pgAdmin
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: optiplant-pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    networks:
+      - optiplant-network
+
+  # 3. Backend (Spring Boot)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: optiplant-backend
+    restart: on-failure
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SECURITY_JWT_SECRET=${JWT_SECRET}
+    ports:
+      - "${SPRING_LOCAL_PORT}:8080"
+    depends_on:
+      - db
+    networks:
+      - optiplant-network
+
+  # 4. Frontend (Next.js)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: optiplant-frontend
+    restart: on-failure
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    ports:
+      - "${NEXT_PORT}:3000"
+    depends_on:
+      - backend
+    networks:
+      - optiplant-network
+
+volumes:
+  pgdata:
+
+networks:
+  optiplant-network:
+    driver: bridge

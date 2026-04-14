@@ -1,0 +1,72 @@
+# =========================================================================
+# CONFIGURACIÓN GLOBAL / SEGURIDAD
+# =========================================================================
+# IGNORAR SIEMPRE LOS ARCHIVOS DE VARIABLES DE ENTORNO
+.env
+.env.*
+*.pem
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# =========================================================================
+# IDEs y EditORES DE CÓDIGO (IntelliJ, VS Code, Eclipse/STS)
+# =========================================================================
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.sts4-cache
+.project
+.classpath
+.settings/
+.factorypath
+.apt_generated/
+.springBeans
+
+# =========================================================================
+# BACKEND (Spring Boot / Java / Maven)
+# =========================================================================
+# Archivos compilados y logs
+target/
+*.log
+*.jar
+*.war
+# Excepción: Mantener el wrapper de Maven para portabilidad
+!**/src/main/**/target/
+!**/src/test/**/target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# =========================================================================
+# FRONTEND (Next.js / Node.js)
+# =========================================================================
+# Dependencias (Evita subir gigabytes de código de terceros)
+node_modules/
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Archivos compilados y de caché de Next.js
+.next/
+out/
+build/
+.vercel/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Logs de gestores de paquetes
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Testing
+coverage/
