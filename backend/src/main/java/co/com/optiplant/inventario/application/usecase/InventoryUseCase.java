@@ -3,6 +3,7 @@ package co.com.optiplant.inventario.application.usecase;
 import co.com.optiplant.inventario.domain.exception.InsufficientStockException;
 import co.com.optiplant.inventario.domain.exception.ResourceNotFoundException;
 import co.com.optiplant.inventario.infrastructure.adapter.in.web.dto.InventoryMovementRequest;
+import co.com.optiplant.inventario.infrastructure.adapter.in.web.dto.InventoryMovementResponse;
 import co.com.optiplant.inventario.infrastructure.adapter.out.persistence.entity.BranchEntity;
 import co.com.optiplant.inventario.infrastructure.adapter.out.persistence.entity.InventoryMovementEntity;
 import co.com.optiplant.inventario.infrastructure.adapter.out.persistence.entity.LocalInventoryEntity;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class InventoryUseCase {
@@ -101,5 +103,39 @@ public class InventoryUseCase {
 
         // Evaluar si el stock cayó por debajo del umbral mínimo y generar alerta si es necesario
         stockAlertUseCase.evaluateAndCreate(localInventory);
+    }
+
+    /** Kardex completo de una sucursal, ordenado de más reciente a más antiguo. */
+    @Transactional(readOnly = true)
+    public List<InventoryMovementResponse> getKardexByBranch(Long branchId) {
+        return movementRepository.findBySucursalIdOrderByFechaDesc(branchId).stream()
+                .map(this::mapMovementToResponse)
+                .collect(Collectors.toList());
+    }
+
+    /** Kardex de un producto específico en una sucursal. */
+    @Transactional(readOnly = true)
+    public List<InventoryMovementResponse> getKardexByBranchAndProduct(Long branchId, Long productId) {
+        return movementRepository.findBySucursalIdAndProductoIdOrderByFechaDesc(branchId, productId).stream()
+                .map(this::mapMovementToResponse)
+                .collect(Collectors.toList());
+    }
+
+    private InventoryMovementResponse mapMovementToResponse(InventoryMovementEntity entity) {
+        return InventoryMovementResponse.builder()
+                .id(entity.getId())
+                .tipo(entity.getTipo())
+                .motivo(entity.getMotivo())
+                .cantidad(entity.getCantidad())
+                .fecha(entity.getFecha())
+                .productoId(entity.getProducto().getId())
+                .productoNombre(entity.getProducto().getNombre())
+                .sucursalId(entity.getSucursal().getId())
+                .sucursalNombre(entity.getSucursal().getNombre())
+                .usuarioId(entity.getUsuario().getId())
+                .usuarioNombre(entity.getUsuario().getNombre())
+                .referenciaId(entity.getReferenciaId())
+                .tipoReferencia(entity.getTipoReferencia())
+                .build();
     }
 }

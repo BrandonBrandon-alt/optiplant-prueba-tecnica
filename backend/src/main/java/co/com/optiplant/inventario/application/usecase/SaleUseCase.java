@@ -3,6 +3,7 @@ package co.com.optiplant.inventario.application.usecase;
 import co.com.optiplant.inventario.domain.exception.ResourceNotFoundException;
 import co.com.optiplant.inventario.infrastructure.adapter.in.web.dto.InventoryMovementRequest;
 import co.com.optiplant.inventario.infrastructure.adapter.in.web.dto.SaleRequest;
+import co.com.optiplant.inventario.infrastructure.adapter.in.web.dto.SaleResponse;
 import co.com.optiplant.inventario.infrastructure.adapter.out.persistence.entity.BranchEntity;
 import co.com.optiplant.inventario.infrastructure.adapter.out.persistence.entity.ProductEntity;
 import co.com.optiplant.inventario.infrastructure.adapter.out.persistence.entity.SaleDetailEntity;
@@ -16,6 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class SaleUseCase {
@@ -35,9 +39,10 @@ public class SaleUseCase {
         this.branchRepository = branchRepository;
         this.userRepository = userRepository;
         this.productRepository = productRepository;
-        this.inventoryUseCase = inventoryUseCase; // Inyección crucial para interactuar con inventario
+        this.inventoryUseCase = inventoryUseCase;
     }
 
+    /** Registra una nueva venta, valida y descuenta el stock por cada ítem. */
     @Transactional
     public Long registerSale(SaleRequest request) {
         BranchEntity branch = branchRepository.findById(request.getBranchId())
@@ -58,8 +63,7 @@ public class SaleUseCase {
             ProductEntity product = productRepository.findById(item.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException("Producto", "ID", item.getProductId()));
 
-            // 1. Validar e insertar retiro en inventario a través de InventoryUseCase
-            // Esto lanzará InsufficientStockException si no hay stock
+            // Lanzará InsufficientStockException si no hay stock suficiente
             InventoryMovementRequest movement = InventoryMovementRequest.builder()
                     .branchId(branch.getId())
                     .productId(product.getId())
@@ -68,12 +72,10 @@ public class SaleUseCase {
                     .reason("VENTA")
                     .quantity(new BigDecimal(item.getQuantity()))
                     .referenceType("VENTA")
-                    // referenceId se actualiza después de guardar la venta, o guardamos la venta primero
                     .build();
 
             inventoryUseCase.registerMovement(movement);
 
-            // 2. Construir detalle de la venta
             SaleDetailEntity detail = SaleDetailEntity.builder()
                     .producto(product)
                     .cantidad(item.getQuantity())
@@ -82,15 +84,62 @@ public class SaleUseCase {
 
             sale.addDetalle(detail);
 
-            // 3. Calcular total
             BigDecimal subtotal = item.getUnitPrice().multiply(new BigDecimal(item.getQuantity()));
             runningTotal = runningTotal.add(subtotal);
         }
 
         sale.setTotal(runningTotal);
-        
-        // El CascadeType.ALL guardará los detalles automáticamente gracias a tu diseño Cabecera/Detalle
-        SaleEntity savedSale = saleRepository.save(sale);
-        return savedSale.getId();
+        return saleRepository.save(sale).getId();
+    }
+
+    /** Lista todas las ventas del sistema. */
+    @Transactional(readOnly = true)
+    public List<SaleResponse> getAllSales() {
+        return saleRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    /** Detalle completo de una venta por ID. */
+    @Transactional(readOnly = true)
+    public SaleResponse getSaleById(Long id) {
+        return mapToResponse(
+                saleRepository.findById(id)
+                        .orElseThrow(() -> new ResourceNotFoundException("Venta", "ID", id))
+        );
+    }
+
+    /** Ventas de una sucursal en un rango de fechas. */
+    @Transactional(readOnly = true)
+    public List<SaleResponse> getSalesByBranch(Long branchId, LocalDateTime from, LocalDateTime to) {
+        LocalDateTime start = (from != null) ? from : LocalDateTime.of(2000, 1, 1, 0, 0);
+        LocalDateTime end   = (to   != null) ? to   : LocalDateTime.now();
+        return saleRepository.findBySucursalIdAndFechaBetween(branchId, start, end).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    private SaleResponse mapToResponse(SaleEntity entity) {
+        List<SaleResponse.SaleDetailDto> detalles = entity.getDetalles().stream()
+                .map(d -> SaleResponse.SaleDetailDto.builder()
+                        .id(d.getId())
+                        .productoId(d.getProducto().getId())
+                        .productoNombre(d.getProducto().getNombre())
+                        .cantidad(d.getCantidad())
+                        .precioUnitarioAplicado(d.getPrecioUnitarioAplicado())
+                        .subtotal(d.getPrecioUnitarioAplicado().multiply(new BigDecimal(d.getCantidad())))
+                        .build())
+                .collect(Collectors.toList());
+
+        return SaleResponse.builder()
+                .id(entity.getId())
+                .fecha(entity.getFecha())
+                .total(entity.getTotal())
+                .sucursalId(entity.getSucursal().getId())
+                .sucursalNombre(entity.getSucursal().getNombre())
+                .usuarioId(entity.getUsuario().getId())
+                .usuarioNombre(entity.getUsuario().getNombre())
+                .detalles(detalles)
+                .build();
     }
 }
