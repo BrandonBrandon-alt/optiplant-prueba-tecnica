@@ -53,10 +53,10 @@ node_modules/
 !.yarn/versions
 
 # Archivos compilados y de caché de Next.js
-.next/
-out/
-build/
-.vercel/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.vercel/
 
 # TypeScript
 *.tsbuildinfo
