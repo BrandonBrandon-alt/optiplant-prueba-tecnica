@@ -1,9 +1,11 @@
 package co.com.optiplant.inventario.branch.infrastructure.adapter.in.web;
 
+import co.com.optiplant.inventario.auth.infrastructure.adapter.out.persistence.JpaUserRepository;
 import co.com.optiplant.inventario.branch.application.port.in.BranchUseCase;
 import co.com.optiplant.inventario.branch.domain.exception.BranchNotFoundException;
 import co.com.optiplant.inventario.branch.domain.model.Branch;
 import co.com.optiplant.inventario.branch.infrastructure.adapter.in.web.dto.BranchRequest;
+import co.com.optiplant.inventario.shared.infrastructure.security.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -43,6 +45,13 @@ class BranchControllerTest {
 
         @MockitoBean
         private BranchUseCase branchUseCase;
+
+        // Requeridos por JwtAuthenticationFilter que carga SecurityConfig en @WebMvcTest
+        @MockitoBean
+        private JpaUserRepository jpaUserRepository;
+
+        @MockitoBean
+        private JwtService jwtService;
 
         private Branch sampleBranch;
 

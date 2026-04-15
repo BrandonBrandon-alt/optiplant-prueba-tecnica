@@ -1,5 +1,7 @@
 package co.com.optiplant.inventario.shared.infrastructure.web;
 
+import co.com.optiplant.inventario.auth.domain.exception.InvalidCredentialsException;
+import co.com.optiplant.inventario.auth.domain.exception.UserNotFoundException;
 import co.com.optiplant.inventario.branch.domain.exception.BranchNotFoundException;
 import co.com.optiplant.inventario.catalog.domain.exception.DuplicateSkuException;
 import co.com.optiplant.inventario.catalog.domain.exception.ProductNotFoundException;
@@ -26,6 +28,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BranchNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleBranchNotFound(BranchNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    /** 404 – Usuario no encontrado. */
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    /** 401 – Credenciales incorrectas (email o contraseña inválidos). */
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse(ex.getMessage()));
     }
 
     /** 404 – Producto no encontrado. */
