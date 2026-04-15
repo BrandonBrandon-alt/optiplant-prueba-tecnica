@@ -7,6 +7,9 @@ import co.com.optiplant.inventario.catalog.domain.exception.DuplicateSkuExceptio
 import co.com.optiplant.inventario.catalog.domain.exception.ProductNotFoundException;
 import co.com.optiplant.inventario.catalog.domain.exception.SupplierNotFoundException;
 import co.com.optiplant.inventario.catalog.domain.exception.UnitOfMeasureNotFoundException;
+import co.com.optiplant.inventario.inventory.domain.exception.InsufficientStockException;
+import co.com.optiplant.inventario.inventory.domain.exception.InventoryNotFoundException;
+import co.com.optiplant.inventario.sale.domain.exception.EmptySaleException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -64,6 +67,30 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateSkuException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateSku(DuplicateSkuException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    /** 422 - Stock Insuficiente en el Inventario. */
+    @ExceptionHandler(InsufficientStockException.class)
+    public ResponseEntity<ErrorResponse> handleInsufficientStock(InsufficientStockException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    /** 404 - Registro de Inventario Local no encontrado. */
+    @ExceptionHandler(InventoryNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleInventoryNotFound(InventoryNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    /** 422 - Venta sin elementos. */
+    @ExceptionHandler(EmptySaleException.class)
+    public ResponseEntity<ErrorResponse> handleEmptySale(EmptySaleException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    /** 400 - Parámetro ilegal genérico (común en constructores del dominio). */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(ex.getMessage()));
     }
 
     /** 400 – Fallo de validación Bean Validation (@Valid). */

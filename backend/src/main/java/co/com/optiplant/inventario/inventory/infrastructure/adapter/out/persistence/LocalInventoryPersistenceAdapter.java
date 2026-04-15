@@ -1,0 +1,29 @@
+package co.com.optiplant.inventario.inventory.infrastructure.adapter.out.persistence;
+
+import co.com.optiplant.inventario.inventory.application.port.out.LocalInventoryRepositoryPort;
+import co.com.optiplant.inventario.inventory.domain.model.LocalInventory;
+import org.springframework.stereotype.Component;
+
+import java.util.Optional;
+
+@Component
+public class LocalInventoryPersistenceAdapter implements LocalInventoryRepositoryPort {
+
+    private final JpaLocalInventoryRepository localInventoryRepository;
+
+    public LocalInventoryPersistenceAdapter(JpaLocalInventoryRepository localInventoryRepository) {
+        this.localInventoryRepository = localInventoryRepository;
+    }
+
+    @Override
+    public Optional<LocalInventory> findByBranchAndProduct(Long branchId, Long productId) {
+        return localInventoryRepository.findByBranchIdAndProductId(branchId, productId)
+                .map(LocalInventoryEntity::toDomain);
+    }
+
+    @Override
+    public LocalInventory save(LocalInventory localInventory) {
+        LocalInventoryEntity entity = LocalInventoryEntity.fromDomain(localInventory);
+        return localInventoryRepository.save(entity).toDomain();
+    }
+}
