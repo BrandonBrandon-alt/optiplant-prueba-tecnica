@@ -1,0 +1,235 @@
+import type { Metadata } from "next";
+import LoginForm from "@/components/auth/LoginForm";
+
+export const metadata: Metadata = {
+  title: "Ingresar | OptiPlant",
+  description: "Accede al sistema de gestión de inventario de OptiPlant.",
+};
+
+export default function LoginPage() {
+  return (
+    <main
+      style={{
+        minHeight: "100dvh",
+        background: "var(--bg-base)",
+        display: "flex",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* ─── Panel Izquierdo: Branding editorial ─────────── */}
+      <div
+        style={{
+          flex: "0 0 50%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "48px 56px",
+          borderRight: "1px solid var(--border-default)",
+          background: "var(--bg-base)",
+        }}
+        className="hidden-mobile"
+      >
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div
+            style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "10px",
+              background: "var(--brand-500)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2" />
+              <polyline points="2 17 12 22 22 17" />
+              <polyline points="2 12 12 17 22 12" />
+            </svg>
+          </div>
+          <span
+            style={{
+              fontSize: "16px",
+              fontWeight: 600,
+              color: "var(--neutral-100)",
+              fontFamily: "var(--font-sans)",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            OptiPlant
+          </span>
+        </div>
+
+        {/* Headline editorial (estilo Zen) */}
+        <div style={{ animation: "fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) both" }}>
+          <h1
+            style={{
+              fontFamily: "var(--font-serif)",
+              fontSize: "clamp(40px, 4.5vw, 60px)",
+              fontWeight: 700,
+              lineHeight: 1.1,
+              letterSpacing: "-0.02em",
+              color: "var(--neutral-50)",
+              marginBottom: "20px",
+            }}
+          >
+            gestiona{" "}
+            <em
+              style={{
+                color: "var(--brand-500)",
+                fontStyle: "italic",
+                fontFamily: "var(--font-serif)",
+              }}
+            >
+              tu inventario
+            </em>
+            <br />
+            con inteligencia
+          </h1>
+          <p
+            style={{
+              fontSize: "16px",
+              color: "var(--neutral-400)",
+              lineHeight: 1.7,
+              maxWidth: "400px",
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            Sistema multi-sucursal con alertas proactivas, trazabilidad completa y analítica en tiempo real.
+          </p>
+        </div>
+
+        {/* Footer branding */}
+        <p style={{ fontSize: "13px", color: "var(--neutral-500)", fontFamily: "var(--font-sans)" }}>
+          © {new Date().getFullYear()} OptiPlant Consultores
+        </p>
+      </div>
+
+      {/* ─── Panel Derecho: Login form ───────────────────── */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "40px 24px",
+          background: "var(--bg-surface)",
+        }}
+      >
+        {/* Mobile logo */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            marginBottom: "40px",
+          }}
+          className="show-mobile"
+        >
+          <div
+            style={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "8px",
+              background: "var(--brand-500)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2" />
+              <polyline points="2 17 12 22 22 17" />
+              <polyline points="2 12 12 17 22 12" />
+            </svg>
+          </div>
+          <span style={{ fontSize: "15px", fontWeight: 600, color: "var(--neutral-100)", letterSpacing: "-0.02em" }}>
+            OptiPlant
+          </span>
+        </div>
+
+        {/* Form container */}
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "380px",
+            animation: "fadeInUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s both",
+          }}
+        >
+          {/* Header */}
+          <div style={{ marginBottom: "32px" }}>
+            <h2
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: "28px",
+                fontWeight: 700,
+                color: "var(--neutral-50)",
+                letterSpacing: "-0.025em",
+                lineHeight: 1.2,
+                marginBottom: "8px",
+              }}
+            >
+              Bienvenido de vuelta
+            </h2>
+            <p style={{ fontSize: "14px", color: "var(--neutral-400)" }}>
+              Ingresa tus credenciales para continuar
+            </p>
+          </div>
+
+          <LoginForm />
+
+          {/* Divider */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", margin: "28px 0" }}>
+            <div style={{ flex: 1, height: "1px", background: "var(--border-default)" }} />
+            <span style={{ fontSize: "11px", color: "var(--neutral-500)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              demo
+            </span>
+            <div style={{ flex: 1, height: "1px", background: "var(--border-default)" }} />
+          </div>
+
+          {/* Demo accounts */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            {[
+              { role: "Admin",    email: "admin@optiplant.co",    pw: "admin123",    dot: "var(--brand-500)" },
+              { role: "Gerente",  email: "gerente@optiplant.co",  pw: "gerente123",  dot: "var(--neutral-400)" },
+              { role: "Operador", email: "operador@optiplant.co", pw: "operador123", dot: "var(--neutral-500)" },
+            ].map(({ role, email, pw, dot }) => (
+              <div
+                key={role}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "9px 12px",
+                  borderRadius: "var(--radius-md)",
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border-subtle)",
+                  fontSize: "12px",
+                }}
+              >
+                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: dot, flexShrink: 0 }} />
+                <span style={{ fontWeight: 500, color: "var(--neutral-300)", width: "60px", flexShrink: 0 }}>{role}</span>
+                <span style={{ color: "var(--neutral-500)", fontFamily: "monospace", fontSize: "11.5px", flex: 1 }}>{email}</span>
+                <span style={{ color: "var(--neutral-600)", fontFamily: "monospace", fontSize: "11px" }}>{pw}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .hidden-mobile { display: none !important; }
+          .show-mobile   { display: flex !important; }
+        }
+        @media (min-width: 769px) {
+          .show-mobile { display: none !important; }
+        }
+      `}</style>
+    </main>
+  );
+}

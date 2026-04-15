@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
+/* ============================================================
+ * Sistema de Diseño – OptiPlant
+ * Estética Editorial Cálida (inspirado en Zen Browser)
+ * Paleta: Carbón cálido + Coral/Terracotta accent
+ * ============================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Backgrounds – tonos carbón cálidos */
+  --bg-base:    #191917;
+  --bg-surface: #1f1f1c;
+  --bg-card:    #242421;
+  --bg-hover:   #2a2a26;
+
+  /* Brand – Coral / Terracotta (idéntico al acento de Zen) */
+  --brand-400: #e87c6a;
+  --brand-500: #d9634f;
+  --brand-600: #c0503c;
+  --brand-glow: rgba(217, 99, 79, 0.22);
+
+  /* Neutral escala cálida */
+  --neutral-50:  #f5f4f0;
+  --neutral-100: #e8e6e0;
+  --neutral-200: #cbc8bf;
+  --neutral-300: #a8a49a;
+  --neutral-400: #7c7971;
+  --neutral-500: #5a574f;
+  --neutral-600: #3d3b35;
+  --neutral-700: #2e2c27;
+  --neutral-800: #232220;
+  --neutral-900: #191917;
+
+  /* State */
+  --color-danger:  #e07070;
+  --color-success: #6fbf8a;
+
+  /* Typography */
+  --font-serif: "Lora", Georgia, "Times New Roman", serif;
+  --font-sans:  "Inter", system-ui, -apple-system, sans-serif;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* Borders */
+  --border-default: rgba(255,255,255,0.07);
+  --border-subtle:  rgba(255,255,255,0.04);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+html { height: 100%; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+  background: var(--bg-base);
+  color: var(--neutral-100);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--neutral-600); border-radius: 4px; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+::selection {
+  background: rgba(217, 99, 79, 0.25);
+  color: var(--brand-400);
 }

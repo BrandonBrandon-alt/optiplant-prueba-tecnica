@@ -28,17 +28,20 @@ public class AlertService implements AlertUseCase {
      */
     @Override
     @Transactional
-    @Scheduled(fixedDelayString = "3600000") 
+    @Scheduled(fixedDelayString = "3600000")
     public void scanForAlerts() {
         List<LocalInventory> lowStockInventories = inventoryUseCase.getLowStockInventories();
 
         for (LocalInventory inv : lowStockInventories) {
             // Verificar si ya hay alerta activa para no causar spam.
-            List<StockAlert> unresolves = alertRepository.findUnresolvedByBranchAndProduct(inv.getBranchId(), inv.getProductId());
+            List<StockAlert> unresolves = alertRepository.findUnresolvedByBranchAndProduct(inv.getBranchId(),
+                    inv.getProductId());
             if (unresolves.isEmpty()) {
-                String msg = String.format("Alerta! Producto ID %d en Sucursal ID %d alcanzó límite crítico. Actual: %s, Mínimo: %s",
-                        inv.getProductId(), inv.getBranchId(), inv.getCurrentQuantity(), inv.getMinimumStock());
-                
+                String actual = inv.getCurrentQuantity().stripTrailingZeros().toPlainString();
+                String minimo = inv.getMinimumStock().stripTrailingZeros().toPlainString();
+                String msg = String.format("⚠ Stock crítico: %s tiene solo %s unidades (mínimo: %s) en Sucursal #%d",
+                        "Producto #" + inv.getProductId(), actual, minimo, inv.getBranchId());
+
                 StockAlert alert = StockAlert.create(inv.getBranchId(), inv.getProductId(), msg);
                 alertRepository.save(alert);
             }

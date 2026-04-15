@@ -10,6 +10,9 @@ import java.util.List;
 @RequestMapping("/api/v1/alerts")
 public class AlertController {
 
+    /** Envelope genérico para respuestas de mensaje — garantiza JSON válido. */
+    public record MessageResponse(String message) {}
+
     private final AlertUseCase alertUseCase;
 
     public AlertController(AlertUseCase alertUseCase) {
@@ -17,9 +20,9 @@ public class AlertController {
     }
 
     @PostMapping("/scan")
-    public ResponseEntity<String> forceScan() {
+    public ResponseEntity<MessageResponse> forceScan() {
         alertUseCase.scanForAlerts();
-        return ResponseEntity.ok("Escaneo de niveles de stock disparado y completado exitosamente.");
+        return ResponseEntity.ok(new MessageResponse("Escaneo de niveles de stock completado exitosamente."));
     }
 
     @GetMapping
@@ -31,8 +34,8 @@ public class AlertController {
     }
 
     @PatchMapping("/{id}/resolve")
-    public ResponseEntity<String> resolveAlert(@PathVariable Long id) {
+    public ResponseEntity<MessageResponse> resolveAlert(@PathVariable Long id) {
         alertUseCase.resolveAlert(id);
-        return ResponseEntity.ok("Alerta con ID " + id + " marcada como resuelta.");
+        return ResponseEntity.ok(new MessageResponse("Alerta #" + id + " marcada como resuelta."));
     }
 }
