@@ -3,17 +3,18 @@ spring:
     name: optiplant-api
 
   datasource:
-    # Ajustamos el nombre de la BD por defecto a inventario_multisucursal
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/inventario_multisucursal}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:admin}
+    # Debe coincidir con DB_PASSWORD en .env
+    password: ${SPRING_DATASOURCE_PASSWORD:admin123}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      # CAMBIO CRÍTICO: 'update' crea las tablas automáticamente leyendo tus Entidades.
-      # Cuando pasemos a producción y usemos scripts SQL, lo cambiaremos a 'validate'.
-      ddl-auto: update
+      # 'validate': JPA verifica que las entidades coincidan con el esquema.
+      # Flyway es quien gestiona el DDL (CREATE TABLE, ALTER TABLE).
+      # Esto evita conflictos entre Flyway y Hibernate.
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
@@ -21,8 +22,8 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
   flyway:
-    # Apagamos Flyway temporalmente hasta que el modelo de datos (Entidades) esté 100% finalizado.
-    enabled: false
+    # Flyway activo: aplica V1__init_schema.sql y V2__catalog_seed_data.sql al arrancar.
+    enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
 
