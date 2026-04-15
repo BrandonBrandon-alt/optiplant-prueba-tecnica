@@ -1,23 +1,34 @@
 # =========================================================================
-# CONFIGURACIÓN GLOBAL / SEGURIDAD
+# SEGURIDAD — Variables de entorno y certificados
 # =========================================================================
-# IGNORAR SIEMPRE LOS ARCHIVOS DE VARIABLES DE ENTORNO
+# NUNCA subir credenciales ni secretos al repositorio
 .env
 .env.*
 *.pem
+*.p12
+*.jks
 
-# Archivos del sistema operativo
+# =========================================================================
+# Sistema operativo
+# =========================================================================
 .DS_Store
+.DS_Store?
 Thumbs.db
+Desktop.ini
 
 # =========================================================================
-# IDEs y EditORES DE CÓDIGO (IntelliJ, VS Code, Eclipse/STS)
+# IDEs y Editores
 # =========================================================================
+# IntelliJ IDEA
 .idea/
-.vscode/
 *.iml
 *.iws
 *.ipr
+
+# VS Code (configuracion local de editor, no del proyecto)
+.vscode/
+
+# Spring Tool Suite / Eclipse
 .sts4-cache
 .project
 .classpath
@@ -27,46 +38,57 @@ Thumbs.db
 .springBeans
 
 # =========================================================================
-# BACKEND (Spring Boot / Java / Maven)
+# BACKEND — Spring Boot / Java / Maven
 # =========================================================================
-# Archivos compilados y logs
-target/
-*.log
-*.jar
-*.war
-# Excepción: Mantener el wrapper de Maven para portabilidad
-!**/src/main/**/target/
-!**/src/test/**/target/
+# Compilados de Maven (SOLO la carpeta target del backend)
+backend/target/
+
+# Wrapper de Maven — MANTENER para portabilidad del proyecto
+!backend/.mvn/wrapper/maven-wrapper.jar
 !.mvn/wrapper/maven-wrapper.jar
 
-# =========================================================================
-# FRONTEND (Next.js / Node.js)
-# =========================================================================
-# Dependencias (Evita subir gigabytes de código de terceros)
-node_modules/
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+# Artefactos empaquetados — nunca subir binarios compilados
+*.jar
+*.war
+!**/maven-wrapper.jar
 
-# Archivos compilados y de caché de Next.js
+# Logs de la aplicación
+*.log
+*.log.*
+
+# =========================================================================
+# FRONTEND — Next.js / Node.js
+# =========================================================================
+# Dependencias — nunca subir node_modules (se reinstalan con npm install)
+frontend/node_modules/
+
+# Archivos de build y caché de Next.js
 frontend/.next/
 frontend/out/
 frontend/build/
+
+# Configuracion de despliegue en Vercel (entorno local)
 frontend/.vercel/
 
-# TypeScript
-*.tsbuildinfo
-next-env.d.ts
+# Archivos generados por TypeScript y Next.js
+frontend/*.tsbuildinfo
+frontend/**/*.tsbuildinfo
+frontend/next-env.d.ts
+
+# Archivos de Yarn (si se usa Yarn en lugar de npm)
+frontend/.pnp
+frontend/.pnp.*
+frontend/.yarn/*
+!frontend/.yarn/patches
+!frontend/.yarn/plugins
+!frontend/.yarn/releases
+!frontend/.yarn/versions
+
+# Cobertura de tests del frontend
+frontend/coverage/
 
 # Logs de gestores de paquetes
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-
-# Testing
-coverage/
