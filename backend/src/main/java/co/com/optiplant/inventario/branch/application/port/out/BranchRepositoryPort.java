@@ -10,4 +10,6 @@ public interface BranchRepositoryPort {
     Optional<Branch> findById(Long id);
 
     Branch save(Branch branch);
+
+    void deleteById(Long id);
 }

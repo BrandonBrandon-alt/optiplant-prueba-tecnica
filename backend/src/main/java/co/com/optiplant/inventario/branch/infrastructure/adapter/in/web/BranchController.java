@@ -51,6 +51,27 @@ public class BranchController {
         return ResponseEntity.ok(mapToResponse(branchUseCase.getBranchById(id)));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<BranchResponse> update(
+            @PathVariable Long id,
+            @Valid @RequestBody BranchRequest request) {
+
+        Branch branchData = Branch.builder()
+                .name(request.nombre())
+                .address(request.direccion())
+                .phone(request.telefono())
+                .build();
+
+        Branch updated = branchUseCase.updateBranch(id, branchData);
+        return ResponseEntity.ok(mapToResponse(updated));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        branchUseCase.deleteBranch(id);
+        return ResponseEntity.noContent().build();
+    }
+
     // Método helper para no repetir código de mapeo
     private BranchResponse mapToResponse(Branch branch) {
         return BranchResponse.builder()

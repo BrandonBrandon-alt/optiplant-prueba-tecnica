@@ -444,9 +444,9 @@ export interface paths {
             cookie?: never;
         };
         get: operations["getById_3"];
-        put?: never;
+        put: operations["updateBranch"];
         post?: never;
-        delete?: never;
+        delete: operations["deleteBranch"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1591,6 +1591,52 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["BranchResponse"];
                 };
+            };
+        };
+    };
+    updateBranch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BranchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BranchResponse"];
+                };
+            };
+        };
+    };
+    deleteBranch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

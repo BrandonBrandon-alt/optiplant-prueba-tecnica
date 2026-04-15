@@ -35,4 +35,29 @@ public class BranchService implements BranchUseCase {
         branch.setCreatedAt(LocalDateTime.now());
         return branchRepositoryPort.save(branch);
     }
+
+    @Override
+    public Branch updateBranch(Long id, Branch updated) {
+        Branch existing = branchRepositoryPort.findById(id)
+                .orElseThrow(() -> new BranchNotFoundException(id));
+
+        existing.setName(updated.getName());
+        existing.setAddress(updated.getAddress());
+        existing.setPhone(updated.getPhone());
+        if (updated.getActive() != null) {
+            existing.setActive(updated.getActive());
+        }
+
+        return branchRepositoryPort.save(existing);
+    }
+
+    @Override
+    public void deleteBranch(Long id) {
+        // Soft-delete: se desactiva la sucursal en lugar de borrarla físicamente
+        // para preservar la integridad referencial con inventario, ventas y traslados.
+        Branch existing = branchRepositoryPort.findById(id)
+                .orElseThrow(() -> new BranchNotFoundException(id));
+        existing.setActive(false);
+        branchRepositoryPort.save(existing);
+    }
 }

@@ -9,4 +9,8 @@ public interface BranchUseCase {
     Branch getBranchById(Long id);
 
     Branch createBranch(Branch branch);
+
+    Branch updateBranch(Long id, Branch branch);
+
+    void deleteBranch(Long id);
 }

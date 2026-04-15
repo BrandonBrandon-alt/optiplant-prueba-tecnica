@@ -27,8 +27,47 @@ function validate(v: Partial<BranchRequest>): FormErrors {
   return e;
 }
 
+// ── Icons ──────────────────────────────────────────────────
+const BuildingIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+    <polyline points="9 22 9 12 15 12 15 22"/>
+  </svg>
+);
+const MapPinIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+    <circle cx="12" cy="10" r="3"/>
+  </svg>
+);
+const PhoneIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.77 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+  </svg>
+);
+const EditIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+);
+const TrashIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <polyline points="3 6 5 6 21 6"/>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+  </svg>
+);
+
 // ── BranchRow ──────────────────────────────────────────────
-function BranchRow({ branch }: { branch: BranchResponse }) {
+function BranchRow({ 
+  branch, 
+  onEdit, 
+  onDelete 
+}: { 
+  branch: BranchResponse;
+  onEdit: (b: BranchResponse) => void;
+  onDelete: (id: number) => void;
+}) {
   return (
     <tr
       style={{ borderBottom: "1px solid var(--border-subtle)", transition: "background 0.1s" }}
@@ -62,28 +101,22 @@ function BranchRow({ branch }: { branch: BranchResponse }) {
           {branch.activa ? "Activa" : "Inactiva"}
         </Badge>
       </td>
+      {/* Acciones */}
+      <td style={{ padding: "13px 16px", textAlign: "right", width: "100px" }}>
+        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+          <Button variant="ghost" size="sm" onClick={() => onEdit(branch)} title="Editar sucursal">
+            <EditIcon />
+          </Button>
+          {branch.activa && (
+            <Button variant="ghost" size="sm" onClick={() => onDelete(branch.id!)} title="Desactivar sucursal">
+              <span style={{ color: "var(--brand-500)" }}><TrashIcon /></span>
+            </Button>
+          )}
+        </div>
+      </td>
     </tr>
   );
 }
-
-// ── Icons inline ───────────────────────────────────────────
-const BuildingIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-    <polyline points="9 22 9 12 15 12 15 22"/>
-  </svg>
-);
-const MapPinIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-    <circle cx="12" cy="10" r="3"/>
-  </svg>
-);
-const PhoneIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.77 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-  </svg>
-);
 
 // ── Create Modal Form ──────────────────────────────────────
 function CreateBranchModal({
@@ -101,7 +134,6 @@ function CreateBranchModal({
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [serverError, setServerError] = useState<string | null>(null);
 
-  // Reset on close
   useEffect(() => {
     if (!open) {
       setValues({ nombre: "", direccion: "", telefono: "" });
@@ -167,16 +199,7 @@ function CreateBranchModal({
     >
       <form onSubmit={handleSubmit} noValidate style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {serverError && (
-          <div
-            style={{
-              background: "rgba(217,99,79,0.08)",
-              border: "1px solid rgba(217,99,79,0.25)",
-              borderRadius: "var(--radius-md)",
-              padding: "10px 14px",
-              fontSize: "13px",
-              color: "var(--brand-500)",
-            }}
-          >
+          <div style={{ background: "rgba(217,99,79,0.08)", border: "1px solid rgba(217,99,79,0.25)", borderRadius: "var(--radius-md)", padding: "10px 14px", fontSize: "13px", color: "var(--brand-500)" }}>
             {serverError}
           </div>
         )}
@@ -213,11 +236,137 @@ function CreateBranchModal({
   );
 }
 
+// ── Edit Modal Form ────────────────────────────────────────
+function EditBranchModal({
+  branch,
+  open,
+  onClose,
+  onUpdated,
+}: {
+  branch: BranchResponse | null;
+  open: boolean;
+  onClose: () => void;
+  onUpdated: (b: BranchResponse) => void;
+}) {
+  const [isPending, startTransition] = useTransition();
+  const [values, setValues]   = useState<Partial<BranchRequest>>({ nombre: "", direccion: "", telefono: "" });
+  const [errors, setErrors]   = useState<FormErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (branch) {
+      setValues({
+        nombre:    branch.nombre,
+        direccion: branch.direccion,
+        telefono:  branch.telefono || "",
+      });
+      setErrors({});
+      setTouched({});
+      setServerError(null);
+    }
+  }, [branch, open]);
+
+  const handleChange = (field: keyof BranchRequest) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const next = { ...values, [field]: e.target.value };
+    setValues(next);
+    if (touched[field]) setErrors(validate(next));
+    setServerError(null);
+  };
+
+  const handleBlur = (field: keyof BranchRequest) => () => {
+    setTouched((t) => ({ ...t, [field]: true }));
+    setErrors(validate(values));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!branch?.id) return;
+
+    setTouched({ nombre: true, direccion: true });
+    const errs = validate(values);
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
+    startTransition(async () => {
+      const { data, error } = await apiClient.PUT("/api/branches/{id}", {
+        params: { path: { id: branch.id! } },
+        body: {
+          nombre:    values.nombre!,
+          direccion: values.direccion!,
+          telefono:  values.telefono || undefined,
+        },
+      });
+
+      if (error || !data) {
+        setServerError("No se pudo actualizar la sucursal.");
+        return;
+      }
+      onUpdated(data);
+      onClose();
+    });
+  };
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Editar sucursal"
+      description="Actualiza la información de la sede seleccionada."
+      footer={
+        <>
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={isPending}>
+            Cancelar
+          </Button>
+          <Button size="sm" loading={isPending} onClick={handleSubmit as never}>
+            Guardar cambios
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} noValidate style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {serverError && (
+          <div style={{ background: "rgba(217,99,79,0.08)", border: "1px solid rgba(217,99,79,0.25)", borderRadius: "var(--radius-md)", padding: "10px 14px", fontSize: "13px", color: "var(--brand-500)" }}>
+            {serverError}
+          </div>
+        )}
+        <Input
+          id="edit-branch-nombre"
+          label="Nombre"
+          value={values.nombre ?? ""}
+          onChange={handleChange("nombre")}
+          onBlur={handleBlur("nombre")}
+          error={touched.nombre ? errors.nombre : undefined}
+          icon={<BuildingIcon />}
+        />
+        <Input
+          id="edit-branch-direccion"
+          label="Dirección"
+          value={values.direccion ?? ""}
+          onChange={handleChange("direccion")}
+          onBlur={handleBlur("direccion")}
+          error={touched.direccion ? errors.direccion : undefined}
+          icon={<MapPinIcon />}
+        />
+        <Input
+          id="edit-branch-telefono"
+          label="Teléfono"
+          value={values.telefono ?? ""}
+          onChange={handleChange("telefono")}
+          icon={<PhoneIcon />}
+        />
+      </form>
+    </Modal>
+  );
+}
+
 // ── Main Page ──────────────────────────────────────────────
 export default function BranchesPage() {
   const [branches, setBranches]   = useState<BranchResponse[]>([]);
   const [loading, setLoading]     = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingBranch, setEditingBranch]     = useState<BranchResponse | null>(null);
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     apiClient.GET("/api/branches").then(({ data }) => {
@@ -228,6 +377,26 @@ export default function BranchesPage() {
 
   const handleCreated = (newBranch: BranchResponse) => {
     setBranches((prev) => [...prev, newBranch]);
+  };
+
+  const handleUpdated = (updated: BranchResponse) => {
+    setBranches((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+  };
+
+  const handleDelete = (id: number) => {
+    if (!confirm("¿Estás seguro de que deseas desactivar esta sucursal? No podrá ser usada para ventas o inventario mientras esté inactiva.")) return;
+
+    startTransition(async () => {
+      const { error } = await apiClient.DELETE("/api/branches/{id}", {
+        params: { path: { id } },
+      });
+
+      if (!error) {
+        setBranches((prev) => prev.map((b) => (b.id === id ? { ...b, activa: false } : b)));
+      } else {
+        alert("Error al desactivar la sucursal.");
+      }
+    });
   };
 
   const active   = branches.filter((b) => b.activa).length;
@@ -257,7 +426,7 @@ export default function BranchesPage() {
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
           }
-          onClick={() => setShowModal(true)}
+          onClick={() => setShowCreateModal(true)}
           style={{ marginTop: "4px", flexShrink: 0 }}
         >
           Nueva sucursal
@@ -286,7 +455,7 @@ export default function BranchesPage() {
             title="No hay sucursales registradas"
             description="Crea la primera sede para comenzar a gestionar el inventario."
             action={
-              <Button size="sm" onClick={() => setShowModal(true)}
+              <Button size="sm" onClick={() => setShowCreateModal(true)}
                 leftIcon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>}
               >
                 Crear primera sucursal
@@ -298,7 +467,7 @@ export default function BranchesPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
-                  {["#", "Nombre / Teléfono", "Dirección", "Estado"].map((h, i) => (
+                  {["#", "Nombre / Teléfono", "Dirección", "Estado", "Acciones"].map((h, i) => (
                     <th
                       key={h}
                       style={{
@@ -306,12 +475,12 @@ export default function BranchesPage() {
                         fontSize: "11px",
                         fontWeight: 600,
                         color: "var(--neutral-500)",
-                        textAlign: "left",
+                        textAlign: h === "Acciones" ? "right" : "left",
                         letterSpacing: "0.07em",
                         textTransform: "uppercase",
                         whiteSpace: "nowrap",
                         background: "var(--bg-surface)",
-                        width: i === 0 ? "60px" : undefined,
+                        width: i === 0 ? "60px" : h === "Acciones" ? "100px" : undefined,
                       }}
                     >
                       {h}
@@ -321,7 +490,12 @@ export default function BranchesPage() {
               </thead>
               <tbody>
                 {branches.map((branch) => (
-                  <BranchRow key={branch.id} branch={branch} />
+                  <BranchRow 
+                    key={branch.id} 
+                    branch={branch} 
+                    onEdit={setEditingBranch}
+                    onDelete={handleDelete}
+                  />
                 ))}
               </tbody>
             </table>
@@ -340,9 +514,17 @@ export default function BranchesPage() {
 
       {/* Create Modal */}
       <CreateBranchModal
-        open={showModal}
-        onClose={() => setShowModal(false)}
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
         onCreated={handleCreated}
+      />
+
+      {/* Edit Modal */}
+      <EditBranchModal
+        branch={editingBranch}
+        open={editingBranch !== null}
+        onClose={() => setEditingBranch(null)}
+        onUpdated={handleUpdated}
       />
     </div>
   );

@@ -35,4 +35,10 @@ public class BranchPersistenceAdapter implements BranchRepositoryPort {
         BranchEntity entity = BranchEntity.fromDomain(branch);
         return jpaRepository.save(entity).toDomain();
     }
+
+    @Override
+    public void deleteById(Long id) {
+        if (id == null) throw new IllegalArgumentException("El ID de sucursal no puede ser nulo.");
+        jpaRepository.deleteById(id);
+    }
 }
