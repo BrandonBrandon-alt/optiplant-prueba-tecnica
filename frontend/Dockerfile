@@ -2,7 +2,9 @@
 # Etapa 1: Dependencias (Dependencies)
 # ==========================================
 FROM node:24-alpine AS deps
-RUN apk add --no-cache libc6-compat
+RUN sed -i 's/https/http/' /etc/apk/repositories && \
+    apk add --no-cache ca-certificates libc6-compat && \
+    update-ca-certificates
 WORKDIR /app
 
 # Copiar archivos de dependencias
