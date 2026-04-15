@@ -1,6 +1,7 @@
 package co.com.optiplant.inventario.branch.infrastructure.adapter.in.web;
 
 import co.com.optiplant.inventario.branch.application.port.in.BranchUseCase;
+import co.com.optiplant.inventario.branch.domain.exception.BranchNotFoundException;
 import co.com.optiplant.inventario.branch.domain.model.Branch;
 import co.com.optiplant.inventario.branch.infrastructure.adapter.in.web.dto.BranchRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -99,13 +100,14 @@ class BranchControllerTest {
         }
 
         @Test
-        @DisplayName("GET /api/branches/{id}: retorna 500 cuando el ID no existe")
-        void getById_returns500WhenNotFound() throws Exception {
+        @DisplayName("GET /api/branches/{id}: retorna 404 cuando el ID no existe")
+        void getById_returns404WhenNotFound() throws Exception {
                 when(branchUseCase.getBranchById(99L))
-                                .thenThrow(new RuntimeException("Sucursal no encontrada con ID: 99"));
+                                .thenThrow(new BranchNotFoundException(99L));
 
                 mockMvc.perform(get("/api/branches/99"))
-                                .andExpect(status().is5xxServerError());
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message").value("Sucursal no encontrada con ID: 99"));
         }
 
         // ─── POST /api/branches ──────────────────────────────────────────────────

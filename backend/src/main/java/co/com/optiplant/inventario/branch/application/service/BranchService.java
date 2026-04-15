@@ -2,6 +2,7 @@ package co.com.optiplant.inventario.branch.application.service;
 
 import co.com.optiplant.inventario.branch.application.port.in.BranchUseCase;
 import co.com.optiplant.inventario.branch.application.port.out.BranchRepositoryPort;
+import co.com.optiplant.inventario.branch.domain.exception.BranchNotFoundException;
 import co.com.optiplant.inventario.branch.domain.model.Branch;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +26,7 @@ public class BranchService implements BranchUseCase {
     @Override
     public Branch getBranchById(Long id) {
         return branchRepositoryPort.findById(id)
-                .orElseThrow(() -> new RuntimeException("Sucursal no encontrada con ID: " + id));
+                .orElseThrow(() -> new BranchNotFoundException(id));
     }
 
     @Override

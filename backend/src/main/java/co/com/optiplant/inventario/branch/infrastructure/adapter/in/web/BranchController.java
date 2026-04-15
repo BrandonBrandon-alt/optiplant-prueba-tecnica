@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,7 +23,7 @@ public class BranchController {
     }
 
     @PostMapping
-    public ResponseEntity<BranchResponse> create(@RequestBody BranchRequest request) {
+    public ResponseEntity<BranchResponse> create(@Valid @RequestBody BranchRequest request) {
         // 1. Mapear DTO a Dominio
         Branch branchToCreate = Branch.builder()
                 .name(request.nombre())
