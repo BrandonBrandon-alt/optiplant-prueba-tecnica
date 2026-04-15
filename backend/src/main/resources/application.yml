@@ -1,21 +1,28 @@
 spring:
   application:
     name: optiplant-api
+
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/optiplant_db}
+    # Ajustamos el nombre de la BD por defecto a inventario_multisucursal
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/inventario_multisucursal}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:admin}
     driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
-      ddl-auto: validate
+      # CAMBIO CRÍTICO: 'update' crea las tablas automáticamente leyendo tus Entidades.
+      # Cuando pasemos a producción y usemos scripts SQL, lo cambiaremos a 'validate'.
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
   flyway:
-    enabled: true
+    # Apagamos Flyway temporalmente hasta que el modelo de datos (Entidades) esté 100% finalizado.
+    enabled: false
     baseline-on-migrate: true
     locations: classpath:db/migration
 
@@ -26,3 +33,10 @@ security:
   jwt:
     secret: ${SECURITY_JWT_SECRET:dGhpcy1pcy1hLXZlcnktc2VjdXJlLWtleS1mb3Itb3B0aXBsYW50LWFwaS10ZXN0}
     expiration: 86400000 # 1 day in ms
+
+# VALOR AGREGADO: Logs específicos para ver nuestra arquitectura hexagonal en acción
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE # Muestra los valores reales insertados en los '?' del SQL
+    co.com.optiplant.inventario: INFO # Muestra los logs de nuestros Casos de Uso
