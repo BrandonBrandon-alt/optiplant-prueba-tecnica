@@ -14,13 +14,14 @@ INSERT INTO sucursal (nombre, direccion, telefono, activa) VALUES
 -- --------------------------------------------------------
 -- Usuarios (rol_id: 1=ADMIN, 2=GERENTE_SUCURSAL, 3=OPERADOR_INVENTARIO)
 -- --------------------------------------------------------
+-- Contraseñas: admin123 / gerente123 / operador123 (BCrypt rounds=10, $2b$ compatible con Spring Security)
 INSERT INTO usuario (nombre, email, password_hash, rol_id, sucursal_id) VALUES
     ('Administrador Principal', 'admin@optiplant.co',
-     '$2a$10$x8H4/QhGMtG3VjGd8Y1SaehRXvfbScPlxaUTsQXPvRSEo1bpb2ynS', 1, 1),
+     '$2b$10$LNaiRfIKHhv9WnSFBUQtROubYChmc/d5W6s7eAZzGjlEyO.mTmWCS', 1, 1),
     ('Gerente Norte', 'gerente@optiplant.co',
-     '$2a$10$mEiWcTsP6dfS29b2ooxeAeYDXVjvIkHI8MqSWh0bJnBb8bGJHktTa', 2, 2),
+     '$2b$10$O5JWPAEBEE.dpBKzOf4/XOjqz13DUg5t35zl4hYgtHHrGneOsOqj6', 2, 2),
     ('Operador Central', 'operador@optiplant.co',
-     '$2a$10$Lp.lOSKPp0VZxzBGsqXj5.h/G3jUzXEHJqHpCJ6zENXVuNxSF3.ai', 3, 1);
+     '$2b$10$FDEIEVrwkQ6Hq.SxkRlBIe452C4VGAKHVrEfy7TCAXOkm//A1e.Sm', 3, 1);
 
 -- --------------------------------------------------------
 -- Proveedores
