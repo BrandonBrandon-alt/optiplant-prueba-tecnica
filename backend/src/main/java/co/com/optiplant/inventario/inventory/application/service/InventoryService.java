@@ -94,4 +94,9 @@ public class InventoryService implements InventoryUseCase {
     public List<InventoryMovement> getKardex(Long branchId, Long productId) {
         return inventoryMovementRepository.findByBranchAndProduct(branchId, productId);
     }
+
+    @Override
+    public List<LocalInventory> getLowStockInventories() {
+        return localInventoryRepository.findLowStock();
+    }
 }

@@ -26,4 +26,11 @@ public class LocalInventoryPersistenceAdapter implements LocalInventoryRepositor
         LocalInventoryEntity entity = LocalInventoryEntity.fromDomain(localInventory);
         return localInventoryRepository.save(entity).toDomain();
     }
+
+    @Override
+    public java.util.List<LocalInventory> findLowStock() {
+        return localInventoryRepository.findLowStock().stream()
+                .map(LocalInventoryEntity::toDomain)
+                .toList();
+    }
 }

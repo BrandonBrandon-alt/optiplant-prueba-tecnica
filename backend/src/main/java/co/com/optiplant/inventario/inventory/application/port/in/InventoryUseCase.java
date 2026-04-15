@@ -32,4 +32,6 @@ public interface InventoryUseCase {
     );
 
     List<InventoryMovement> getKardex(Long branchId, Long productId);
+
+    List<LocalInventory> getLowStockInventories();
 }

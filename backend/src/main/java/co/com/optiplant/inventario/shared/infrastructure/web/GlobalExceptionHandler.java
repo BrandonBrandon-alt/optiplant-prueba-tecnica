@@ -9,7 +9,10 @@ import co.com.optiplant.inventario.catalog.domain.exception.SupplierNotFoundExce
 import co.com.optiplant.inventario.catalog.domain.exception.UnitOfMeasureNotFoundException;
 import co.com.optiplant.inventario.inventory.domain.exception.InsufficientStockException;
 import co.com.optiplant.inventario.inventory.domain.exception.InventoryNotFoundException;
+import co.com.optiplant.inventario.alert.domain.exception.AlertAlreadyResolvedException;
+import co.com.optiplant.inventario.purchase.domain.exception.InvalidPurchaseStateException;
 import co.com.optiplant.inventario.sale.domain.exception.EmptySaleException;
+import co.com.optiplant.inventario.transfer.domain.exception.InvalidTransferStateException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -85,6 +88,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EmptySaleException.class)
     public ResponseEntity<ErrorResponse> handleEmptySale(EmptySaleException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    /** 409 - Estado de Transferencia Inválido. */
+    @ExceptionHandler(InvalidTransferStateException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTransferState(InvalidTransferStateException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    /** 409 - Estado de Orden de Compra Inválido. */
+    @ExceptionHandler(InvalidPurchaseStateException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidPurchaseState(InvalidPurchaseStateException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    /** 409 - Alerta ya Resuelta. */
+    @ExceptionHandler(AlertAlreadyResolvedException.class)
+    public ResponseEntity<ErrorResponse> handleAlertAlreadyResolved(AlertAlreadyResolvedException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(ex.getMessage()));
     }
 
     /** 400 - Parámetro ilegal genérico (común en constructores del dominio). */
