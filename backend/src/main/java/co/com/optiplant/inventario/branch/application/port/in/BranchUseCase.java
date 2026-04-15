@@ -8,5 +8,5 @@ public interface BranchUseCase {
 
     Branch getBranchById(Long id);
 
-    Branch createBranch(Branch branch); // Recibe una sucursal y la devuelve guardada
+    Branch createBranch(Branch branch);
 }

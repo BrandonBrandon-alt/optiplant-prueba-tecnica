@@ -30,8 +30,8 @@ public class BranchService implements BranchUseCase {
 
     @Override
     public Branch createBranch(Branch branch) {
-        branch.setActive(true); // Regla: Nace activa
-        branch.setCreatedAt(LocalDateTime.now()); // Regla: Fecha del sistema
+        branch.setActive(true);
+        branch.setCreatedAt(LocalDateTime.now());
         return branchRepositoryPort.save(branch);
     }
 }
