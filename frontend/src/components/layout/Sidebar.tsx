@@ -1,7 +1,6 @@
-"use client";
-
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { logout } from "@/api/auth";
+import { logout, getSession, type AuthSession } from "@/api/auth";
 
 const navItems = [
   {
@@ -13,16 +12,6 @@ const navItems = [
         <rect x="14" y="3" width="7" height="7" rx="1" />
         <rect x="3" y="14" width="7" height="7" rx="1" />
         <rect x="14" y="14" width="7" height="7" rx="1" />
-      </svg>
-    ),
-  },
-  {
-    href: "/branches",
-    label: "Sucursales",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-        <polyline points="9 22 9 12 15 12 15 22" />
       </svg>
     ),
   },
@@ -49,13 +38,103 @@ const navItems = [
   },
 ];
 
+const adminItems = [
+  {
+    href: "/branches",
+    label: "Sucursales",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    ),
+  },
+  {
+    href: "/users",
+    label: "Usuarios",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+  },
+];
+
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [session, setSession] = useState<AuthSession | null>(null);
+
+  useEffect(() => {
+    setSession(getSession());
+  }, []);
 
   const handleLogout = () => {
     logout();
     router.push("/login");
+  };
+
+  const isAdmin = session?.rol === "ADMIN";
+
+  const NavLink = ({ href, label, icon }: { href: string; label: string; icon: React.ReactNode }) => {
+    const isActive = pathname === href;
+    return (
+      <a
+        key={href}
+        href={href}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          padding: "9px 10px",
+          borderRadius: "var(--radius-md)",
+          fontSize: "14px",
+          fontWeight: isActive ? 600 : 400,
+          color: isActive ? "var(--neutral-50)" : "var(--neutral-400)",
+          background: isActive ? "var(--bg-card)" : "transparent",
+          border: isActive ? "1px solid var(--border-default)" : "1px solid transparent",
+          textDecoration: "none",
+          transition: "all 0.15s ease",
+        }}
+        onMouseEnter={(e) => {
+          if (!isActive) {
+            e.currentTarget.style.color = "var(--neutral-100)";
+            e.currentTarget.style.background = "var(--bg-hover)";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isActive) {
+            e.currentTarget.style.color = "var(--neutral-400)";
+            e.currentTarget.style.background = "transparent";
+          }
+        }}
+      >
+        <span style={{ color: isActive ? "var(--brand-500)" : "currentColor", display: "flex" }}>
+          {icon}
+        </span>
+        {label}
+        {label === "Alertas" && (
+          <span
+            style={{
+              marginLeft: "auto",
+              background: "var(--brand-500)",
+              color: "#fff",
+              fontSize: "10px",
+              fontWeight: 700,
+              borderRadius: "20px",
+              padding: "1px 6px",
+              minWidth: "18px",
+              textAlign: "center",
+            }}
+          >
+            !
+          </span>
+        )}
+      </a>
+    );
   };
 
   return (
@@ -116,80 +195,47 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav style={{ flex: 1, display: "flex", flexDirection: "column", gap: "2px", padding: "0 12px" }}>
-        <p
-          style={{
-            fontSize: "10.5px",
-            fontWeight: 600,
-            color: "var(--neutral-500)",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            padding: "0 8px",
-            marginBottom: "8px",
-          }}
-        >
-          Menú
-        </p>
-        {navItems.map(({ href, label, icon }) => {
-          const isActive = pathname === href;
-          return (
-            <a
-              key={href}
-              href={href}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "9px 10px",
-                borderRadius: "var(--radius-md)",
-                fontSize: "14px",
-                fontWeight: isActive ? 600 : 400,
-                color: isActive ? "var(--neutral-50)" : "var(--neutral-400)",
-                background: isActive ? "var(--bg-card)" : "transparent",
-                border: isActive ? "1px solid var(--border-default)" : "1px solid transparent",
-                textDecoration: "none",
-                transition: "all 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.color = "var(--neutral-100)";
-                  e.currentTarget.style.background = "var(--bg-hover)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.color = "var(--neutral-400)";
-                  e.currentTarget.style.background = "transparent";
-                }
-              }}
-            >
-              <span style={{ color: isActive ? "var(--brand-500)" : "currentColor", display: "flex" }}>
-                {icon}
-              </span>
-              {label}
-              {label === "Alertas" && (
-                <span
-                  style={{
-                    marginLeft: "auto",
-                    background: "var(--brand-500)",
-                    color: "#fff",
-                    fontSize: "10px",
-                    fontWeight: 700,
-                    borderRadius: "20px",
-                    padding: "1px 6px",
-                    minWidth: "18px",
-                    textAlign: "center",
-                  }}
-                >
-                  !
-                </span>
-              )}
-            </a>
-          );
-        })}
+        <p style={{
+          fontSize: "10.5px",
+          fontWeight: 600,
+          color: "var(--neutral-500)",
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          padding: "0 8px",
+          marginBottom: "8px",
+        }}>Menú</p>
+        
+        {navItems.map((item) => (
+          <NavLink key={item.href} {...item} />
+        ))}
+
+        {isAdmin && (
+          <>
+            <p style={{
+              fontSize: "10.5px",
+              fontWeight: 600,
+              color: "var(--neutral-500)",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              padding: "0 8px",
+              marginTop: "24px",
+              marginBottom: "8px",
+            }}>Administración</p>
+            {adminItems.map((item) => (
+              <NavLink key={item.href} {...item} />
+            ))}
+          </>
+        )}
       </nav>
 
-      {/* Logout */}
+      {/* Profile & Logout */}
       <div style={{ padding: "0 12px", borderTop: "1px solid var(--border-default)", paddingTop: "16px", marginTop: "8px" }}>
+        {session && (
+          <div style={{ padding: "0 10px", marginBottom: "12px" }}>
+            <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--neutral-100)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{session.nombre}</p>
+            <p style={{ fontSize: "11px", color: "var(--neutral-500)" }}>{session.rol}</p>
+          </div>
+        )}
         <button
           onClick={handleLogout}
           style={{

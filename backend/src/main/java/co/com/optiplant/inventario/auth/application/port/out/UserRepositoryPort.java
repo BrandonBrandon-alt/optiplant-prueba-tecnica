@@ -1,18 +1,15 @@
 package co.com.optiplant.inventario.auth.application.port.out;
 
+import co.com.optiplant.inventario.auth.domain.model.Role;
 import co.com.optiplant.inventario.auth.domain.model.User;
+import java.util.List;
 import java.util.Optional;
 
-/**
- * Puerto de salida para la persistencia de Usuarios.
- * El dominio depende de esta interfaz; la implementación concreta
- * con JPA es {@code UserPersistenceAdapter}.
- */
 public interface UserRepositoryPort {
-
-    /**
-     * Busca un usuario por su email (login).
-     * @return Optional vacío si el email no está registrado.
-     */
     Optional<User> findByEmail(String email);
+    Optional<User> findById(Long id);
+    List<User> findAll();
+    User save(User user);
+    List<Role> findAllRoles();
+    Optional<Role> findRoleById(Long id);
 }

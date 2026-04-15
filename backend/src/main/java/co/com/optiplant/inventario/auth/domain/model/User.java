@@ -24,5 +24,6 @@ public class User {
     private Role role;
     /** Sucursal asignada (null para ADMIN general). */
     private Long sucursalId;
+    private Boolean active;
     private LocalDateTime createdAt;
 }

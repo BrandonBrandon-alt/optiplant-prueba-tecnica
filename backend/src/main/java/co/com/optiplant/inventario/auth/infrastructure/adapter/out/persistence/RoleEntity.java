@@ -29,4 +29,11 @@ public class RoleEntity {
                 .nombre(this.nombre)
                 .build();
     }
+
+    public static RoleEntity fromDomain(Role role) {
+        return RoleEntity.builder()
+                .id(role.getId())
+                .nombre(role.getNombre())
+                .build();
+    }
 }

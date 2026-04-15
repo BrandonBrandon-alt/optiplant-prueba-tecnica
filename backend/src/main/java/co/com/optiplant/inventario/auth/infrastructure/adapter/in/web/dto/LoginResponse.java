@@ -9,10 +9,12 @@ package co.com.optiplant.inventario.auth.infrastructure.adapter.in.web.dto;
 public record LoginResponse(
         String token,
         String tipo,
-        String email
+        String email,
+        String nombre,
+        String rol
 ) {
     /** Constructor de conveniencia: tipo siempre es "Bearer". */
-    public LoginResponse(String token, String email) {
-        this(token, "Bearer", email);
+    public LoginResponse(String token, String email, String nombre, String rol) {
+        this(token, "Bearer", email, nombre, rol);
     }
 }

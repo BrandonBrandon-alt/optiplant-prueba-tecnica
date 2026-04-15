@@ -3,6 +3,7 @@ package co.com.optiplant.inventario.auth.application.service;
 import co.com.optiplant.inventario.auth.application.port.in.AuthUseCase;
 import co.com.optiplant.inventario.auth.application.port.out.UserRepositoryPort;
 import co.com.optiplant.inventario.auth.domain.exception.InvalidCredentialsException;
+import co.com.optiplant.inventario.auth.domain.model.LoginResult;
 import co.com.optiplant.inventario.auth.domain.model.User;
 import co.com.optiplant.inventario.shared.infrastructure.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -41,7 +42,7 @@ public class AuthService implements AuthUseCase {
      * como para contraseña incorrecta — evita revelar cuál de los dos falló (enumeración).</p>
      */
     @Override
-    public String login(String email, String password) {
+    public LoginResult login(String email, String password) {
         User user = userRepositoryPort.findByEmail(email)
                 .orElseThrow(InvalidCredentialsException::new);
 
@@ -49,10 +50,15 @@ public class AuthService implements AuthUseCase {
             throw new InvalidCredentialsException();
         }
 
-        return jwtService.generateToken(
+        String token = jwtService.generateToken(
                 user.getEmail(),
                 user.getRole().getNombre(),
                 user.getSucursalId()
         );
+
+        return LoginResult.builder()
+                .token(token)
+                .user(user)
+                .build();
     }
 }

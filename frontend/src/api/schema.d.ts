@@ -452,6 +452,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAllUsers"];
+        put?: never;
+        post: operations["createUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getUser"];
+        put: operations["updateUser"];
+        post?: never;
+        delete: operations["deactivateUser"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAllRoles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -469,6 +517,33 @@ export interface components {
             contacto?: string;
             /** Format: int32 */
             tiempoEntregaDias?: number;
+        };
+        UserRequest: {
+            nombre: string;
+            email: string;
+            password?: string;
+            /** Format: int64 */
+            rolId: number;
+            /** Format: int64 */
+            sucursalId?: number;
+            activo?: boolean;
+        };
+        UserResponse: {
+            /** Format: int64 */
+            id?: number;
+            nombre?: string;
+            email?: string;
+            role?: components["schemas"]["RoleResponse"];
+            /** Format: int64 */
+            sucursalId?: number;
+            activo?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        RoleResponse: {
+            /** Format: int64 */
+            id?: number;
+            nombre?: string;
         };
         ProductRequest: {
             sku: string;
@@ -686,6 +761,8 @@ export interface components {
             token?: string;
             tipo?: string;
             email?: string;
+            nombre?: string;
+            rol?: string;
         };
         LocalInventory: {
             /** Format: int64 */

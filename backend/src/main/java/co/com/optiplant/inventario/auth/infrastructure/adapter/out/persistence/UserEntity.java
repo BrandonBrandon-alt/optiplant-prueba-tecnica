@@ -46,6 +46,10 @@ public class UserEntity {
     @Column(name = "sucursal_id")
     private Long sucursalId;
 
+    @Builder.Default
+    @Column(name = "activa")
+    private Boolean activa = true;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -57,7 +61,21 @@ public class UserEntity {
                 .passwordHash(this.passwordHash)
                 .role(this.role != null ? this.role.toDomain() : null)
                 .sucursalId(this.sucursalId)
+                .active(this.activa)
                 .createdAt(this.createdAt)
+                .build();
+    }
+
+    public static UserEntity fromDomain(User user) {
+        return UserEntity.builder()
+                .id(user.getId())
+                .nombre(user.getNombre())
+                .email(user.getEmail())
+                .passwordHash(user.getPasswordHash())
+                .role(user.getRole() != null ? RoleEntity.fromDomain(user.getRole()) : null)
+                .sucursalId(user.getSucursalId())
+                .activa(user.getActive())
+                .createdAt(user.getCreatedAt())
                 .build();
     }
 }

@@ -1,6 +1,7 @@
 package co.com.optiplant.inventario.auth.infrastructure.adapter.in.web;
 
 import co.com.optiplant.inventario.auth.application.port.in.AuthUseCase;
+import co.com.optiplant.inventario.auth.domain.model.LoginResult;
 import co.com.optiplant.inventario.auth.infrastructure.adapter.in.web.dto.LoginRequest;
 import co.com.optiplant.inventario.auth.infrastructure.adapter.in.web.dto.LoginResponse;
 import jakarta.validation.Valid;
@@ -47,7 +48,12 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        String token = authUseCase.login(request.email(), request.password());
-        return ResponseEntity.ok(new LoginResponse(token, request.email()));
+        LoginResult result = authUseCase.login(request.email(), request.password());
+        return ResponseEntity.ok(new LoginResponse(
+            result.token(), 
+            result.user().getEmail(),
+            result.user().getNombre(),
+            result.user().getRole().getNombre()
+        ));
     }
 }
