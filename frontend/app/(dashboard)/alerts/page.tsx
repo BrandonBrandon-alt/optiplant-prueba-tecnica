@@ -12,6 +12,7 @@ import Badge      from "@/components/ui/Badge";
 import EmptyState from "@/components/ui/EmptyState";
 import Modal      from "@/components/ui/Modal";
 import Button     from "@/components/ui/Button";
+import AlertResolutionModal from "@/components/alerts/AlertResolutionModal";
 
 // ── Types ──────────────────────────────────────────────────
 type StockAlert     = components["schemas"]["StockAlertResponse"];
@@ -125,12 +126,7 @@ export default function AlertsPage() {
         setBranches(bra);
 
         if (bra.length > 0) {
-          const results = await Promise.all(
-            bra.map((b) =>
-              apiClient.GET("/api/v1/alerts", { params: { query: { branchId: b.id! } } })
-            )
-          );
-          setAlerts(results.flatMap((r) => r.data ?? []));
+          await refreshAlerts(bra);
         }
       } finally {
         setLoading(false);
@@ -139,20 +135,22 @@ export default function AlertsPage() {
     load();
   }, []);
 
+  const refreshAlerts = async (branchList = branches) => {
+    const results = await Promise.all(
+      branchList.map((b) =>
+        apiClient.GET("/api/v1/alerts", { params: { query: { branchId: b.id! } } })
+      )
+    );
+    setAlerts(results.flatMap((r) => r.data ?? []));
+  };
+
   // Force scan
   const handleScan = () => {
     showToast("Escaneando el inventario en busca de quiebres de stock...", "info", "Escaneo iniciado");
     startScan(async () => {
       await apiClient.POST("/api/v1/alerts/scan");
-      // Reload alerts after scan
-      const results = await Promise.all(
-        branches.map((b) =>
-          apiClient.GET("/api/v1/alerts", { params: { query: { branchId: b.id! } } })
-        )
-      );
-      const newAlerts = results.flatMap((r) => r.data ?? []);
-      setAlerts(newAlerts);
-      const newCount = newAlerts.filter((a) => !a.resolved).length;
+      await refreshAlerts();
+      const newCount = alerts.filter((a) => !a.resolved).length;
       showToast(`Escaneo completo. Se encontraron ${newCount} alertas activas.`, "success", "Escaneo finalizado");
       setScanResult(`Escaneo completo. ${newCount} alerta${newCount !== 1 ? "s" : ""} activa${newCount !== 1 ? "s" : ""}.`);
       setTimeout(() => setScanResult(null), 4000);
@@ -160,21 +158,12 @@ export default function AlertsPage() {
   };
 
 
-  // Resolve alert
-  const handleResolve = (id: number) => {
-    startResolve(async () => {
-      const { data } = await apiClient.PATCH("/api/v1/alerts/{id}/resolve", {
-        params: { path: { id } },
-      });
-      if (data) {
-        setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, resolved: true } : a)));
-        showToast("La alerta ha sido marcada como resuelta.", "success", "Alerta resuelta");
-      } else {
-        showToast("No se pudo marcar la alerta como resuelta.", "error");
-      }
-      setConfirmId(null);
-    });
+  const handleSuccess = () => {
+    refreshAlerts();
+    setSelectedAlert(null);
   };
+
+  const [selectedAlert, setSelectedAlert] = useState<StockAlert | null>(null);
 
   const { showToast } = useToast();
 
@@ -354,57 +343,19 @@ export default function AlertsPage() {
                 key={alert.id}
                 alert={alert}
                 branchName={branchName(alert.branchId)}
-                onResolve={(id) => setConfirmId(id)}
+                onResolve={(id) => setSelectedAlert(alerts.find(a => a.id === id) || null)}
               />
             ))}
           </div>
         )}
       </Card>
 
-      {/* Confirm Resolve Modal */}
-      <Modal
-        open={confirmId !== null}
-        onClose={() => setConfirmId(null)}
-        title="Resolver alerta"
-        description="¿Confirmas que este problema de stock ha sido atendido?"
-        size="sm"
-        footer={
-          <>
-            <Button variant="ghost" size="sm" onClick={() => setConfirmId(null)} disabled={resolving}>
-              Cancelar
-            </Button>
-            <Button
-              size="sm"
-              loading={resolving}
-              onClick={() => confirmId !== null && handleResolve(confirmId)}
-            >
-              Sí, marcar como resuelta
-            </Button>
-          </>
-        }
-      >
-        {confirmId && (() => {
-          const a = alerts.find((x) => x.id === confirmId);
-          return a ? (
-            <div
-              style={{
-                background: "var(--bg-surface)",
-                border: "1px solid var(--border-default)",
-                borderRadius: "var(--radius-md)",
-                padding: "14px 16px",
-                fontSize: "13.5px",
-                color: "var(--neutral-200)",
-                lineHeight: 1.5,
-              }}
-            >
-              <p style={{ marginBottom: "6px" }}>{a.message}</p>
-              <p style={{ fontSize: "12px", color: "var(--neutral-500)" }}>
-                📍 {branchName(a.branchId)} · Producto #{a.productId}
-              </p>
-            </div>
-          ) : null;
-        })()}
-      </Modal>
+      {/* Gateway de Resolución Modal */}
+      <AlertResolutionModal 
+        alert={selectedAlert}
+        onClose={() => setSelectedAlert(null)}
+        onSuccess={handleSuccess}
+      />
     </div>
   );
 }

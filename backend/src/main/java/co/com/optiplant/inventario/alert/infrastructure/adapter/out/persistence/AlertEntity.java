@@ -1,5 +1,6 @@
 package co.com.optiplant.inventario.alert.infrastructure.adapter.out.persistence;
 
+import co.com.optiplant.inventario.alert.domain.model.ResolutionType;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -27,6 +28,19 @@ public class AlertEntity {
     @Column(name = "resuelta", nullable = false)
     private Boolean resolved;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_resolucion", length = 50)
+    private ResolutionType resolutionType;
+
+    @Column(name = "referencia_id")
+    private Long referenceId;
+
+    @Column(name = "motivo_descarte")
+    private String resolutionReason;
+
+    @Column(name = "fecha_resolucion")
+    private LocalDateTime resolvedAt;
+
     public AlertEntity() {}
 
     public Long getId() { return id; }
@@ -46,4 +60,16 @@ public class AlertEntity {
 
     public Boolean getResolved() { return resolved; }
     public void setResolved(Boolean resolved) { this.resolved = resolved; }
+
+    public ResolutionType getResolutionType() { return resolutionType; }
+    public void setResolutionType(ResolutionType resolutionType) { this.resolutionType = resolutionType; }
+
+    public Long getReferenceId() { return referenceId; }
+    public void setReferenceId(Long referenceId) { this.referenceId = referenceId; }
+
+    public String getResolutionReason() { return resolutionReason; }
+    public void setResolutionReason(String resolutionReason) { this.resolutionReason = resolutionReason; }
+
+    public LocalDateTime getResolvedAt() { return resolvedAt; }
+    public void setResolvedAt(LocalDateTime resolvedAt) { this.resolvedAt = resolvedAt; }
 }

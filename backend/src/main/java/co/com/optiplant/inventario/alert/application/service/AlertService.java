@@ -2,6 +2,7 @@ package co.com.optiplant.inventario.alert.application.service;
 
 import co.com.optiplant.inventario.alert.application.port.in.AlertUseCase;
 import co.com.optiplant.inventario.alert.application.port.out.AlertRepositoryPort;
+import co.com.optiplant.inventario.alert.domain.model.ResolutionType;
 import co.com.optiplant.inventario.alert.domain.model.StockAlert;
 import co.com.optiplant.inventario.branch.application.port.in.BranchUseCase;
 import co.com.optiplant.inventario.branch.domain.model.Branch;
@@ -9,10 +10,16 @@ import co.com.optiplant.inventario.catalog.application.port.in.ProductUseCase;
 import co.com.optiplant.inventario.catalog.domain.model.Product;
 import co.com.optiplant.inventario.inventory.application.port.in.InventoryUseCase;
 import co.com.optiplant.inventario.inventory.domain.model.LocalInventory;
+import co.com.optiplant.inventario.purchase.application.port.in.CreatePurchaseCommand;
+import co.com.optiplant.inventario.purchase.application.port.in.PurchaseUseCase;
+import co.com.optiplant.inventario.transfer.application.port.in.RequestTransferCommand;
+import co.com.optiplant.inventario.transfer.application.port.in.TransferUseCase;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -22,15 +29,21 @@ public class AlertService implements AlertUseCase {
     private final InventoryUseCase inventoryUseCase;
     private final ProductUseCase productUseCase;
     private final BranchUseCase branchUseCase;
+    private final TransferUseCase transferUseCase;
+    private final PurchaseUseCase purchaseUseCase;
 
     public AlertService(AlertRepositoryPort alertRepository, 
                         InventoryUseCase inventoryUseCase,
                         ProductUseCase productUseCase,
-                        BranchUseCase branchUseCase) {
+                        BranchUseCase branchUseCase,
+                        TransferUseCase transferUseCase,
+                        PurchaseUseCase purchaseUseCase) {
         this.alertRepository = alertRepository;
         this.inventoryUseCase = inventoryUseCase;
         this.productUseCase = productUseCase;
         this.branchUseCase = branchUseCase;
+        this.transferUseCase = transferUseCase;
+        this.purchaseUseCase = purchaseUseCase;
     }
 
     /**
@@ -86,9 +99,67 @@ public class AlertService implements AlertUseCase {
     @Override
     @Transactional
     public void resolveAlert(Long alertId) {
-        StockAlert alert = alertRepository.findById(alertId)
-                .orElseThrow(() -> new IllegalArgumentException("No se encontró la alerta de stock solicitada."));
-        alert.resolve();
+        StockAlert alert = findAlert(alertId);
+        alert.resolve(ResolutionType.DISMISSED, null, "Resolución manual genérica");
         alertRepository.save(alert);
+    }
+
+    @Override
+    @Transactional
+    public void resolveViaTransfer(Long alertId, Long originBranchId, Integer quantity) {
+        StockAlert alert = findAlert(alertId);
+        
+        RequestTransferCommand cmd = new RequestTransferCommand(
+                originBranchId,
+                alert.getBranchId(),
+                LocalDateTime.now().plusDays(2), // +2 días sugerido por Tech Lead
+                List.of(new RequestTransferCommand.Detail(alert.getProductId(), quantity))
+        );
+        
+        var transfer = transferUseCase.requestTransfer(cmd);
+        
+        alert.resolve(ResolutionType.TRANSFER, transfer.getId(), "Abastecimiento vía transferencia interna");
+        alertRepository.save(alert);
+    }
+
+    @Override
+    @Transactional
+    public void resolveViaPurchaseOrder(Long alertId, LocalDateTime estimatedArrival, BigDecimal quantity) {
+        StockAlert alert = findAlert(alertId);
+        Product product = productUseCase.getProductById(alert.getProductId());
+        
+        if (product.getSupplierId() == null) {
+            throw new IllegalStateException("El producto no tiene un proveedor asociado para generar una orden de compra.");
+        }
+
+        CreatePurchaseCommand cmd = new CreatePurchaseCommand(
+                product.getSupplierId(),
+                1L, // Por ahora default ADMIN ID = 1
+                alert.getBranchId(),
+                estimatedArrival,
+                List.of(new CreatePurchaseCommand.Detail(
+                        alert.getProductId(), 
+                        quantity,
+                        product.getAverageCost()
+                ))
+        );
+        
+        var order = purchaseUseCase.createOrder(cmd);
+        
+        alert.resolve(ResolutionType.PURCHASE, order.getId(), "Abastecimiento vía orden de compra");
+        alertRepository.save(alert);
+    }
+
+    @Override
+    @Transactional
+    public void dismissAlert(Long alertId, String reason) {
+        StockAlert alert = findAlert(alertId);
+        alert.resolve(ResolutionType.DISMISSED, null, reason);
+        alertRepository.save(alert);
+    }
+
+    private StockAlert findAlert(Long id) {
+        return alertRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("No se encontró la alerta de stock solicitada."));
     }
 }

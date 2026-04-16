@@ -45,9 +45,49 @@
   --radius-lg: 16px;
   --radius-xl: 20px;
 
+  /* Spacing */
+  --page-padding: 40px;
+  --header-height: 0px;
+
   /* Borders */
   --border-default: rgba(255,255,255,0.07);
   --border-subtle:  rgba(255,255,255,0.04);
+}
+
+@media (max-width: 1024px) {
+  :root {
+    --page-padding: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --page-padding: 16px;
+    --header-height: 60px;
+  }
+}
+
+.hidden-mobile {
+  @media (max-width: 768px) {
+    display: none !important;
+  }
+}
+
+.show-mobile {
+  display: none;
+  @media (max-width: 768px) {
+    display: block;
+  }
+}
+
+/* Sidebar responsive adjustments */
+@media (max-width: 768px) {
+  .sidebar-responsive {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    z-index: 2000;
+  }
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

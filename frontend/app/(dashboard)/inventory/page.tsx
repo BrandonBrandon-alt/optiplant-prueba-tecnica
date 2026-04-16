@@ -240,14 +240,22 @@ export default function InventoryPage() {
   if (loadingInit) return <Spinner fullPage />;
 
   return (
-    <div style={{ padding: "36px 40px", maxWidth: "1400px" }}>
+    <div style={{ padding: "var(--page-padding)", maxWidth: "1400px", margin: "0 auto" }}>
       <PageHeader
         title="Centro de Control de Inventario"
         description="Gestión inmutable de stock, auditoría de Kardex y niveles críticos por sucursal."
       />
 
       {/* Selector de Sede y Tabs */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "32px", gap: "24px" }}>
+      <div style={{ 
+        display: "flex", 
+        flexDirection: "row", 
+        flexWrap: "wrap",
+        justifyContent: "space-between", 
+        alignItems: "flex-end", 
+        marginBottom: "32px", 
+        gap: "24px" 
+      }}>
         <div style={{ display: "flex", gap: "32px", alignItems: "flex-end" }}>
           <div style={{ width: "300px" }}>
             <Select

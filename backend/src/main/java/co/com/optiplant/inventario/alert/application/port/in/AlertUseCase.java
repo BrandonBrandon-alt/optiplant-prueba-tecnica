@@ -7,8 +7,14 @@ import java.util.List;
 
 public interface AlertUseCase {
     void scanForAlerts();
-    void handleLowStockCheck(LocalInventory inv);
-    void createAlert(Long branchId, Long productId, String message);
     List<StockAlert> getActiveAlerts(Long branchId);
     void resolveAlert(Long alertId);
+    
+    // Decision Gateway Methods
+    void resolveViaTransfer(Long alertId, Long originBranchId, Integer quantity);
+    void resolveViaPurchaseOrder(Long alertId, java.time.LocalDateTime estimatedArrival, java.math.BigDecimal quantity);
+    void dismissAlert(Long alertId, String reason);
+    
+    void createAlert(Long branchId, Long productId, String message);
+    void handleLowStockCheck(LocalInventory inv);
 }

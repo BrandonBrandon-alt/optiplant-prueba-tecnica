@@ -48,6 +48,10 @@ public class AlertPersistenceAdapter implements AlertRepositoryPort {
         entity.setMessage(domain.getMessage());
         entity.setAlertDate(domain.getAlertDate());
         entity.setResolved(domain.isResolved());
+        entity.setResolutionType(domain.getResolutionType());
+        entity.setReferenceId(domain.getReferenceId());
+        entity.setResolutionReason(domain.getResolutionReason());
+        entity.setResolvedAt(domain.getResolvedAt());
         return entity;
     }
 
@@ -58,7 +62,11 @@ public class AlertPersistenceAdapter implements AlertRepositoryPort {
                 entity.getProductId(),
                 entity.getMessage(),
                 entity.getAlertDate(),
-                entity.getResolved()
+                entity.getResolved(),
+                entity.getResolutionType(),
+                entity.getReferenceId(),
+                entity.getResolutionReason(),
+                entity.getResolvedAt()
         );
     }
 }

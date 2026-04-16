@@ -13,6 +13,10 @@ public class AlertController {
     /** Envelope genérico para respuestas de mensaje — garantiza JSON válido. */
     public record MessageResponse(String message) {}
 
+    public record TransferResolutionRequest(Long originBranchId, Integer quantity) {}
+    public record PurchaseResolutionRequest(java.time.LocalDateTime estimatedArrival, java.math.BigDecimal quantity) {}
+    public record DismissResolutionRequest(String reason) {}
+
     private final AlertUseCase alertUseCase;
 
     public AlertController(AlertUseCase alertUseCase) {
@@ -37,5 +41,29 @@ public class AlertController {
     public ResponseEntity<MessageResponse> resolveAlert(@PathVariable Long id) {
         alertUseCase.resolveAlert(id);
         return ResponseEntity.ok(new MessageResponse("Alerta #" + id + " marcada como resuelta."));
+    }
+
+    @PostMapping("/{id}/resolve/transfer")
+    public ResponseEntity<MessageResponse> resolveViaTransfer(
+            @PathVariable Long id, 
+            @RequestBody TransferResolutionRequest request) {
+        alertUseCase.resolveViaTransfer(id, request.originBranchId(), request.quantity());
+        return ResponseEntity.ok(new MessageResponse("Alerta resuelta mediante solicitud de transferencia interna."));
+    }
+
+    @PostMapping("/{id}/resolve/purchase")
+    public ResponseEntity<MessageResponse> resolveViaPurchase(
+            @PathVariable Long id, 
+            @RequestBody PurchaseResolutionRequest request) {
+        alertUseCase.resolveViaPurchaseOrder(id, request.estimatedArrival(), request.quantity());
+        return ResponseEntity.ok(new MessageResponse("Alerta resuelta mediante generación de orden de compra."));
+    }
+
+    @PostMapping("/{id}/resolve/dismiss")
+    public ResponseEntity<MessageResponse> dismissAlert(
+            @PathVariable Long id, 
+            @RequestBody DismissResolutionRequest request) {
+        alertUseCase.dismissAlert(id, request.reason());
+        return ResponseEntity.ok(new MessageResponse("Alerta descartada exitosamente."));
     }
 }

@@ -151,7 +151,12 @@ const masterItems = [
   },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [session, setSession] = useState<AuthSession | null>(null);
@@ -269,20 +274,47 @@ export default function Sidebar() {
   };
 
   return (
-    <aside
-      style={{
-        width: "220px",
-        flexShrink: 0,
-        height: "100dvh",
-        position: "sticky",
-        top: 0,
-        background: "var(--bg-base)",
-        borderRight: "1px solid var(--border-default)",
-        display: "flex",
-        flexDirection: "column",
-        padding: "24px 0",
-      }}
-    >
+    <>
+      {/* Overlay para móvil */}
+      {isOpen && (
+        <div 
+          onClick={onClose}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            backdropFilter: "blur(4px)",
+            zIndex: 1999,
+          }}
+          className="show-mobile"
+        />
+      )}
+
+      <aside
+        style={{
+          width: "220px",
+          flexShrink: 0,
+          height: "100dvh",
+          position: "sticky",
+          top: 0,
+          background: "var(--bg-base)",
+          borderRight: "1px solid var(--border-default)",
+          display: "flex",
+          flexDirection: "column",
+          padding: "24px 0",
+          zIndex: 2000,
+          transition: "transform 0.3s ease",
+          // Estilos responsivos dinámicos
+          ...((typeof window !== "undefined" && window.innerWidth <= 768) ? {
+            position: "fixed",
+            transform: isOpen ? "translateX(0)" : "translateX(-100%)",
+            boxShadow: "20px 0 50px rgba(0,0,0,0.5)",
+          } : {})
+        }}
+        // Usar variables CSS para mejor manejo de media queries si es posible, 
+        // pero aquí usaremos inline con una pequeña "trampa" de clase para el CSS global
+        className="sidebar-responsive"
+      >
       {/* Logo */}
       <div
         style={{
@@ -427,6 +459,26 @@ export default function Sidebar() {
           Cerrar sesión
         </button>
       </div>
+      {/* Close button - solo móvil */}
+      <button
+        onClick={onClose}
+        className="show-mobile"
+        style={{
+          position: "absolute",
+          top: "20px",
+          right: "10px",
+          background: "transparent",
+          border: "none",
+          color: "var(--neutral-400)",
+          cursor: "pointer"
+        }}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
     </aside>
+    </>
   );
 }

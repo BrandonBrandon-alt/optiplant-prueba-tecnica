@@ -12,6 +12,7 @@ import java.util.List;
 import co.com.optiplant.inventario.transfer.domain.model.TransferDetail;
 import co.com.optiplant.inventario.transfer.application.port.in.UpdateQuantityCommand;
 import co.com.optiplant.inventario.alert.application.port.in.AlertUseCase;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +26,9 @@ public class TransferService implements TransferUseCase {
     private final InventoryUseCase inventoryUseCase;
     private final AlertUseCase alertUseCase;
 
-    public TransferService(TransferRepositoryPort transferRepositoryPort, InventoryUseCase inventoryUseCase, AlertUseCase alertUseCase) {
+    public TransferService(TransferRepositoryPort transferRepositoryPort, 
+                           InventoryUseCase inventoryUseCase, 
+                           @Lazy AlertUseCase alertUseCase) {
         this.transferRepositoryPort = transferRepositoryPort;
         this.inventoryUseCase = inventoryUseCase;
         this.alertUseCase = alertUseCase;
