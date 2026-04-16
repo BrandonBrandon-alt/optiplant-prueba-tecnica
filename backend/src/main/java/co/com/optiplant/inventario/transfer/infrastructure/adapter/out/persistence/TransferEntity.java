@@ -31,6 +31,12 @@ public class TransferEntity {
     @Column(name = "sucursal_destino_id", nullable = false)
     private Long destinationBranchId;
 
+    @Column(name = "transportista")
+    private String carrier;
+
+    @Column(name = "notas_recepcion")
+    private String receiptNotes;
+
     @OneToMany(mappedBy = "transfer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TransferDetailEntity> details = new ArrayList<>();
 
@@ -66,6 +72,12 @@ public class TransferEntity {
 
     public Long getDestinationBranchId() { return destinationBranchId; }
     public void setDestinationBranchId(Long destinationBranchId) { this.destinationBranchId = destinationBranchId; }
+
+    public String getCarrier() { return carrier; }
+    public void setCarrier(String carrier) { this.carrier = carrier; }
+
+    public String getReceiptNotes() { return receiptNotes; }
+    public void setReceiptNotes(String receiptNotes) { this.receiptNotes = receiptNotes; }
 
     public List<TransferDetailEntity> getDetails() { return details; }
     public void setDetails(List<TransferDetailEntity> details) { this.details = details; }

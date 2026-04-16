@@ -14,9 +14,11 @@ public class Transfer {
     private LocalDateTime actualArrivalDate;
     private Long originBranchId;
     private Long destinationBranchId;
+    private String carrier;
+    private String receiptNotes;
     private List<TransferDetail> details;
 
-    public Transfer(Long id, TransferStatus status, LocalDateTime requestDate, LocalDateTime estimatedArrivalDate, LocalDateTime actualArrivalDate, Long originBranchId, Long destinationBranchId, List<TransferDetail> details) {
+    public Transfer(Long id, TransferStatus status, LocalDateTime requestDate, LocalDateTime estimatedArrivalDate, LocalDateTime actualArrivalDate, Long originBranchId, Long destinationBranchId, String carrier, String receiptNotes, List<TransferDetail> details) {
         if (originBranchId == null || destinationBranchId == null) {
             throw new IllegalArgumentException("Las sucursales de origen y destino son obligatorias.");
         }
@@ -34,26 +36,30 @@ public class Transfer {
         this.actualArrivalDate = actualArrivalDate;
         this.originBranchId = originBranchId;
         this.destinationBranchId = destinationBranchId;
+        this.carrier = carrier;
+        this.receiptNotes = receiptNotes;
         this.details = details;
     }
 
     public static Transfer create(Long originBranchId, Long destinationBranchId, LocalDateTime estimatedArrival, List<TransferDetail> details) {
-        return new Transfer(null, TransferStatus.PENDING, LocalDateTime.now(), estimatedArrival, null, originBranchId, destinationBranchId, details);
+        return new Transfer(null, TransferStatus.PENDING, LocalDateTime.now(), estimatedArrival, null, originBranchId, destinationBranchId, null, null, details);
     }
 
-    public void dispatch() {
+    public void dispatch(String carrier) {
         if (this.status != TransferStatus.PENDING) {
             throw new InvalidTransferStateException("Solo se puede despachar una transferencia en estado PENDING.");
         }
         this.status = TransferStatus.IN_TRANSIT;
+        this.carrier = carrier;
     }
 
-    public void receive() {
+    public void receive(String notes) {
         if (this.status != TransferStatus.IN_TRANSIT) {
             throw new InvalidTransferStateException("Solo se puede recibir una transferencia que está IN_TRANSIT.");
         }
         this.status = TransferStatus.DELIVERED;
         this.actualArrivalDate = LocalDateTime.now();
+        this.receiptNotes = notes;
     }
 
     public void cancel() {
@@ -70,5 +76,7 @@ public class Transfer {
     public LocalDateTime getActualArrivalDate() { return actualArrivalDate; }
     public Long getOriginBranchId() { return originBranchId; }
     public Long getDestinationBranchId() { return destinationBranchId; }
+    public String getCarrier() { return carrier; }
+    public String getReceiptNotes() { return receiptNotes; }
     public List<TransferDetail> getDetails() { return Collections.unmodifiableList(details); }
 }

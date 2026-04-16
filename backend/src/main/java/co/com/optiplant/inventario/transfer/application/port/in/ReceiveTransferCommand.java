@@ -4,6 +4,7 @@ import java.util.List;
 
 public record ReceiveTransferCommand(
         Long userId,
+        String notes,
         List<ReceivedDetail> items
 ) {
     public record ReceivedDetail(

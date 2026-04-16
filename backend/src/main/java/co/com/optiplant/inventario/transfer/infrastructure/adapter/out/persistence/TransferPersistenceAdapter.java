@@ -47,6 +47,8 @@ public class TransferPersistenceAdapter implements TransferRepositoryPort {
         entity.setActualArrivalDate(domain.getActualArrivalDate());
         entity.setOriginBranchId(domain.getOriginBranchId());
         entity.setDestinationBranchId(domain.getDestinationBranchId());
+        entity.setCarrier(domain.getCarrier());
+        entity.setReceiptNotes(domain.getReceiptNotes());
 
         if (domain.getDetails() != null) {
             for (TransferDetail detail : domain.getDetails()) {
@@ -73,6 +75,8 @@ public class TransferPersistenceAdapter implements TransferRepositoryPort {
                 entity.getActualArrivalDate(),
                 entity.getOriginBranchId(),
                 entity.getDestinationBranchId(),
+                entity.getCarrier(),
+                entity.getReceiptNotes(),
                 entity.getDetails().stream().map(d -> new TransferDetail(
                         d.getId(),
                         d.getProductId(),

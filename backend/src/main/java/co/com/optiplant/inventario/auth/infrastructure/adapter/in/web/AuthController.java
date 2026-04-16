@@ -54,7 +54,8 @@ public class AuthController {
             result.user().getEmail(),
             result.user().getNombre(),
             result.user().getRole().getNombre(),
-            result.user().getSucursalId()
+            result.user().getSucursalId(),
+            result.user().getId()
         ));
     }
 }

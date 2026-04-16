@@ -2,6 +2,7 @@ package co.com.optiplant.inventario.transfer.application.service;
 
 import co.com.optiplant.inventario.inventory.application.port.in.InventoryUseCase;
 import co.com.optiplant.inventario.inventory.domain.model.MovementReason;
+import co.com.optiplant.inventario.transfer.application.port.in.DispatchTransferCommand;
 import co.com.optiplant.inventario.transfer.application.port.in.ReceiveTransferCommand;
 import co.com.optiplant.inventario.transfer.application.port.in.RequestTransferCommand;
 import co.com.optiplant.inventario.transfer.application.port.in.TransferUseCase;
@@ -45,38 +46,40 @@ public class TransferService implements TransferUseCase {
 
     @Override
     @Transactional
-    public Transfer dispatchTransfer(Long transferId, Long userId) {
+    public Transfer dispatchTransfer(Long transferId, DispatchTransferCommand command) {
         Transfer transfer = getTransferById(transferId);
         
         // El agregado valida su estado internamente
-        transfer.dispatch();
-
-        // Almacenamos el avance local del estado transaccional
-        Transfer savedTransfer = transferRepositoryPort.save(transfer);
+        transfer.dispatch(command.carrier());
 
         // Operamos contra el Inventario de la sucursal origen
-        for (TransferDetail detail : savedTransfer.getDetails()) {
-            detail.registerDispatch(detail.getRequestedQuantity()); // Se envia lo validado
+        for (DispatchTransferCommand.DispatchDetail dDetail : command.items()) {
+            TransferDetail detail = transfer.getDetails().stream()
+                    .filter(d -> d.getId().equals(dDetail.detailId()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("No se encontró el detalle en esta transferencia."));
+            
+            detail.registerDispatch(dDetail.sentQuantity());
             
             inventoryUseCase.withdrawStock(
-                    savedTransfer.getOriginBranchId(),
+                    transfer.getOriginBranchId(),
                     detail.getProductId(),
                     BigDecimal.valueOf(detail.getSentQuantity()),
                     MovementReason.TRASLADO,
-                    userId,
-                    savedTransfer.getId(),
+                    command.userId(),
+                    transfer.getId(),
                     "TRANSFERENCIA_OUT"
             );
         }
 
-        return transferRepositoryPort.save(savedTransfer);
+        return transferRepositoryPort.save(transfer);
     }
 
     @Override
     @Transactional
     public Transfer receiveTransfer(Long transferId, ReceiveTransferCommand command) {
         Transfer transfer = getTransferById(transferId);
-        transfer.receive();
+        transfer.receive(command.notes());
 
         // Procesar detalles
         for (ReceiveTransferCommand.ReceivedDetail rDetail : command.items()) {
@@ -97,7 +100,7 @@ public class TransferService implements TransferUseCase {
                         command.userId(),
                         transfer.getId(),
                         "TRANSFERENCIA_IN",
-                        null // Las transferencias no afectan el costo promedio
+                        null
                 );
             }
         }

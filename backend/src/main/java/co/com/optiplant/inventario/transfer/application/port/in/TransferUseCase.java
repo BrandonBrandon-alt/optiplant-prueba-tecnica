@@ -5,7 +5,7 @@ import java.util.List;
 
 public interface TransferUseCase {
     Transfer requestTransfer(RequestTransferCommand command);
-    Transfer dispatchTransfer(Long transferId, Long userId);
+    Transfer dispatchTransfer(Long transferId, DispatchTransferCommand command);
     Transfer receiveTransfer(Long transferId, ReceiveTransferCommand command);
     Transfer getTransferById(Long transferId);
     List<Transfer> getAllTransfers();

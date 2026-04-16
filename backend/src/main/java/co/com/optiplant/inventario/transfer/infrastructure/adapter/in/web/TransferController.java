@@ -1,5 +1,6 @@
 package co.com.optiplant.inventario.transfer.infrastructure.adapter.in.web;
 
+import co.com.optiplant.inventario.transfer.application.port.in.DispatchTransferCommand;
 import co.com.optiplant.inventario.transfer.application.port.in.ReceiveTransferCommand;
 import co.com.optiplant.inventario.transfer.application.port.in.RequestTransferCommand;
 import co.com.optiplant.inventario.transfer.application.port.in.TransferUseCase;
@@ -37,9 +38,17 @@ public class TransferController {
     @PostMapping("/{id}/dispatch")
     public ResponseEntity<TransferResponse> dispatchTransfer(
             @PathVariable Long id,
-            @RequestParam Long userId) {
+            @Valid @RequestBody TransferDispatchRequest request) {
         
-        Transfer transfer = transferUseCase.dispatchTransfer(id, userId);
+        DispatchTransferCommand command = new DispatchTransferCommand(
+                request.userId(),
+                request.carrier(),
+                request.items().stream()
+                        .map(item -> new DispatchTransferCommand.DispatchDetail(item.detailId(), item.sentQuantity()))
+                        .toList()
+        );
+
+        Transfer transfer = transferUseCase.dispatchTransfer(id, command);
         return ResponseEntity.ok(TransferResponse.fromDomain(transfer));
     }
 
@@ -50,6 +59,7 @@ public class TransferController {
         
         ReceiveTransferCommand command = new ReceiveTransferCommand(
                 request.userId(),
+                request.notes(),
                 request.items().stream()
                         .map(item -> new ReceiveTransferCommand.ReceivedDetail(item.detailId(), item.receivedQuantity()))
                         .toList()

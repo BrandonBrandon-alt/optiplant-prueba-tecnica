@@ -148,4 +148,9 @@ public class InventoryService implements InventoryUseCase {
     public List<LocalInventory> getLowStockInventories() {
         return localInventoryRepository.findLowStock();
     }
+
+    @Override
+    public List<InventoryMovement> getAllMovements() {
+        return inventoryMovementRepository.findAll();
+    }
 }

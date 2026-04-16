@@ -12,10 +12,11 @@ public record LoginResponse(
         String email,
         String nombre,
         String rol,
-        Long sucursalId
+        Long sucursalId,
+        Long id
 ) {
     /** Constructor de conveniencia: tipo siempre es "Bearer". */
-    public LoginResponse(String token, String email, String nombre, String rol, Long sucursalId) {
-        this(token, "Bearer", email, nombre, rol, sucursalId);
+    public LoginResponse(String token, String email, String nombre, String rol, Long sucursalId, Long id) {
+        this(token, "Bearer", email, nombre, rol, sucursalId, id);
     }
 }

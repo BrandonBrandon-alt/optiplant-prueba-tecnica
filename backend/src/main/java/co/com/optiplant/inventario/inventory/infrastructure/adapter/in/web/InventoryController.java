@@ -87,4 +87,9 @@ public class InventoryController {
                 
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/movements")
+    public ResponseEntity<List<InventoryMovement>> getAllMovements() {
+        return ResponseEntity.ok(inventoryUseCase.getAllMovements());
+    }
 }

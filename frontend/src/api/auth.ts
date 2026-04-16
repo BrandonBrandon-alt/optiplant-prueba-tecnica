@@ -5,6 +5,7 @@ const AUTH_EMAIL_KEY = "optiplant_email";
 const AUTH_NAME_KEY  = "optiplant_nombre";
 const AUTH_ROLE_KEY      = "optiplant_rol";
 const AUTH_BRANCH_ID_KEY = "optiplant_sucursal_id";
+const AUTH_USER_ID_KEY   = "optiplant_user_id";
 
 export interface LoginPayload {
   email: string;
@@ -16,6 +17,7 @@ export interface AuthSession {
   email: string;
   nombre: string;
   rol: string;
+  id: number;
   sucursalId?: number;
 }
 
@@ -40,12 +42,16 @@ export async function login(payload: LoginPayload): Promise<AuthSession> {
   if (data.sucursalId) {
     localStorage.setItem(AUTH_BRANCH_ID_KEY, data.sucursalId.toString());
   }
+  if (data.id) {
+    localStorage.setItem(AUTH_USER_ID_KEY, data.id.toString());
+  }
 
   return { 
     token:  data.token, 
     email:  data.email, 
     nombre: data.nombre || "", 
     rol:    data.rol || "",
+    id:     data.id,
     sucursalId: data.sucursalId
   };
 }
@@ -57,6 +63,7 @@ export function logout(): void {
   localStorage.removeItem(AUTH_NAME_KEY);
   localStorage.removeItem(AUTH_ROLE_KEY);
   localStorage.removeItem(AUTH_BRANCH_ID_KEY);
+  localStorage.removeItem(AUTH_USER_ID_KEY);
 }
 
 /** Recupera la sesión guardada, o null si no hay ninguna */
@@ -67,12 +74,14 @@ export function getSession(): AuthSession | null {
   const nombre = localStorage.getItem(AUTH_NAME_KEY);
   const rol    = localStorage.getItem(AUTH_ROLE_KEY);
   const branchId = localStorage.getItem(AUTH_BRANCH_ID_KEY);
-  if (!token || !email) return null;
+  const userId   = localStorage.getItem(AUTH_USER_ID_KEY);
+  if (!token || !email || !userId) return null;
   return { 
     token, 
     email, 
     nombre: nombre || "", 
     rol:    rol || "",
+    id:     parseInt(userId, 10),
     sucursalId: branchId ? parseInt(branchId, 10) : undefined
   };
 }

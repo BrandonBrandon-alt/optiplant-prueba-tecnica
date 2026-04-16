@@ -29,4 +29,12 @@ public class InventoryMovementPersistenceAdapter implements InventoryMovementRep
                 .map(InventoryMovementEntity::toDomain)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<InventoryMovement> findAll() {
+        return movementRepository.findAllByOrderByDateDesc()
+                .stream()
+                .map(InventoryMovementEntity::toDomain)
+                .collect(Collectors.toList());
+    }
 }
