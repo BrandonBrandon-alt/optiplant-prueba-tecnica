@@ -8,5 +8,7 @@ public enum MovementReason {
     COMPRA,
     TRASLADO,
     MERMA,
-    AJUSTE
+    DEVOLUCION,
+    AJUSTE_POSITIVO,
+    AJUSTE_NEGATIVO
 }

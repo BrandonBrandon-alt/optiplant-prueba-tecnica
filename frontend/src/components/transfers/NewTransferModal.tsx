@@ -33,6 +33,7 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
     productId: "",
     quantity: 1,
   });
+  const [availableStock, setAvailableStock] = useState<number | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -51,6 +52,20 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
       fetchData();
     }
   }, [open, showToast]);
+
+  useEffect(() => {
+    if (formData.originBranchId && formData.productId) {
+      apiClient.GET("/api/v1/inventory/branches/{branchId}/products/{productId}", {
+        params: { path: { branchId: parseInt(formData.originBranchId), productId: parseInt(formData.productId) } }
+      }).then(res => {
+        setAvailableStock((res.data as any)?.currentQuantity ?? 0);
+      }).catch(() => {
+        setAvailableStock(0);
+      });
+    } else {
+      setAvailableStock(null);
+    }
+  }, [formData.originBranchId, formData.productId]);
 
   const handleSubmit = async () => {
     if (!formData.originBranchId || !formData.destinationBranchId || !formData.productId || formData.quantity <= 0) {
@@ -127,19 +142,27 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "16px" }}>
-          <Select
-            label="Producto"
-            placeholder="Busca un producto"
-            value={formData.productId}
-            onChange={(val) => setFormData({ ...formData, productId: val })}
-            options={products.map(p => ({ value: p.id!.toString(), label: p.nombre! }))}
-          />
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <Select
+              label="Producto"
+              placeholder="Busca un producto"
+              value={formData.productId}
+              onChange={(val) => setFormData({ ...formData, productId: val })}
+              options={products.map(p => ({ value: p.id!.toString(), label: p.nombre! }))}
+            />
+            {availableStock !== null && (
+              <span style={{ fontSize: "12px", color: availableStock > 0 ? "var(--neutral-400)" : "var(--color-danger)" }}>
+                Disp. en origen: <strong>{availableStock}</strong> unidades
+              </span>
+            )}
+          </div>
 
           <Input
             label="Cantidad"
             type="number"
             min="1"
             value={formData.quantity}
+            error={availableStock !== null && formData.quantity > availableStock ? "Excede el stock disponible" : undefined}
             onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
           />
         </div>

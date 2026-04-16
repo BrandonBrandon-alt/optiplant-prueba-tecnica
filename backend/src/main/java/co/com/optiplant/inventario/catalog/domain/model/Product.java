@@ -42,6 +42,9 @@ public class Product {
      */
     private Long supplierId;
 
+    /** Unidad de medida del producto (KG, Litros, etc). */
+    private MeasurementUnit unit;
+
     /** Fecha en que el producto fue registrado en el sistema. */
     private LocalDateTime createdAt;
 }

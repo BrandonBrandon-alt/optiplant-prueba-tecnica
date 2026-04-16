@@ -10,6 +10,7 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import EmptyState from "@/components/ui/EmptyState";
+import Select from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 
 // Components
@@ -168,48 +169,38 @@ export default function TransfersManagementPage() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", marginBottom: "24px" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontSize: "12px", color: "var(--neutral-500)" }}>Sede Origen</label>
-            <select 
-              value={filterOrigin} 
-              onChange={(e) => setFilterOrigin(e.target.value)}
-              style={{ padding: "10px", background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", color: "var(--neutral-50)" }}
-            >
-              <option value="all">Todas las sedes</option>
-              {Array.from(branches.entries()).map(([id, name]) => (
-                <option key={id} value={id}>{name}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontSize: "12px", color: "var(--neutral-500)" }}>Sede Destino</label>
-            <select 
-              value={filterDestination} 
-              onChange={(e) => setFilterDestination(e.target.value)}
-              style={{ padding: "10px", background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", color: "var(--neutral-50)" }}
-            >
-              <option value="all">Todas las sedes</option>
-              {Array.from(branches.entries()).map(([id, name]) => (
-                <option key={id} value={id}>{name}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontSize: "12px", color: "var(--neutral-500)" }}>Estado</label>
-            <select 
-              value={filterStatus} 
-              onChange={(e) => setFilterStatus(e.target.value)}
-              style={{ padding: "10px", background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", color: "var(--neutral-50)" }}
-            >
-              <option value="all">Cualquier estado</option>
-              <option value="PENDING">Pendiente</option>
-              <option value="PREPARING">Preparando</option>
-              <option value="IN_TRANSIT">En Tránsito</option>
-              <option value="DELIVERED">Completado</option>
-              <option value="WITH_ISSUE">Con Novedad</option>
-              <option value="CANCELLED">Cancelado</option>
-            </select>
-          </div>
+        <Select
+          label="Sede Origen"
+          value={filterOrigin}
+          onChange={(val) => setFilterOrigin(val)}
+          options={[
+            { value: "all", label: "Todas las sedes" },
+            ...Array.from(branches.entries()).map(([id, name]) => ({ value: id.toString(), label: name }))
+          ]}
+        />
+        <Select
+          label="Sede Destino"
+          value={filterDestination}
+          onChange={(val) => setFilterDestination(val)}
+          options={[
+            { value: "all", label: "Todas las sedes" },
+            ...Array.from(branches.entries()).map(([id, name]) => ({ value: id.toString(), label: name }))
+          ]}
+        />
+        <Select
+          label="Estado"
+          value={filterStatus}
+          onChange={(val) => setFilterStatus(val)}
+          options={[
+            { value: "all", label: "Cualquier estado" },
+            { value: "PENDING", label: "Pendiente" },
+            { value: "PREPARING", label: "Preparando" },
+            { value: "IN_TRANSIT", label: "En Tránsito" },
+            { value: "DELIVERED", label: "Completado" },
+            { value: "WITH_ISSUE", label: "Con Novedad" },
+            { value: "CANCELLED", label: "Cancelado" },
+          ]}
+        />
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>

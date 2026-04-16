@@ -5,6 +5,9 @@ import { apiClient } from "@/api/client";
 import type { components } from "@/api/schema";
 import { getSession } from "@/api/auth";
 import { useRouter } from "next/navigation";
+import Select from "@/components/ui/Select";
+import Badge from "@/components/ui/Badge";
+import { useToast } from "@/context/ToastContext";
 
 // Types from schema
 type ProductResponse = components["schemas"]["ProductResponse"];
@@ -25,7 +28,9 @@ export default function MasterProductsPage() {
     costoPromedio: 0,
     precioVenta: 0,
     proveedorId: 0,
+    unit: "UNIDADES",
   });
+  const { showToast } = useToast();
 
   useEffect(() => {
     const session = getSession();
@@ -60,6 +65,7 @@ export default function MasterProductsPage() {
         costoPromedio: product.costoPromedio ?? 0,
         precioVenta: product.precioVenta ?? 0,
         proveedorId: product.proveedorId ?? 0,
+        unit: (product as any).unit || "UNIDADES",
       });
     } else {
       setEditingProduct(null);
@@ -69,6 +75,7 @@ export default function MasterProductsPage() {
         costoPromedio: 0,
         precioVenta: 0,
         proveedorId: suppliers[0]?.id ?? 0,
+        unit: "UNIDADES",
       });
     }
     setShowModal(true);
@@ -139,8 +146,9 @@ export default function MasterProductsPage() {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid var(--border-default)" }}>
-              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>SKU</th>
+               <th style={{ padding: "16px 24px", textAlign: "left", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>SKU</th>
               <th style={{ padding: "16px 24px", textAlign: "left", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Nombre</th>
+              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Unidad</th>
               <th style={{ padding: "16px 24px", textAlign: "left", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Proveedor</th>
               <th style={{ padding: "16px 24px", textAlign: "right", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Precio Venta</th>
               <th style={{ padding: "16px 24px", textAlign: "right", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Acciones</th>
@@ -150,7 +158,10 @@ export default function MasterProductsPage() {
             {products.map((p) => (
               <tr key={p.id} style={{ borderBottom: "1px solid var(--border-default)" }}>
                 <td style={{ padding: "16px 24px", fontSize: "14px", color: "var(--brand-400)", fontWeight: 600 }}>{p.sku}</td>
-                <td style={{ padding: "16px 24px", fontSize: "14px", color: "var(--neutral-100)" }}>{p.nombre}</td>
+                 <td style={{ padding: "16px 24px", fontSize: "14px", color: "var(--neutral-100)" }}>{p.nombre}</td>
+                <td style={{ padding: "16px 24px", fontSize: "12px", color: "var(--neutral-500)" }}>
+                    <Badge variant="neutral">{(p as any).unit || "UNIDADES"}</Badge>
+                </td>
                 <td style={{ padding: "16px 24px", fontSize: "14px", color: "var(--neutral-400)" }}>
                   {suppliers.find(s => s.id === p.proveedorId)?.nombre ?? "N/A"}
                 </td>
@@ -210,17 +221,27 @@ export default function MasterProductsPage() {
                   />
                 </div>
               </div>
-              <div style={{ marginBottom: "24px" }}>
-                <label style={{ display: "block", marginBottom: "8px", fontSize: "13px", color: "var(--neutral-400)" }}>Proveedor</label>
-                <select
-                  value={formData.proveedorId}
-                  onChange={(e) => setFormData({ ...formData, proveedorId: Number(e.target.value) })}
-                  style={{ width: "100%", padding: "10px", background: "var(--bg-base)", border: "1px solid var(--border-default)", borderRadius: "8px", color: "white" }}
-                  required
-                >
-                  <option value={0}>Selecciona un proveedor</option>
-                  {suppliers.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-                </select>
+               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
+                <Select
+                  label="Unidad de Medida"
+                  value={formData.unit}
+                  onChange={(val) => setFormData({ ...formData, unit: val })}
+                  options={[
+                    { value: "KILOS", label: "Kilogramos (Kg)" },
+                    { value: "LITROS", label: "Litros (L)" },
+                    { value: "UNIDADES", label: "Unidades (Und)" },
+                    { value: "METROS_CUADRADOS", label: "Metros Cuadrados (M2)" },
+                  ]}
+                />
+                <Select
+                  label="Proveedor"
+                  value={formData.proveedorId.toString()}
+                  onChange={(val) => setFormData({ ...formData, proveedorId: Number(val) })}
+                  options={[
+                    { value: "0", label: "Selecciona proveedor" },
+                    ...suppliers.map(s => ({ value: s.id!.toString(), label: s.nombre! }))
+                  ]}
+                />
               </div>
               <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
                 <button type="button" onClick={() => setShowModal(false)} style={{ background: "none", border: "1px solid var(--border-default)", color: "white", padding: "10px 20px", borderRadius: "8px", cursor: "pointer" }}>Cancelar</button>

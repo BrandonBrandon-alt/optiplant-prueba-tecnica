@@ -63,6 +63,7 @@ public class InventoryService implements InventoryUseCase {
                 .userId(userId)
                 .referenceId(referenceId)
                 .referenceType(referenceType)
+                .finalBalance(inventory.getCurrentQuantity())
                 .build();
         inventoryMovementRepository.save(movement);
     }
@@ -97,6 +98,7 @@ public class InventoryService implements InventoryUseCase {
                 .userId(userId)
                 .referenceId(referenceId)
                 .referenceType(referenceType)
+                .finalBalance(inventory.getCurrentQuantity())
                 .build();
         inventoryMovementRepository.save(movement);
     }

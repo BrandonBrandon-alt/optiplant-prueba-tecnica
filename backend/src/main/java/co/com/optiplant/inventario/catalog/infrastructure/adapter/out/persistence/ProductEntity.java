@@ -1,5 +1,6 @@
 package co.com.optiplant.inventario.catalog.infrastructure.adapter.out.persistence;
 
+import co.com.optiplant.inventario.catalog.domain.model.MeasurementUnit;
 import co.com.optiplant.inventario.catalog.domain.model.Product;
 import jakarta.persistence.*;
 import lombok.*;
@@ -47,6 +48,10 @@ public class ProductEntity {
     @Column(name = "proveedor_id")
     private Long supplierId;
 
+    @Column(name = "unidad", length = 30)
+    @Enumerated(EnumType.STRING)
+    private MeasurementUnit unit;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -61,6 +66,7 @@ public class ProductEntity {
                 .averageCost(this.averageCost)
                 .salePrice(this.salePrice)
                 .supplierId(this.supplierId)
+                .unit(this.unit)
                 .createdAt(this.createdAt)
                 .build();
     }
@@ -74,6 +80,7 @@ public class ProductEntity {
                 .averageCost(product.getAverageCost())
                 .salePrice(product.getSalePrice())
                 .supplierId(product.getSupplierId())
+                .unit(product.getUnit())
                 .createdAt(product.getCreatedAt())
                 .build();
     }
