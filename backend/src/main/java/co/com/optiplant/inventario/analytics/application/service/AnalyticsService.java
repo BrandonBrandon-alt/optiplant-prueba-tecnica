@@ -2,7 +2,9 @@ package co.com.optiplant.inventario.analytics.application.service;
 
 import co.com.optiplant.inventario.analytics.application.port.in.AnalyticsUseCase;
 import co.com.optiplant.inventario.analytics.application.port.out.AnalyticsRepositoryPort;
+import co.com.optiplant.inventario.analytics.domain.model.BranchPerformance;
 import co.com.optiplant.inventario.analytics.domain.model.BranchValuation;
+import co.com.optiplant.inventario.analytics.domain.model.GlobalSummary;
 import co.com.optiplant.inventario.analytics.domain.model.TopSellingProduct;
 import org.springframework.stereotype.Service;
 
@@ -28,5 +30,15 @@ public class AnalyticsService implements AnalyticsUseCase {
     @Override
     public List<BranchValuation> getBranchValuations() {
         return analyticsRepository.findBranchValuations();
+    }
+
+    @Override
+    public GlobalSummary getGlobalSummary() {
+        return analyticsRepository.findGlobalSummary();
+    }
+
+    @Override
+    public List<BranchPerformance> getBranchPerformance() {
+        return analyticsRepository.findBranchPerformance();
     }
 }

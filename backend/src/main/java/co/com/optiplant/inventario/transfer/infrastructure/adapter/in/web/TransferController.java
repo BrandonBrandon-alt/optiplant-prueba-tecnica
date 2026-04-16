@@ -64,4 +64,11 @@ public class TransferController {
         Transfer transfer = transferUseCase.getTransferById(id);
         return ResponseEntity.ok(TransferResponse.fromDomain(transfer));
     }
+
+    @GetMapping
+    public ResponseEntity<java.util.List<TransferResponse>> getAllTransfers() {
+        return ResponseEntity.ok(transferUseCase.getAllTransfers().stream()
+                .map(TransferResponse::fromDomain)
+                .toList());
+    }
 }

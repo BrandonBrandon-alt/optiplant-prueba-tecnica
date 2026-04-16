@@ -34,4 +34,10 @@ public interface UnitOfMeasureUseCase {
      * Si {@code isBase = true}, marca esta como la unidad principal.
      */
     ProductUnit assignUnitToProduct(ProductUnit productUnit);
+
+    /** Actualiza una unidad de medida existente. */
+    UnitOfMeasure updateUnit(Long id, UnitOfMeasure unit);
+
+    /** Elimina una unidad de medida por ID. */
+    void deleteUnit(Long id);
 }

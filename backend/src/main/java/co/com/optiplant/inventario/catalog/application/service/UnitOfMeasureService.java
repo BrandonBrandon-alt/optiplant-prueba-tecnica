@@ -50,4 +50,21 @@ public class UnitOfMeasureService implements UnitOfMeasureUseCase {
                 .orElseThrow(() -> new UnitOfMeasureNotFoundException(productUnit.getUnitId()));
         return unitRepositoryPort.saveProductUnit(productUnit);
     }
+
+    @Override
+    public UnitOfMeasure updateUnit(Long id, UnitOfMeasure unit) {
+        UnitOfMeasure existing = getUnitById(id);
+        UnitOfMeasure updated = UnitOfMeasure.builder()
+                .id(existing.getId())
+                .name(unit.getName())
+                .abbreviation(unit.getAbbreviation())
+                .build();
+        return unitRepositoryPort.save(updated);
+    }
+
+    @Override
+    public void deleteUnit(Long id) {
+        getUnitById(id); // Verificar existencia
+        unitRepositoryPort.deleteById(id);
+    }
 }

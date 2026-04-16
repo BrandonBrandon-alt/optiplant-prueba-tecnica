@@ -7,6 +7,7 @@ import co.com.optiplant.inventario.catalog.infrastructure.adapter.in.web.dto.Pro
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -62,6 +63,7 @@ public class ProductController {
      * Crea un nuevo producto. Devuelve 201 con el producto creado.
      */
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductResponse> create(@Valid @RequestBody ProductRequest request) {
         Product created = productUseCase.createProduct(mapToDomain(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(mapToResponse(created));
@@ -72,6 +74,7 @@ public class ProductController {
      * Actualiza un producto existente. Devuelve 404 si no existe.
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody ProductRequest request) {
@@ -85,6 +88,7 @@ public class ProductController {
      * Devuelve 404 si el producto no existe.
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         productUseCase.deleteProduct(id);
         return ResponseEntity.noContent().build();

@@ -61,6 +61,64 @@ const adminItems = [
       </svg>
     ),
   },
+  {
+    href: "/analytics",
+    label: "Análisis Global",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+        <path d="M22 12A10 10 0 0 0 12 2v10z" />
+      </svg>
+    ),
+  },
+  {
+    href: "/transfers/monitor",
+    label: "Monitor Logístico",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+        <line x1="12" y1="22.08" x2="12" y2="12" />
+      </svg>
+    ),
+  },
+];
+
+const masterItems = [
+  {
+    href: "/catalog/products",
+    label: "Catálogo Productos",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M21 8V21H3V8" />
+        <path d="M1 3H23V8H1V3Z" />
+        <path d="M10 12H14" />
+      </svg>
+    ),
+  },
+  {
+    href: "/catalog/units",
+    label: "Unidades Medida",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M12 3V21" />
+        <path d="M17 5H7" />
+        <path d="M17 10H7" />
+        <path d="M17 15H7" />
+      </svg>
+    ),
+  },
+  {
+    href: "/catalog/suppliers",
+    label: "Proveedores",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <polyline points="16 11 18 13 22 9" />
+      </svg>
+    ),
+  },
 ];
 
 export default function Sidebar() {
@@ -222,6 +280,20 @@ export default function Sidebar() {
               marginBottom: "8px",
             }}>Administración</p>
             {adminItems.map((item) => (
+              <NavLink key={item.href} {...item} />
+            ))}
+
+            <p style={{
+              fontSize: "10.5px",
+              fontWeight: 600,
+              color: "var(--neutral-500)",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              padding: "0 8px",
+              marginTop: "24px",
+              marginBottom: "8px",
+            }}>Configuración Maestra</p>
+            {masterItems.map((item) => (
               <NavLink key={item.href} {...item} />
             ))}
           </>

@@ -7,6 +7,7 @@ import co.com.optiplant.inventario.transfer.application.port.in.RequestTransferC
 import co.com.optiplant.inventario.transfer.application.port.in.TransferUseCase;
 import co.com.optiplant.inventario.transfer.application.port.out.TransferRepositoryPort;
 import co.com.optiplant.inventario.transfer.domain.model.Transfer;
+import java.util.List;
 import co.com.optiplant.inventario.transfer.domain.model.TransferDetail;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -107,5 +108,10 @@ public class TransferService implements TransferUseCase {
     public Transfer getTransferById(Long id) {
         return transferRepositoryPort.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Transferencia no encontrada con id: " + id));
+    }
+
+    @Override
+    public List<Transfer> getAllTransfers() {
+        return transferRepositoryPort.findAll();
     }
 }

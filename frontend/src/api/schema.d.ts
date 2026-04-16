@@ -43,7 +43,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["getAllTransfers"];
         put?: never;
         post: operations["requestTransfer"];
         delete?: never;
@@ -427,10 +427,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["getById_2"];
-        put?: never;
-        post?: never;
-        delete?: never;
+        get: operations["getUnitById"];
+        put: operations["updateUnit"];
+        delete: operations["deleteUnit"];
         options?: never;
         head?: never;
         patch?: never;
@@ -447,6 +446,70 @@ export interface paths {
         put: operations["updateBranch"];
         post?: never;
         delete: operations["deleteBranch"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/valuations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getBranchValuations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/top-products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getTopSellingProducts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/global-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGlobalSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/branch-performance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getBranchPerformance"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -819,6 +882,23 @@ export interface components {
             /** Format: date-time */
             alertDate?: string;
             resolved?: boolean;
+        };
+        GlobalSummary: {
+            totalRevenue?: number;
+            totalUnitsSold?: number;
+            totalInventoryValue?: number;
+            averageTicket?: number;
+            /** Format: int64 */
+            branchCount?: number;
+        };
+        BranchPerformance: {
+            /** Format: int64 */
+            branchId?: number;
+            branchName?: string;
+            revenue?: number;
+            unitsSold?: number;
+            /** Format: int64 */
+            salesCount?: number;
         };
     };
     responses: never;
@@ -1698,6 +1778,134 @@ export interface operations {
         };
     };
     deleteBranch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getGlobalSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GlobalSummary"];
+                };
+            };
+        };
+    };
+    getBranchPerformance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPerformance"][];
+                };
+            };
+        };
+    };
+    getAllTransfers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferResponse"][];
+                };
+            };
+        };
+    };
+    getUnitById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UnitOfMeasureResponse"];
+                };
+            };
+        };
+    };
+    updateUnit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnitOfMeasureRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UnitOfMeasureResponse"];
+                };
+            };
+        };
+    };
+    deleteUnit: {
         parameters: {
             query?: never;
             header?: never;

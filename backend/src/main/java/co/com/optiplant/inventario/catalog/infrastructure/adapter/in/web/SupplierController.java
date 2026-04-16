@@ -7,6 +7,7 @@ import co.com.optiplant.inventario.catalog.infrastructure.adapter.in.web.dto.Sup
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -43,6 +44,7 @@ public class SupplierController {
 
     /** POST /api/catalog/suppliers — Crea un nuevo proveedor. */
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<SupplierResponse> create(@Valid @RequestBody SupplierRequest request) {
         Supplier created = supplierUseCase.createSupplier(mapToDomain(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(mapToResponse(created));
@@ -50,6 +52,7 @@ public class SupplierController {
 
     /** PUT /api/catalog/suppliers/{id} — Actualiza un proveedor. */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<SupplierResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody SupplierRequest request) {
@@ -58,6 +61,7 @@ public class SupplierController {
 
     /** DELETE /api/catalog/suppliers/{id} — Elimina un proveedor. */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         supplierUseCase.deleteSupplier(id);
         return ResponseEntity.noContent().build();

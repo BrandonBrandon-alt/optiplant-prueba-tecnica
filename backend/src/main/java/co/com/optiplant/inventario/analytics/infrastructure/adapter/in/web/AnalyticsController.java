@@ -1,7 +1,9 @@
 package co.com.optiplant.inventario.analytics.infrastructure.adapter.in.web;
 
 import co.com.optiplant.inventario.analytics.application.port.in.AnalyticsUseCase;
+import co.com.optiplant.inventario.analytics.domain.model.BranchPerformance;
 import co.com.optiplant.inventario.analytics.domain.model.BranchValuation;
+import co.com.optiplant.inventario.analytics.domain.model.GlobalSummary;
 import co.com.optiplant.inventario.analytics.domain.model.TopSellingProduct;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,5 +34,15 @@ public class AnalyticsController {
     public ResponseEntity<List<BranchValuation>> getBranchValuations() {
         List<BranchValuation> valuations = analyticsUseCase.getBranchValuations();
         return ResponseEntity.ok(valuations);
+    }
+
+    @GetMapping("/global-summary")
+    public ResponseEntity<GlobalSummary> getGlobalSummary() {
+        return ResponseEntity.ok(analyticsUseCase.getGlobalSummary());
+    }
+
+    @GetMapping("/branch-performance")
+    public ResponseEntity<List<BranchPerformance>> getBranchPerformance() {
+        return ResponseEntity.ok(analyticsUseCase.getBranchPerformance());
     }
 }

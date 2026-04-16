@@ -7,6 +7,7 @@ import co.com.optiplant.inventario.catalog.infrastructure.adapter.in.web.dto.*;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -47,9 +48,28 @@ public class UnitOfMeasureController {
 
     /** POST /api/catalog/units — Crea una nueva unidad de medida. */
     @PostMapping("/api/catalog/units")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UnitOfMeasureResponse> create(@Valid @RequestBody UnitOfMeasureRequest request) {
         UnitOfMeasure created = unitUseCase.createUnit(mapToDomain(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(mapToResponse(created));
+    }
+
+    /** PUT /api/catalog/units/{id} — Actualiza una unidad de medida. */
+    @PutMapping("/api/catalog/units/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UnitOfMeasureResponse> update(
+            @PathVariable Long id,
+            @Valid @RequestBody UnitOfMeasureRequest request) {
+        UnitOfMeasure updated = unitUseCase.updateUnit(id, mapToDomain(request));
+        return ResponseEntity.ok(mapToResponse(updated));
+    }
+
+    /** DELETE /api/catalog/units/{id} — Elimina una unidad de medida. */
+    @DeleteMapping("/api/catalog/units/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        unitUseCase.deleteUnit(id);
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -69,6 +89,7 @@ public class UnitOfMeasureController {
      * Asocia una unidad de medida a un producto con su factor de conversión.
      */
     @PostMapping("/api/catalog/products/{productId}/units")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductUnitResponse> assignUnit(
             @PathVariable Long productId,
             @Valid @RequestBody ProductUnitRequest request) {

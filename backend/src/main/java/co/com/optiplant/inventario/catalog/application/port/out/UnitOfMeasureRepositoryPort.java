@@ -18,6 +18,8 @@ public interface UnitOfMeasureRepositoryPort {
 
     UnitOfMeasure save(UnitOfMeasure unit);
 
+    void deleteById(Long id);
+
     /** Devuelve todas las unidades asignadas a un producto con sus factores. */
     List<ProductUnit> findProductUnitsByProductId(Long productId);
 

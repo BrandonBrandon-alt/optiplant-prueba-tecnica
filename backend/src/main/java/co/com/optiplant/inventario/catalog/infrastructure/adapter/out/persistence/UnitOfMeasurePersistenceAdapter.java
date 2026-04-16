@@ -44,6 +44,11 @@ public class UnitOfMeasurePersistenceAdapter implements UnitOfMeasureRepositoryP
     }
 
     @Override
+    public void deleteById(Long id) {
+        unitRepository.deleteById(id);
+    }
+
+    @Override
     public List<ProductUnit> findProductUnitsByProductId(Long productId) {
         return productUnitRepository.findByProductId(productId).stream()
                 .map(ProductUnitEntity::toDomain)

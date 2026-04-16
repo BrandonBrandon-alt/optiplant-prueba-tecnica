@@ -64,19 +64,22 @@ export default function DashboardPage() {
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [alerts, setAlerts]           = useState<StockAlert[]>([]);
   const [branches, setBranches]       = useState<BranchResponse[]>([]);
+  const [global, setGlobal]           = useState<components["schemas"]["GlobalSummary"] | null>(null);
   const [loading, setLoading]         = useState(true);
   const session = typeof window !== "undefined" ? getSession() : null;
 
   useEffect(() => {
     async function fetchAll() {
       try {
-        const [val, top, bra] = await Promise.all([
+        const [val, top, bra, glo] = await Promise.all([
           apiClient.GET("/api/v1/analytics/valuations"),
           apiClient.GET("/api/v1/analytics/top-products", { params: { query: { limit: 5 } } }),
           apiClient.GET("/api/branches"),
+          apiClient.GET("/api/v1/analytics/global-summary"),
         ]);
         setValuations(val.data ?? []);
         setTopProducts(top.data ?? []);
+        setGlobal(glo.data ?? null);
         const branchList = bra.data ?? [];
         setBranches(branchList);
 
@@ -135,11 +138,19 @@ export default function DashboardPage() {
           icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
         />
         <KpiCard
+          label="Ventas Globales"
+          value={formatCOP(global?.totalRevenue ?? 0)}
+          sub={`Ticket promedio: ${formatCOP(global?.averageTicket ?? 0)}`}
+          accent="var(--color-success)"
+          delay="0.05s"
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
+        />
+        <KpiCard
           label="Alertas activas"
           value={String(activeAlerts)}
           sub={`${alerts.length - activeAlerts} resueltas`}
           accent={activeAlerts > 0 ? "var(--brand-500)" : "var(--color-success)"}
-          delay="0.05s"
+          delay="0.1s"
           icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>}
         />
         <KpiCard

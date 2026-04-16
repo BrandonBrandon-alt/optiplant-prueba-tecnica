@@ -6,6 +6,7 @@ import co.com.optiplant.inventario.transfer.domain.model.TransferDetail;
 import co.com.optiplant.inventario.transfer.domain.model.TransferStatus;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,13 @@ public class TransferPersistenceAdapter implements TransferRepositoryPort {
     @Override
     public Optional<Transfer> findById(Long id) {
         return jpaTransferRepository.findById(id).map(this::toDomain);
+    }
+
+    @Override
+    public List<Transfer> findAll() {
+        return jpaTransferRepository.findAll().stream()
+                .map(this::toDomain)
+                .collect(Collectors.toList());
     }
 
     private TransferEntity toEntity(Transfer domain) {
