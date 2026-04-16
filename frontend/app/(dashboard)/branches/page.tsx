@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { apiClient } from "@/api/client";
+import { useToast } from "@/context/ToastContext";
 import type { components } from "@/api/schema";
 
 import Spinner    from "@/components/ui/Spinner";
@@ -173,12 +174,17 @@ function CreateBranchModal({
 
       if (error || !data) {
         setServerError("No se pudo crear la sucursal. Verifica tu sesión.");
+        showToast("Error al crear la sucursal.", "error");
         return;
       }
       onCreated(data);
+      showToast("Sucursal creada exitosamente.", "success", "Registro exitoso");
       onClose();
     });
   };
+
+  const { showToast } = useToast();
+
 
   return (
     <Modal
@@ -300,12 +306,17 @@ function EditBranchModal({
 
       if (error || !data) {
         setServerError("No se pudo actualizar la sucursal.");
+        showToast("Error al actualizar la sucursal.", "error");
         return;
       }
       onUpdated(data);
+      showToast("Sucursal actualizada correctamente.", "success", "Cambios guardados");
       onClose();
     });
   };
+
+  const { showToast } = useToast();
+
 
   return (
     <Modal
@@ -390,14 +401,19 @@ export default function BranchesPage() {
       const { error } = await apiClient.DELETE("/api/branches/{id}", {
         params: { path: { id } },
       });
-
+      
       if (!error) {
         setBranches((prev) => prev.map((b) => (b.id === id ? { ...b, activa: false } : b)));
+        showToast("La sucursal ha sido desactivada.", "success", "Sucursal de baja");
       } else {
+        showToast("No se pudo desactivar la sucursal.", "error");
         alert("Error al desactivar la sucursal.");
       }
     });
   };
+
+  const { showToast } = useToast();
+
 
   const active   = branches.filter((b) => b.activa).length;
   const inactive = branches.filter((b) => !b.activa).length;

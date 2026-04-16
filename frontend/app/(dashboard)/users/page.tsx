@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { apiClient } from "@/api/client";
+import { useToast } from "@/context/ToastContext";
 import type { components } from "@/api/schema";
 
 import Spinner    from "@/components/ui/Spinner";
@@ -148,13 +149,18 @@ function CreateUserModal({ open, onClose, roles, branches, onCreated }: {
             });
 
             if (data) {
+                showToast("Usuario creado correctamente.", "success", "Registro exitoso");
                 onCreated(data);
                 onClose();
             } else {
+                showToast(error?.message || "No se pudo crear el usuario.", "error", "Error");
                 setServerError(error?.message || "Error al crear usuario.");
             }
         });
     };
+
+    const { showToast } = useToast();
+
 
     return (
         <Modal
@@ -265,13 +271,18 @@ function EditUserModal({ open, onClose, user, roles, branches, onUpdated }: {
             });
 
             if (data) {
+                showToast("Los cambios se han guardado correctamente.", "success", "Usuario actualizado");
                 onUpdated(data);
                 onClose();
             } else {
+                showToast(error?.message || "No se pudo actualizar el usuario.", "error", "Error");
                 setServerError(error?.message || "Error al actualizar usuario.");
             }
         });
     };
+
+    const { showToast } = useToast();
+
 
     return (
         <Modal
@@ -380,10 +391,16 @@ export default function UsersPage() {
         startTransition(async () => {
              const { error } = await apiClient.DELETE("/api/users/{id}", { params: { path: { id } } });
              if (!error) {
+                 showToast("El usuario ha sido desactivado.", "success", "Usuario desactivado");
                  setUsers(prev => prev.map(u => u.id === id ? { ...u, activo: false } : u));
+             } else {
+                 showToast("Error al intentar desactivar el usuario.", "error");
              }
         });
     };
+
+    const { showToast } = useToast();
+
 
     if (loading) return <Spinner fullPage />;
 

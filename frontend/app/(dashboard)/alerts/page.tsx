@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { apiClient } from "@/api/client";
+import { useToast } from "@/context/ToastContext";
 import type { components } from "@/api/schema";
 
 import Spinner    from "@/components/ui/Spinner";
@@ -140,6 +141,7 @@ export default function AlertsPage() {
 
   // Force scan
   const handleScan = () => {
+    showToast("Escaneando el inventario en busca de quiebres de stock...", "info", "Escaneo iniciado");
     startScan(async () => {
       await apiClient.POST("/api/v1/alerts/scan");
       // Reload alerts after scan
@@ -151,10 +153,12 @@ export default function AlertsPage() {
       const newAlerts = results.flatMap((r) => r.data ?? []);
       setAlerts(newAlerts);
       const newCount = newAlerts.filter((a) => !a.resolved).length;
+      showToast(`Escaneo completo. Se encontraron ${newCount} alertas activas.`, "success", "Escaneo finalizado");
       setScanResult(`Escaneo completo. ${newCount} alerta${newCount !== 1 ? "s" : ""} activa${newCount !== 1 ? "s" : ""}.`);
       setTimeout(() => setScanResult(null), 4000);
     });
   };
+
 
   // Resolve alert
   const handleResolve = (id: number) => {
@@ -164,10 +168,16 @@ export default function AlertsPage() {
       });
       if (data) {
         setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, resolved: true } : a)));
+        showToast("La alerta ha sido marcada como resuelta.", "success", "Alerta resuelta");
+      } else {
+        showToast("No se pudo marcar la alerta como resuelta.", "error");
       }
       setConfirmId(null);
     });
   };
+
+  const { showToast } = useToast();
+
 
   // Branch name lookup
   const branchName = (id: number | undefined) =>
