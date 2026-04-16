@@ -5,6 +5,13 @@ import { apiClient } from "@/api/client";
 import type { components } from "@/api/schema";
 import { getSession } from "@/api/auth";
 import { useRouter } from "next/navigation";
+import { ArrowRight, Truck, Package, Clock, CheckCircle2, History } from "lucide-react";
+
+import PageHeader from "@/components/ui/PageHeader";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import DataTable, { Column } from "@/components/ui/DataTable";
+import Spinner from "@/components/ui/Spinner";
 
 type TransferResponse = components["schemas"]["TransferResponse"];
 type BranchResponse = components["schemas"]["BranchResponse"];
@@ -41,115 +48,111 @@ export default function TransferMonitorPage() {
 
   const getBranchName = (id: number) => branches.find(b => b.id === id)?.nombre ?? `Sede ${id}`;
 
-  const getStatusStyle = (status: string) => {
-    switch (status) {
-      case "PENDIENTE": return { bg: "rgba(245, 158, 11, 0.1)", color: "#f59e0b" };
-      case "EN_TRANSITO": return { bg: "rgba(59, 130, 246, 0.1)", color: "#3b82f6" };
-      case "ENTREGADO": return { bg: "rgba(34, 197, 94, 0.1)", color: "#22c55e" };
-      default: return { bg: "var(--bg-base)", color: "var(--neutral-400)" };
-    }
-  };
+  const columns: Column<TransferResponse>[] = [
+    {
+      header: "ID / Fecha",
+      key: "id",
+      width: "120px",
+      render: (t) => (
+        <div>
+          <div style={{ fontSize: "14px", color: "var(--neutral-100)", fontWeight: 600 }}>#{t.id}</div>
+          <div style={{ fontSize: "12px", color: "var(--neutral-500)" }}>{new Date(t.requestDate || "").toLocaleDateString()}</div>
+        </div>
+      )
+    },
+    {
+      header: "Ruta (Origen → Destino)",
+      key: "originBranchId",
+      render: (t) => (
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "13px", color: "var(--neutral-300)" }}>{getBranchName(t.originBranchId || 0)}</span>
+          <ArrowRight size={12} style={{ color: "var(--neutral-600)" }} />
+          <span style={{ fontSize: "13px", color: "var(--neutral-100)", fontWeight: 600 }}>{getBranchName(t.destinationBranchId || 0)}</span>
+        </div>
+      )
+    },
+    {
+      header: "Estado",
+      key: "status",
+      width: "130px",
+      render: (t) => {
+        const status = t.status || "PENDIENTE";
+        let variant: "neutral" | "success" | "warning" | "error" = "neutral";
+        let icon = <Clock size={12} />;
+        
+        if (status === "ENTREGADO") {
+          variant = "success";
+          icon = <CheckCircle2 size={12} />;
+        } else if (status === "EN_TRANSITO") {
+          variant = "warning";
+          icon = <Truck size={12} />;
+        }
 
-  if (loading) {
-    return (
-      <div style={{ padding: "40px", textAlign: "center", color: "var(--neutral-400)" }}>
-        Cargando monitor logístico...
-      </div>
-    );
-  }
+        return (
+          <Badge variant={variant as any} dot>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              {icon}
+              {status}
+            </div>
+          </Badge>
+        );
+      }
+    },
+    {
+      header: "Items",
+      key: "details",
+      render: (t) => (
+        <span style={{ fontSize: "13px", color: "var(--neutral-400)" }}>
+          {t.details?.length} productos
+        </span>
+      )
+    },
+    {
+      header: "Llegada Est.",
+      key: "estimatedArrivalDate",
+      align: "right",
+      render: (t) => (
+        <span style={{ fontSize: "13px", color: "var(--neutral-500)", fontFamily: "monospace" }}>
+          {t.estimatedArrivalDate ? new Date(t.estimatedArrivalDate).toLocaleDateString() : "—"}
+        </span>
+      )
+    }
+  ];
+
+  if (loading) return <Spinner fullPage />;
+
+  const activeTransfers = transfers.filter(t => t.status !== "ENTREGADO").length;
 
   return (
-    <div style={{ padding: "32px", maxWidth: "1200px", margin: "0 auto" }}>
-      <header style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-        <div>
-          <h1 style={{ fontSize: "28px", fontWeight: 700, color: "var(--neutral-50)", marginBottom: "8px" }}>
-            Monitor Logístico Global
-          </h1>
-          <p style={{ color: "var(--neutral-400)", fontSize: "15px" }}>
-            Seguimiento en tiempo real de todos los traslados entre sucursales.
-          </p>
-        </div>
-        <div style={{ padding: "8px 16px", background: "var(--bg-card)", borderRadius: "8px", border: "1px solid var(--border-default)" }}>
-          <span style={{ fontSize: "13px", color: "var(--neutral-500)", marginRight: "8px" }}>Activos:</span>
-          <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--brand-500)" }}>
-            {transfers.filter(t => t.status !== "ENTREGADO").length}
-          </span>
-        </div>
-      </header>
-
-      <div style={{ 
-        background: "var(--bg-card)", 
-        borderRadius: "var(--radius-lg)", 
-        border: "1px solid var(--border-default)",
-        overflow: "hidden"
-      }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid var(--border-default)" }}>
-              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>ID / Fecha</th>
-              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Ruta (Origen → Destino)</th>
-              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Estado</th>
-              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Items</th>
-              <th style={{ padding: "16px 24px", textAlign: "right", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Llegada Est.</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transfers.length === 0 ? (
-              <tr>
-                <td colSpan={5} style={{ padding: "48px", textAlign: "center", color: "var(--neutral-500)" }}>
-                  No hay traslados registrados en el sistema.
-                </td>
-              </tr>
-            ) : (
-              transfers.map((t) => {
-                const style = getStatusStyle(t.status || "");
-                return (
-                  <tr key={t.id} style={{ borderBottom: "1px solid var(--border-default)", transition: "background 0.2s ease" }} className="row-hover">
-                    <td style={{ padding: "16px 24px" }}>
-                      <div style={{ fontSize: "14px", color: "var(--neutral-100)", fontWeight: 600 }}>#{t.id}</div>
-                      <div style={{ fontSize: "12px", color: "var(--neutral-500)" }}>{new Date(t.requestDate || "").toLocaleDateString()}</div>
-                    </td>
-                    <td style={{ padding: "16px 24px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <span style={{ fontSize: "14px", color: "var(--neutral-200)" }}>{getBranchName(t.originBranchId || 0)}</span>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--neutral-500)" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                        <span style={{ fontSize: "14px", color: "var(--neutral-200)", fontWeight: 500 }}>{getBranchName(t.destinationBranchId || 0)}</span>
-                      </div>
-                    </td>
-                    <td style={{ padding: "16px 24px" }}>
-                      <span style={{ 
-                        padding: "4px 10px", 
-                        borderRadius: "20px", 
-                        fontSize: "11px", 
-                        fontWeight: 700,
-                        background: style.bg,
-                        color: style.color,
-                        letterSpacing: "0.02em"
-                      }}>
-                        {t.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: "16px 24px" }}>
-                      <span style={{ fontSize: "14px", color: "var(--neutral-300)" }}>
-                        {t.details?.length} productos
-                      </span>
-                    </td>
-                    <td style={{ padding: "16px 24px", textAlign: "right", fontSize: "14px", color: "var(--neutral-400)" }}>
-                      {t.estimatedArrivalDate ? new Date(t.estimatedArrivalDate).toLocaleDateString() : "—"}
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+    <div style={{ padding: "36px 40px", maxWidth: "1200px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px", gap: "16px", flexWrap: "wrap" }}>
+        <PageHeader
+          title="Monitor Logístico"
+          description="Seguimiento en tiempo real de todos los traslados de mercancía entre sucursales."
+        />
+        <Card style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--neutral-500)", textTransform: "uppercase" }}>Traslados Activos</span>
+            <span style={{ fontSize: "20px", fontWeight: 700, color: "var(--brand-500)" }}>{activeTransfers}</span>
+          </div>
+          <div style={{ padding: "8px", borderRadius: "8px", background: "var(--brand-900)", color: "var(--brand-400)" }}>
+            <Truck size={20} />
+          </div>
+        </Card>
       </div>
 
-      <style jsx>{`
-        .row-hover:hover {
-          background: rgba(255,255,255,0.01);
-        }
-      `}</style>
+      <Card style={{ padding: 0, overflow: "hidden" }}>
+        <DataTable<TransferResponse>
+          columns={columns}
+          data={transfers}
+          isLoading={loading}
+          emptyState={{
+            title: "Sin actividad logística",
+            description: "No hay traslados registrados en el sistema.",
+            icon: <History size={40} />
+          }}
+        />
+      </Card>
     </div>
   );
 }

@@ -4,116 +4,23 @@ import { useEffect, useState, useTransition } from "react";
 import { apiClient } from "@/api/client";
 import { useToast } from "@/context/ToastContext";
 import type { components } from "@/api/schema";
+import { User, Mail, Lock, Shield, Building, Edit, Trash2 } from "lucide-react";
 
 import Spinner    from "@/components/ui/Spinner";
 import PageHeader from "@/components/ui/PageHeader";
 import Card       from "@/components/ui/Card";
 import Badge      from "@/components/ui/Badge";
-import EmptyState from "@/components/ui/EmptyState";
 import Modal      from "@/components/ui/Modal";
 import Button     from "@/components/ui/Button";
 import Input      from "@/components/ui/Input";
 import Select     from "@/components/ui/Select";
+import DataTable, { Column } from "@/components/ui/DataTable";
 
 // ── Types ──────────────────────────────────────────────────
 type UserResponse   = components["schemas"]["UserResponse"];
 type UserRequest    = components["schemas"]["UserRequest"];
 type RoleResponse   = components["schemas"]["RoleResponse"];
 type BranchResponse = components["schemas"]["BranchResponse"];
-
-// ── Icons ──────────────────────────────────────────────────
-const UserIcon = () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-        <circle cx="12" cy="7" r="4"/>
-    </svg>
-);
-const MailIcon = () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-        <polyline points="22,6 12,13 2,6"/>
-    </svg>
-);
-const LockIcon = () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-    </svg>
-);
-const ShieldIcon = () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-    </svg>
-);
-const BuildingIcon = () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-        <polyline points="9 22 9 12 15 12 15 22"/>
-    </svg>
-);
-const EditIcon = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-    </svg>
-);
-const TrashIcon = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-        <polyline points="3 6 5 6 21 6"/>
-        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-    </svg>
-);
-
-// ── UserRow Component ──────────────────────────────────────
-function UserRow({ user, branches, onEdit, onDeactivate }: { 
-    user: UserResponse; 
-    branches: BranchResponse[];
-    onEdit: (u: UserResponse) => void; 
-    onDeactivate: (id: number) => void;
-}) {
-    const branchName = user.sucursalId 
-        ? branches.find(b => b.id === user.sucursalId)?.nombre || `Sucursal #${user.sucursalId}`
-        : "Acceso Global";
-
-    return (
-        <tr
-            style={{ borderBottom: "1px solid var(--border-subtle)", transition: "background 0.1s" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-hover)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-        >
-            <td style={{ padding: "13px 16px", width: "60px" }}>
-                <span style={{ fontFamily: "monospace", fontSize: "12px", color: "var(--neutral-500)" }}>#{user.id}</span>
-            </td>
-            <td style={{ padding: "13px 16px" }}>
-                <p style={{ fontSize: "14px", fontWeight: 500, color: "var(--neutral-100)", marginBottom: "2px" }}>{user.nombre}</p>
-                <p style={{ fontSize: "12px", color: "var(--neutral-500)" }}>{user.email}</p>
-            </td>
-            <td style={{ padding: "13px 16px" }}>
-                <Badge variant="neutral">{user.role?.nombre}</Badge>
-            </td>
-            <td style={{ padding: "13px 16px" }}>
-                <span style={{ fontSize: "13px", color: "var(--neutral-300)" }}>{branchName}</span>
-            </td>
-            <td style={{ padding: "13px 16px" }}>
-                <Badge variant={user.activo ? "success" : "neutral"} dot>
-                    {user.activo ? "Activo" : "Inactivo"}
-                </Badge>
-            </td>
-            <td style={{ padding: "13px 16px", textAlign: "right", width: "100px" }}>
-                <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                    <Button variant="ghost" size="sm" onClick={() => onEdit(user)} title="Editar usuario">
-                        <EditIcon />
-                    </Button>
-                    {user.activo && (
-                        <Button variant="ghost" size="sm" onClick={() => onDeactivate(user.id!)} title="Desactivar usuario">
-                            <span style={{ color: "var(--brand-500)" }}><TrashIcon /></span>
-                        </Button>
-                    )}
-                </div>
-            </td>
-        </tr>
-    );
-}
 
 // ── CreateUserModal ────────────────────────────────────────
 function CreateUserModal({ open, onClose, roles, branches, onCreated }: {
@@ -182,14 +89,14 @@ function CreateUserModal({ open, onClose, roles, branches, onCreated }: {
                     label="Nombre completo"
                     value={values.nombre ?? ""}
                     onChange={e => setValues({...values, nombre: e.target.value})}
-                    icon={<UserIcon />}
+                    icon={<User size={15} />}
                     placeholder="Ej. Juan Pérez"
                 />
                 <Input
                     label="Email"
                     value={values.email ?? ""}
                     onChange={e => setValues({...values, email: e.target.value})}
-                    icon={<MailIcon />}
+                    icon={<Mail size={15} />}
                     placeholder="juan@optiplant.com"
                 />
                 <Input
@@ -197,14 +104,14 @@ function CreateUserModal({ open, onClose, roles, branches, onCreated }: {
                     type="password"
                     value={values.password ?? ""}
                     onChange={e => setValues({...values, password: e.target.value})}
-                    icon={<LockIcon />}
+                    icon={<Lock size={15} />}
                 />
                 <Select
                     label="Rol del sistema"
                     value={values.rolId ?? ""}
                     onChange={val => setValues({...values, rolId: Number(val)})}
                     options={roles.map(r => ({ value: r.id!, label: r.nombre! }))}
-                    icon={<ShieldIcon />}
+                    icon={<Shield size={15} />}
                 />
                 {values.rolId && Number(values.rolId) !== 1 && (
                     <Select
@@ -212,7 +119,7 @@ function CreateUserModal({ open, onClose, roles, branches, onCreated }: {
                         value={values.sucursalId || ""}
                         onChange={val => setValues({...values, sucursalId: Number(val)})}
                         options={branches.map(b => ({ value: b.id!, label: b.nombre! }))}
-                        icon={<BuildingIcon />}
+                        icon={<Building size={15} />}
                         placeholder="Seleccionar sede..."
                     />
                 )}
@@ -298,27 +205,27 @@ function EditUserModal({ open, onClose, user, roles, branches, onUpdated }: {
                     label="Nombre completo"
                     value={values.nombre ?? ""}
                     onChange={e => setValues({...values, nombre: e.target.value})}
-                    icon={<UserIcon />}
+                    icon={<User size={15} />}
                 />
                 <Input
                     label="Email"
                     value={values.email ?? ""}
                     onChange={e => setValues({...values, email: e.target.value})}
-                    icon={<MailIcon />}
+                    icon={<Mail size={15} />}
                 />
                 <Input
                     label="Nueva contraseña (dejar en blanco para no cambiar)"
                     type="password"
                     value={values.password ?? ""}
                     onChange={e => setValues({...values, password: e.target.value})}
-                    icon={<LockIcon />}
+                    icon={<Lock size={15} />}
                 />
                 <Select
                     label="Rol del sistema"
                     value={values.rolId ?? ""}
                     onChange={val => setValues({...values, rolId: Number(val)})}
                     options={roles.map(r => ({ value: r.id!, label: r.nombre! }))}
-                    icon={<ShieldIcon />}
+                    icon={<Shield size={15} />}
                 />
                 {values.rolId && Number(values.rolId) !== 1 && (
                     <Select
@@ -326,7 +233,7 @@ function EditUserModal({ open, onClose, user, roles, branches, onUpdated }: {
                         value={values.sucursalId || ""}
                         onChange={val => setValues({...values, sucursalId: Number(val)})}
                         options={branches.map(b => ({ value: b.id!, label: b.nombre! }))}
-                        icon={<BuildingIcon />}
+                        icon={<Building size={15} />}
                         placeholder="Seleccionar sede..."
                     />
                 )}
@@ -353,6 +260,7 @@ export default function UsersPage() {
     const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
 
     const [, startTransition] = useTransition();
+    const { showToast } = useToast();
 
     useEffect(() => {
         Promise.all([
@@ -388,10 +296,70 @@ export default function UsersPage() {
         });
     };
 
-    const { showToast } = useToast();
-
-
-    if (loading) return <Spinner fullPage />;
+    const columns: Column<UserResponse>[] = [
+        {
+            header: "ID",
+            key: "id",
+            width: "60px",
+            render: (user) => (
+                <span style={{ fontFamily: "monospace", fontSize: "12px", color: "var(--neutral-500)" }}>#{user.id}</span>
+            )
+        },
+        {
+            header: "Nombre / Email",
+            key: "nombre",
+            render: (user) => (
+                <div>
+                    <p style={{ fontSize: "14px", fontWeight: 500, color: "var(--neutral-100)", marginBottom: "2px" }}>{user.nombre}</p>
+                    <p style={{ fontSize: "12px", color: "var(--neutral-500)" }}>{user.email}</p>
+                </div>
+            )
+        },
+        {
+            header: "Rol",
+            key: "role",
+            render: (user) => (
+                <Badge variant="neutral">{user.role?.nombre}</Badge>
+            )
+        },
+        {
+            header: "Sede",
+            key: "sucursalId",
+            render: (user) => {
+                const branchName = user.sucursalId 
+                    ? branches.find(b => b.id === user.sucursalId)?.nombre || `Sucursal #${user.sucursalId}`
+                    : "Acceso Global";
+                return <span style={{ fontSize: "13px", color: "var(--neutral-300)" }}>{branchName}</span>;
+            }
+        },
+        {
+            header: "Estado",
+            key: "activo",
+            render: (user) => (
+                <Badge variant={user.activo ? "success" : "neutral"} dot>
+                    {user.activo ? "Activo" : "Inactivo"}
+                </Badge>
+            )
+        },
+        {
+            header: "Acciones",
+            key: "actions",
+            align: "right",
+            width: "100px",
+            render: (user) => (
+                <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                    <Button variant="ghost" size="sm" onClick={() => setEditingUser(user)} title="Editar usuario">
+                        <Edit size={14} />
+                    </Button>
+                    {user.activo && (
+                        <Button variant="ghost" size="sm" onClick={() => handleDeactivate(user.id!)} title="Desactivar usuario">
+                            <span style={{ color: "var(--brand-500)" }}><Trash2 size={14} /></span>
+                        </Button>
+                    )}
+                </div>
+            )
+        }
+    ];
 
     return (
         <div style={{ padding: "36px 40px", maxWidth: "1200px" }}>
@@ -404,28 +372,16 @@ export default function UsersPage() {
             </div>
 
             <Card style={{ padding: 0, overflow: "hidden" }}>
-                {users.length === 0 ? (
-                    <EmptyState 
-                        icon={<UserIcon />}
-                        title="Sin usuarios" 
-                        description="No hay otros usuarios registrados." 
-                    />
-                ) : (
-                    <div style={{ overflowX: "auto" }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                            <thead>
-                                <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
-                                    {["ID", "Nombre / Email", "Rol", "Sede", "Estado", "Acciones"].map((h) => (
-                                        <th key={h} style={{ padding: "12px 16px", fontSize: "11px", fontWeight: 600, color: "var(--neutral-500)", textAlign: h === "Acciones" ? "right" : "left", textTransform: "uppercase" }}>{h}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {users.map(u => <UserRow key={u.id} user={u} branches={branches} onEdit={setEditingUser} onDeactivate={handleDeactivate} />)}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                <DataTable<UserResponse>
+                    columns={columns}
+                    data={users}
+                    isLoading={loading}
+                    emptyState={{
+                        title: "Sin usuarios",
+                        description: "No hay otros usuarios registrados.",
+                        icon: <User size={40} />
+                    }}
+                />
             </Card>
 
             <CreateUserModal

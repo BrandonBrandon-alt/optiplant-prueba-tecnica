@@ -4,15 +4,16 @@ import { useEffect, useState, useTransition } from "react";
 import { apiClient } from "@/api/client";
 import { useToast } from "@/context/ToastContext";
 import type { components } from "@/api/schema";
+import { Building, MapPin, Phone, Edit, Trash2, Plus } from "lucide-react";
 
 import Spinner    from "@/components/ui/Spinner";
 import PageHeader from "@/components/ui/PageHeader";
 import Card       from "@/components/ui/Card";
 import Badge      from "@/components/ui/Badge";
-import EmptyState from "@/components/ui/EmptyState";
 import Modal      from "@/components/ui/Modal";
 import Button     from "@/components/ui/Button";
 import Input      from "@/components/ui/Input";
+import DataTable, { Column } from "@/components/ui/DataTable";
 
 // ── Types ──────────────────────────────────────────────────
 type BranchResponse = components["schemas"]["BranchResponse"];
@@ -26,97 +27,6 @@ function validate(v: Partial<BranchRequest>): FormErrors {
   if (!v.nombre?.trim())    e.nombre    = "El nombre es requerido.";
   if (!v.direccion?.trim()) e.direccion = "La dirección es requerida.";
   return e;
-}
-
-// ── Icons ──────────────────────────────────────────────────
-const BuildingIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-    <polyline points="9 22 9 12 15 12 15 22"/>
-  </svg>
-);
-const MapPinIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-    <circle cx="12" cy="10" r="3"/>
-  </svg>
-);
-const PhoneIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.77 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-  </svg>
-);
-const EditIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-  </svg>
-);
-const TrashIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-    <polyline points="3 6 5 6 21 6"/>
-    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-  </svg>
-);
-
-// ── BranchRow ──────────────────────────────────────────────
-function BranchRow({ 
-  branch, 
-  onEdit, 
-  onDelete 
-}: { 
-  branch: BranchResponse;
-  onEdit: (b: BranchResponse) => void;
-  onDelete: (id: number) => void;
-}) {
-  return (
-    <tr
-      style={{ borderBottom: "1px solid var(--border-subtle)", transition: "background 0.1s" }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-hover)")}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-    >
-      {/* ID */}
-      <td style={{ padding: "13px 16px", width: "60px" }}>
-        <span style={{ fontFamily: "monospace", fontSize: "12px", color: "var(--neutral-500)" }}>
-          #{branch.id}
-        </span>
-      </td>
-      {/* Nombre */}
-      <td style={{ padding: "13px 16px" }}>
-        <p style={{ fontSize: "14px", fontWeight: 500, color: "var(--neutral-100)", marginBottom: "2px" }}>
-          {branch.nombre}
-        </p>
-        {branch.telefono && (
-          <p style={{ fontSize: "12px", color: "var(--neutral-500)" }}>
-            📞 {branch.telefono}
-          </p>
-        )}
-      </td>
-      {/* Dirección */}
-      <td style={{ padding: "13px 16px" }}>
-        <span style={{ fontSize: "13px", color: "var(--neutral-300)" }}>{branch.direccion}</span>
-      </td>
-      {/* Estado */}
-      <td style={{ padding: "13px 16px" }}>
-        <Badge variant={branch.activa ? "success" : "neutral"} dot>
-          {branch.activa ? "Activa" : "Inactiva"}
-        </Badge>
-      </td>
-      {/* Acciones */}
-      <td style={{ padding: "13px 16px", textAlign: "right", width: "100px" }}>
-        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-          <Button variant="ghost" size="sm" onClick={() => onEdit(branch)} title="Editar sucursal">
-            <EditIcon />
-          </Button>
-          {branch.activa && (
-            <Button variant="ghost" size="sm" onClick={() => onDelete(branch.id!)} title="Desactivar sucursal">
-              <span style={{ color: "var(--brand-500)" }}><TrashIcon /></span>
-            </Button>
-          )}
-        </div>
-      </td>
-    </tr>
-  );
 }
 
 // ── Create Modal Form ──────────────────────────────────────
@@ -217,7 +127,7 @@ function CreateBranchModal({
           onChange={handleChange("nombre")}
           onBlur={handleBlur("nombre")}
           error={touched.nombre ? errors.nombre : undefined}
-          icon={<BuildingIcon />}
+          icon={<Building size={15} />}
         />
         <Input
           id="branch-direccion"
@@ -227,7 +137,7 @@ function CreateBranchModal({
           onChange={handleChange("direccion")}
           onBlur={handleBlur("direccion")}
           error={touched.direccion ? errors.direccion : undefined}
-          icon={<MapPinIcon />}
+          icon={<MapPin size={15} />}
         />
         <Input
           id="branch-telefono"
@@ -235,7 +145,7 @@ function CreateBranchModal({
           placeholder="Ej. 6015551234"
           value={values.telefono ?? ""}
           onChange={handleChange("telefono")}
-          icon={<PhoneIcon />}
+          icon={<Phone size={15} />}
         />
       </form>
     </Modal>
@@ -348,7 +258,7 @@ function EditBranchModal({
           onChange={handleChange("nombre")}
           onBlur={handleBlur("nombre")}
           error={touched.nombre ? errors.nombre : undefined}
-          icon={<BuildingIcon />}
+          icon={<Building size={15} />}
         />
         <Input
           id="edit-branch-direccion"
@@ -357,14 +267,14 @@ function EditBranchModal({
           onChange={handleChange("direccion")}
           onBlur={handleBlur("direccion")}
           error={touched.direccion ? errors.direccion : undefined}
-          icon={<MapPinIcon />}
+          icon={<MapPin size={15} />}
         />
         <Input
           id="edit-branch-telefono"
           label="Teléfono"
           value={values.telefono ?? ""}
           onChange={handleChange("telefono")}
-          icon={<PhoneIcon />}
+          icon={<Phone size={15} />}
         />
       </form>
     </Modal>
@@ -378,6 +288,7 @@ export default function BranchesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingBranch, setEditingBranch]     = useState<BranchResponse | null>(null);
   const [, startTransition] = useTransition();
+  const { showToast } = useToast();
 
   useEffect(() => {
     apiClient.GET("/api/branches").then(({ data }) => {
@@ -407,18 +318,65 @@ export default function BranchesPage() {
         showToast("La sucursal ha sido desactivada.", "success", "Sucursal de baja");
       } else {
         showToast("No se pudo desactivar la sucursal.", "error");
-        alert("Error al desactivar la sucursal.");
       }
     });
   };
 
-  const { showToast } = useToast();
-
+  const columns: Column<BranchResponse>[] = [
+    {
+      header: "#",
+      key: "id",
+      width: "60px",
+      render: (branch: BranchResponse) => (
+        <span style={{ fontFamily: "monospace", fontSize: "12px", color: "var(--neutral-500)" }}>#{branch.id}</span>
+      )
+    },
+    {
+      header: "Nombre / Teléfono",
+      key: "nombre",
+      render: (branch: BranchResponse) => (
+        <div>
+          <p style={{ fontSize: "14px", fontWeight: 500, color: "var(--neutral-100)", marginBottom: "2px" }}>{branch.nombre}</p>
+          {branch.telefono && <p style={{ fontSize: "12px", color: "var(--neutral-500)" }}>📞 {branch.telefono}</p>}
+        </div>
+      )
+    },
+    {
+      header: "Dirección",
+      key: "direccion",
+      render: (branch: BranchResponse) => <span style={{ fontSize: "13px", color: "var(--neutral-300)" }}>{branch.direccion}</span>
+    },
+    {
+      header: "Estado",
+      key: "activa",
+      render: (branch: BranchResponse) => (
+        <Badge variant={branch.activa ? "success" : "neutral"} dot>
+          {branch.activa ? "Activa" : "Inactiva"}
+        </Badge>
+      )
+    },
+    {
+      header: "Acciones",
+      key: "actions",
+      align: "right",
+      width: "100px",
+      render: (branch: BranchResponse) => (
+        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+          <Button variant="ghost" size="sm" onClick={() => setEditingBranch(branch)} title="Editar sucursal">
+            <Edit size={14} />
+          </Button>
+          {branch.activa && (
+            <Button variant="ghost" size="sm" onClick={() => handleDelete(branch.id!)} title="Desactivar sucursal">
+              <span style={{ color: "var(--brand-500)" }}><Trash2 size={14} /></span>
+            </Button>
+          )}
+        </div>
+      )
+    }
+  ];
 
   const active   = branches.filter((b) => b.activa).length;
   const inactive = branches.filter((b) => !b.activa).length;
-
-  if (loading) return <Spinner fullPage />;
 
   return (
     <div style={{ padding: "36px 40px", maxWidth: "1100px" }}>
@@ -436,12 +394,7 @@ export default function BranchesPage() {
           }
         />
         <Button
-          leftIcon={
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          }
+          leftIcon={<Plus size={15} />}
           onClick={() => setShowCreateModal(true)}
           style={{ marginTop: "4px", flexShrink: 0 }}
         >
@@ -460,63 +413,21 @@ export default function BranchesPage() {
 
       {/* Table Card */}
       <Card delay="0.1s" style={{ padding: 0, overflow: "hidden" }}>
-        {branches.length === 0 ? (
-          <EmptyState
-            icon={
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                <polyline points="9 22 9 12 15 12 15 22"/>
-              </svg>
-            }
-            title="No hay sucursales registradas"
-            description="Crea la primera sede para comenzar a gestionar el inventario."
-            action={
-              <Button size="sm" onClick={() => setShowCreateModal(true)}
-                leftIcon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>}
-              >
+        <DataTable<BranchResponse>
+          columns={columns}
+          data={branches}
+          isLoading={loading}
+          emptyState={{
+            title: "No hay sucursales registradas",
+            description: "Crea la primera sede para comenzar a gestionar el inventario.",
+            icon: <Building size={40} />,
+            action: (
+              <Button size="sm" onClick={() => setShowCreateModal(true)} leftIcon={<Plus size={13} />}>
                 Crear primera sucursal
               </Button>
-            }
-          />
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
-                  {["#", "Nombre / Teléfono", "Dirección", "Estado", "Acciones"].map((h, i) => (
-                    <th
-                      key={h}
-                      style={{
-                        padding: "10px 16px",
-                        fontSize: "11px",
-                        fontWeight: 600,
-                        color: "var(--neutral-500)",
-                        textAlign: h === "Acciones" ? "right" : "left",
-                        letterSpacing: "0.07em",
-                        textTransform: "uppercase",
-                        whiteSpace: "nowrap",
-                        background: "var(--bg-surface)",
-                        width: i === 0 ? "60px" : h === "Acciones" ? "100px" : undefined,
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {branches.map((branch) => (
-                  <BranchRow 
-                    key={branch.id} 
-                    branch={branch} 
-                    onEdit={setEditingBranch}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+            )
+          }}
+        />
 
         {/* Footer */}
         {branches.length > 0 && (
@@ -528,14 +439,12 @@ export default function BranchesPage() {
         )}
       </Card>
 
-      {/* Create Modal */}
       <CreateBranchModal
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onCreated={handleCreated}
       />
 
-      {/* Edit Modal */}
       <EditBranchModal
         branch={editingBranch}
         open={editingBranch !== null}

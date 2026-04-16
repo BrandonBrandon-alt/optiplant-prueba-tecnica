@@ -154,6 +154,9 @@ public class InventoryService implements InventoryUseCase {
                             .currentQuantity(inv.getCurrentQuantity())
                             .minimumStock(inv.getMinimumStock())
                             .salePrice(product.getSalePrice())
+                            .averageCost(product.getAverageCost())
+                            .unit(product.getUnit())
+                            .lastUpdated(inv.getLastUpdated())
                             .build();
                 })
                 .toList();

@@ -5,6 +5,13 @@ import { apiClient } from "@/api/client";
 import type { components } from "@/api/schema";
 import { getSession } from "@/api/auth";
 import { useRouter } from "next/navigation";
+import { TrendingUp, BarChart3, Activity, Users, DollarSign, Package, ShoppingCart } from "lucide-react";
+
+import PageHeader from "@/components/ui/PageHeader";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import DataTable, { Column } from "@/components/ui/DataTable";
+import Spinner from "@/components/ui/Spinner";
 
 type GlobalSummary = components["schemas"]["GlobalSummary"];
 type BranchPerformance = components["schemas"]["BranchPerformance"];
@@ -47,162 +54,143 @@ export default function AnalyticsPage() {
     fetchData();
   }, [router]);
 
-  if (loading) {
-    return (
-      <div style={{ padding: "40px", textAlign: "center", color: "var(--neutral-400)" }}>
-        Cargando análisis global...
-      </div>
-    );
-  }
+  if (loading) return <Spinner fullPage />;
 
   const maxRevenue = Math.max(...performance.map((p) => p.revenue ?? 0), 1);
 
-  return ( performance.length > 0 && 
-    <div style={{ padding: "32px", maxWidth: "1200px", margin: "0 auto" }}>
-      <header style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "28px", fontWeight: 700, color: "var(--neutral-50)", marginBottom: "8px" }}>
-          Análisis Global de la Red
-        </h1>
-        <p style={{ color: "var(--neutral-400)", fontSize: "15px" }}>
-          Rendimiento comparativo y métricas consolidadas de todas las sucursales.
-        </p>
-      </header>
+  const columns: Column<BranchPerformance>[] = [
+    {
+      header: "Sede",
+      key: "branchName",
+      render: (p) => <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--neutral-100)" }}>{p.branchName}</span>
+    },
+    {
+      header: "Transacciones",
+      key: "salesCount",
+      align: "right",
+      render: (p) => <span style={{ fontSize: "14px", color: "var(--neutral-300)", fontFamily: "monospace" }}>{p.salesCount}</span>
+    },
+    {
+      header: "Uds Vendidas",
+      key: "unitsSold",
+      align: "right",
+      render: (p) => (
+        <Badge variant="neutral">
+          <span style={{ fontWeight: 600 }}>{p.unitsSold}</span>
+        </Badge>
+      )
+    }
+  ];
+
+  return (
+    <div style={{ padding: "36px 40px", maxWidth: "1200px" }}>
+      <PageHeader
+        title="Análisis Global"
+        description="Rendimiento comparativo y métricas consolidadas de todas las sucursales de la red."
+      />
 
       {/* Stats Overview */}
       <div style={{ 
         display: "grid", 
-        gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", 
-        gap: "20px",
-        marginBottom: "40px" 
+        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", 
+        gap: "24px",
+        marginBottom: "40px",
+        marginTop: "32px"
       }}>
-        <div className="stat-card">
-          <p className="label">Ingresos Totales</p>
-          <p className="value">{formatCOP(summary?.totalRevenue ?? 0)}</p>
-          <div className="trend success">↑ 12% vs mes anterior</div>
-        </div>
-        <div className="stat-card">
-          <p className="label">Valor Inventario</p>
-          <p className="value">{formatCOP(summary?.totalInventoryValue ?? 0)}</p>
-          <p className="subtext">{summary?.branchCount} sedes activas</p>
-        </div>
-        <div className="stat-card">
-          <p className="label">Unidades Vendidas</p>
-          <p className="value">{(summary?.totalUnitsSold ?? 0).toLocaleString()}</p>
-          <p className="subtext">Media de {(summary?.averageTicket ?? 0).toLocaleString()} por venta</p>
-        </div>
+        <Card style={{ padding: "24px", position: "relative", overflow: "hidden" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+            <div>
+              <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--neutral-500)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Ingresos Totales</p>
+              <h2 style={{ fontSize: "28px", fontWeight: 700, color: "var(--neutral-50)" }}>{formatCOP(summary?.totalRevenue ?? 0)}</h2>
+            </div>
+            <div style={{ padding: "10px", borderRadius: "10px", background: "rgba(34, 197, 94, 0.1)", color: "#4ade80" }}>
+              <DollarSign size={20} />
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#4ade80", fontWeight: 600 }}>
+            <TrendingUp size={14} />
+            <span>+12.5% desde el último mes</span>
+          </div>
+        </Card>
+
+        <Card style={{ padding: "24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+            <div>
+              <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--neutral-500)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Valor Inventario</p>
+              <h2 style={{ fontSize: "28px", fontWeight: 700, color: "var(--neutral-50)" }}>{formatCOP(summary?.totalInventoryValue ?? 0)}</h2>
+            </div>
+            <div style={{ padding: "10px", borderRadius: "10px", background: "var(--brand-900)", color: "var(--brand-400)" }}>
+              <Package size={20} />
+            </div>
+          </div>
+          <p style={{ fontSize: "12px", color: "var(--neutral-500)" }}>Consolidado de {summary?.branchCount} sedes activas</p>
+        </Card>
+
+        <Card style={{ padding: "24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+            <div>
+              <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--neutral-500)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Unidades Vendidas</p>
+              <h2 style={{ fontSize: "28px", fontWeight: 700, color: "var(--neutral-50)" }}>{(summary?.totalUnitsSold ?? 0).toLocaleString()}</h2>
+            </div>
+            <div style={{ padding: "10px", borderRadius: "10px", background: "rgba(168, 85, 247, 0.1)", color: "#a855f7" }}>
+              <ShoppingCart size={20} />
+            </div>
+          </div>
+          <p style={{ fontSize: "12px", color: "var(--neutral-500)" }}>Media de {formatCOP(summary?.averageTicket ?? 0)} por ticket</p>
+        </Card>
       </div>
 
       <div style={{ 
         display: "grid", 
-        gridTemplateColumns: "1fr 1fr", 
-        gap: "32px",
-        alignItems: "start" 
+        gridTemplateColumns: "repeat(auto-fit, minmax(500px, 1fr))", 
+        gap: "32px"
       }}>
-        {/* Branch Comparison Chart */}
-        <div style={{ 
-          background: "var(--bg-card)", 
-          padding: "24px", 
-          borderRadius: "var(--radius-lg)",
-          border: "1px solid var(--border-default)"
-        }}>
-          <h3 style={{ fontSize: "18px", fontWeight: 600, color: "var(--neutral-100)", marginBottom: "24px" }}>
-            Ingresos por Sede
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        {/* Branch Comparison */}
+        <Card style={{ padding: "32px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "32px" }}>
+            <BarChart3 size={20} style={{ color: "var(--brand-500)" }} />
+            <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--neutral-100)" }}>Ingresos por Sede</h3>
+          </div>
+          
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
             {performance.map((p) => (
               <div key={p.branchId}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "13px" }}>
-                  <span style={{ color: "var(--neutral-200)", fontWeight: 500 }}>{p.branchName}</span>
-                  <span style={{ color: "var(--neutral-400)" }}>{formatCOP(p.revenue ?? 0)}</span>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--neutral-200)" }}>{p.branchName}</span>
+                  <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--neutral-400)" }}>{formatCOP(p.revenue ?? 0)}</span>
                 </div>
                 <div style={{ 
-                  height: "10px", 
-                  background: "var(--bg-base)", 
-                  borderRadius: "5px", 
+                  height: "8px", 
+                  background: "var(--neutral-900)", 
+                  borderRadius: "4px", 
                   overflow: "hidden" 
                 }}>
                   <div style={{ 
                     height: "100%", 
                     width: `${((p.revenue ?? 0) / maxRevenue) * 100}%`,
                     background: "linear-gradient(90deg, var(--brand-600), var(--brand-400))",
-                    borderRadius: "5px",
-                    transition: "width 1s ease-out"
+                    borderRadius: "4px",
+                    transition: "width 1s ease-in-out"
                   }} />
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
-        {/* Efficiency Table */}
-        <div style={{ 
-          background: "var(--bg-card)", 
-          padding: "24px", 
-          borderRadius: "var(--radius-lg)",
-          border: "1px solid var(--border-default)"
-        }}>
-          <h3 style={{ fontSize: "18px", fontWeight: 600, color: "var(--neutral-100)", marginBottom: "24px" }}>
-            Métricas Operativas
-          </h3>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--border-default)", textAlign: "left" }}>
-                <th style={{ padding: "12px 0", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Sede</th>
-                <th style={{ padding: "12px 0", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Transacciones</th>
-                <th style={{ padding: "12px 0", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Uds Vendidas</th>
-              </tr>
-            </thead>
-            <tbody>
-              {performance.map((p) => (
-                <tr key={p.branchId} style={{ borderBottom: "1px solid var(--border-default)" }}>
-                  <td style={{ padding: "16px 0", fontSize: "14px", color: "var(--neutral-100)", fontWeight: 500 }}>{p.branchName}</td>
-                  <td style={{ padding: "16px 0", fontSize: "14px", color: "var(--neutral-300)" }}>{p.salesCount}</td>
-                  <td style={{ padding: "16px 0", fontSize: "14px", color: "var(--neutral-300)" }}>{p.unitsSold}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Operational Metrics */}
+        <Card style={{ padding: 0, overflow: "hidden" }}>
+          <div style={{ padding: "32px 32px 0 32px", display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
+            <Activity size={20} style={{ color: "var(--brand-500)" }} />
+            <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--neutral-100)" }}>Métricas Operativas</h3>
+          </div>
+          <DataTable<BranchPerformance>
+            columns={columns}
+            data={performance}
+            isLoading={loading}
+          />
+        </Card>
       </div>
-
-      <style jsx>{`
-        .stat-card {
-          background: var(--bg-card);
-          padding: 24px;
-          border-radius: var(--radius-lg);
-          border: 1px solid var(--border-default);
-          transition: transform 0.2s ease;
-        }
-        .stat-card:hover {
-          transform: translateY(-4px);
-        }
-        .label {
-          font-size: 13px;
-          color: var(--neutral-500);
-          margin-bottom: 8px;
-        }
-        .value {
-          font-size: 24px;
-          font-weight: 700;
-          color: var(--neutral-50);
-          margin-bottom: 8px;
-        }
-        .subtext {
-          font-size: 12px;
-          color: var(--neutral-500);
-        }
-        .trend {
-          font-size: 12px;
-          font-weight: 600;
-          padding: 4px 8px;
-          border-radius: 4px;
-          display: inline-block;
-        }
-        .trend.success {
-          background: rgba(34, 197, 94, 0.1);
-          color: #4ade80;
-        }
-      `}</style>
     </div>
   );
 }

@@ -7,9 +7,10 @@ import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
+import DataTable, { Column } from "@/components/ui/DataTable";
 
 type TransferResponse = components["schemas"]["TransferResponse"];
-type ProductResponse = components["schemas"]["ProductResponse"];
+type TransferDetailResponse = components["schemas"]["TransferDetailResponse"];
 
 interface ReceiveTransferModalProps {
   open: boolean;
@@ -85,6 +86,46 @@ export default function ReceiveTransferModal({ open, onClose, onSuccess, transfe
     }
   };
 
+  const columns: Column<TransferDetailResponse>[] = [
+    {
+      header: "Producto",
+      key: "productId",
+      render: (d) => <span style={{ fontSize: "13px", fontWeight: 600 }}>{products.get(d.productId!) || `ID: ${d.productId}`}</span>
+    },
+    {
+      header: "Enviado",
+      key: "sentQuantity",
+      align: "center",
+      render: (d) => <span style={{ fontWeight: 600, color: "var(--neutral-400)" }}>{d.sentQuantity || d.requestedQuantity}</span>
+    },
+    {
+      header: "Recibido",
+      key: "id",
+      align: "right",
+      width: "100px",
+      render: (d) => (
+        <input
+          type="number"
+          min="0"
+          max={d.sentQuantity || d.requestedQuantity}
+          value={receivedQuantities[d.id!] || 0}
+          onChange={(e) => handleQuantityChange(d.id!, e.target.value)}
+          style={{
+            width: "100%",
+            padding: "6px",
+            borderRadius: "6px",
+            border: "1px solid var(--border-default)",
+            background: "var(--bg-base)",
+            color: "var(--neutral-100)",
+            textAlign: "center",
+            fontWeight: 700,
+            fontSize: "13px",
+          }}
+        />
+      )
+    }
+  ];
+
   if (!transfer) return null;
 
   return (
@@ -94,34 +135,13 @@ export default function ReceiveTransferModal({ open, onClose, onSuccess, transfe
           Confirma la recepción física de los productos. Si llegó menos de lo enviado, ingresa la cantidad real; el sistema generará una alerta por el faltante automáticamente.
         </p>
 
-        <div style={{ overflow: "hidden", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
-            <thead>
-              <tr style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
-                <th style={headerStyle}>Producto</th>
-                <th style={headerStyle}>Enviado</th>
-                <th style={headerStyle}>Recibido</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transfer.details?.map((d) => (
-                <tr key={d.id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                  <td style={cellStyle}>{products.get(d.productId!) || `ID: ${d.productId}`}</td>
-                  <td style={{ ...cellStyle, textAlign: "center", fontWeight: 600 }}>{d.sentQuantity || d.requestedQuantity}</td>
-                  <td style={{ padding: "8px" }}>
-                    <input
-                      type="number"
-                      min="0"
-                      max={d.sentQuantity || d.requestedQuantity}
-                      value={receivedQuantities[d.id!] || 0}
-                      onChange={(e) => handleQuantityChange(d.id!, e.target.value)}
-                      style={inputStyle}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div style={{ overflow: "hidden", borderRadius: "12px", border: "1px solid var(--border-subtle)" }}>
+          <DataTable<TransferDetailResponse>
+            columns={columns}
+            data={transfer.details ?? []}
+            density="compact"
+            minWidth="100%"
+          />
         </div>
 
         <Input
@@ -141,27 +161,3 @@ export default function ReceiveTransferModal({ open, onClose, onSuccess, transfe
     </Modal>
   );
 }
-
-const headerStyle = {
-  padding: "10px 12px",
-  textAlign: "left" as const,
-  fontSize: "12px",
-  color: "var(--neutral-500)",
-};
-
-const cellStyle = {
-  padding: "10px 12px",
-  color: "var(--neutral-100)",
-};
-
-const inputStyle = {
-  width: "100%",
-  padding: "6px 10px",
-  borderRadius: "6px",
-  border: "1px solid var(--border-default)",
-  background: "var(--bg-base)",
-  color: "var(--neutral-100)",
-  textAlign: "center" as const,
-  fontWeight: 700,
-  fontSize: "14px",
-};

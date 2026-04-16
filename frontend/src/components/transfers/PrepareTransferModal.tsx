@@ -7,8 +7,11 @@ import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
 
+import DataTable, { Column } from "@/components/ui/DataTable";
+import Badge from "@/components/ui/Badge";
+
 type TransferResponse = components["schemas"]["TransferResponse"];
-type ProductResponse = components["schemas"]["ProductResponse"];
+type TransferDetailResponse = components["schemas"]["TransferDetailResponse"];
 
 interface PrepareTransferModalProps {
   open: boolean;
@@ -70,6 +73,40 @@ export default function PrepareTransferModal({ open, onClose, onSuccess, transfe
     }
   };
 
+  const columns: Column<TransferDetailResponse>[] = [
+    {
+      header: "Producto",
+      key: "productId",
+      render: (d) => <span style={{ fontSize: "13px", fontWeight: 600 }}>{products.get(d.productId!) || `ID: ${d.productId}`}</span>
+    },
+    {
+      header: "Pedido",
+      key: "requestedQuantity",
+      align: "center",
+      render: (d) => <span style={{ fontWeight: 700, fontFamily: "monospace" }}>{d.requestedQuantity}</span>
+    },
+    {
+      header: "En Stock",
+      key: "stock",
+      align: "center",
+      render: (d) => <span style={{ color: "var(--neutral-400)", fontFamily: "monospace" }}>{stockInfo[d.productId!] || 0}</span>
+    },
+    {
+      header: "Estado",
+      key: "status",
+      align: "right",
+      render: (d) => {
+        const stock = stockInfo[d.productId!] || 0;
+        const isShort = stock < (d.requestedQuantity || 0);
+        return (
+          <Badge variant={isShort ? "danger" : "success"} dot>
+            {isShort ? "Insuficiente" : "Disponible"}
+          </Badge>
+        );
+      }
+    }
+  ];
+
   if (!transfer) return null;
 
   return (
@@ -80,36 +117,12 @@ export default function PrepareTransferModal({ open, onClose, onSuccess, transfe
         </p>
 
         <div style={{ borderRadius: "12px", border: "1px solid var(--border-default)", overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border-default)" }}>
-                <th style={thStyle}>Producto</th>
-                <th style={thStyle}>Pedido</th>
-                <th style={thStyle}>En Stock</th>
-                <th style={thStyle}>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transfer.details?.map(d => {
-                const stock = stockInfo[d.productId!] || 0;
-                const isShort = stock < (d.requestedQuantity || 0);
-                return (
-                  <tr key={d.id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                    <td style={tdStyle}>{products.get(d.productId!) || `ID: ${d.productId}`}</td>
-                    <td style={{ ...tdStyle, fontWeight: 700 }}>{d.requestedQuantity}</td>
-                    <td style={tdStyle}>{stock}</td>
-                    <td style={tdStyle}>
-                      {isShort ? (
-                        <span style={{ color: "var(--color-danger)", fontSize: "12px", fontWeight: 600 }}>Insuficiente</span>
-                      ) : (
-                        <span style={{ color: "var(--color-success)", fontSize: "12px", fontWeight: 600 }}>Disponible</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <DataTable<TransferDetailResponse>
+            columns={columns}
+            data={transfer.details ?? []}
+            density="compact"
+            minWidth="100%"
+          />
         </div>
 
         {Object.values(stockInfo).some((s, idx) => s < (transfer.details?.[idx]?.requestedQuantity || 0)) && (
@@ -130,6 +143,3 @@ export default function PrepareTransferModal({ open, onClose, onSuccess, transfe
     </Modal>
   );
 }
-
-const thStyle = { padding: "12px", textAlign: "left" as const, fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" as const };
-const tdStyle = { padding: "12px", fontSize: "14px", color: "var(--neutral-100)" };

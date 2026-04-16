@@ -14,6 +14,7 @@ import Modal      from "@/components/ui/Modal";
 import Button     from "@/components/ui/Button";
 import Input      from "@/components/ui/Input";
 import Select     from "@/components/ui/Select";
+import DataTable  from "@/components/ui/DataTable";
 import { useToast } from "@/context/ToastContext";
 
 // ── Types ──────────────────────────────────────────────────
@@ -240,6 +241,13 @@ export default function InventoryPage() {
   const getProductName = (id: number) => products.find(p => p.id === id)?.nombre || `Producto #${id}`;
   const getProductUnit = (id: number) => (products.find(p => p.id === id) as any)?.unit || "UND";
 
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
+      maximumFractionDigits: 0,
+    }).format(amount);
+
   if (loadingInit) return <Spinner fullPage />;
 
   return (
@@ -305,77 +313,114 @@ export default function InventoryPage() {
 
       {activeTab === "matrix" ? (
         <Card style={{ padding: 0, overflow: "hidden", border: "1px solid var(--border-default)" }}>
-          {loadingInv ? (
-             <div style={{ height: "400px", display: "flex", alignItems: "center", justifyContent: "center" }}><Spinner /></div>
-          ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border-default)" }}>
-                    <th style={thStyle}>Producto</th>
-                    <th style={{ ...thStyle, textAlign: "right" }}>Nivel de Stock</th>
-                    <th style={{ ...thStyle, textAlign: "right" }}>Stock Mínimo</th>
-                    <th style={thStyle}>Última Operación</th>
-                    {canEdit && <th style={{ ...thStyle, textAlign: "right" }}>Acciones</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map(p => {
-                    const inv = inventoryMap.get(p.id!) as any;
-                    const current = inv?.stockActual ?? 0;
-                    const minimum = inv?.stockMinimo ?? 0;
-                    const unit = (p as any).unit || "UND";
-
-                    return (
-                      <tr key={p.id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                        <td style={{ padding: "16px" }}>
-                          <div style={{ display: "flex", flexDirection: "column" }}>
-                            <span style={{ fontSize: "11px", color: "var(--neutral-500)", fontWeight: 600, textTransform: "uppercase" }}>{p.sku}</span>
-                            <span style={{ fontSize: "15px", fontWeight: 600, color: "var(--neutral-100)" }}>{p.nombre}</span>
-                          </div>
-                        </td>
-                        <td style={{ padding: "16px", textAlign: "right" }}>
-                           <StockStatus current={current} minimum={minimum} unit={unit} />
-                        </td>
-                        <td style={{ padding: "16px", textAlign: "right" }}>
-                           <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--neutral-500)" }}>{minimum} {unit}</span>
-                        </td>
-                        <td style={{ padding: "16px" }}>
-                          <span style={{ fontSize: "12px", color: "var(--neutral-400)" }}>
-                            {inv?.lastUpdated ? new Date(inv.lastUpdated).toLocaleString() : "Sin actividad registrada"}
-                          </span>
-                        </td>
-                        {!isSeller && (
-                          <td style={{ padding: "16px", textAlign: "right" }}>
-                            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                              {canEdit ? (
-                                <>
-                                  <Button variant="primary" size="sm" onClick={() => {
-                                    setAdjustingProduct(p);
-                                    setAdjustData({ type: "INGRESO", quantity: 0, reason: "", unitCost: p.costoPromedio ?? 0 });
-                                  }}>
-                                    Movimiento
-                                  </Button>
-                                  <Button variant="ghost" size="sm" onClick={() => {
-                                    setConfigProduct({ p, inv: inv || { productId: p.id, minimumStock: 0, currentQuantity: 0 } });
-                                    setMinStockValue(minimum);
-                                  }}>
-                                    Configurar
-                                  </Button>
-                                </>
-                              ) : (
-                                <Badge variant="warning">Solo Lectura (Otra Sede)</Badge>
-                              )}
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <DataTable<any>
+            columns={[
+              {
+                header: "SKU",
+                key: "sku",
+                width: "120px",
+                render: (p: any) => (
+                  <span className="tabular" style={{ fontSize: "12px", color: "var(--brand-400)", fontWeight: 700 }}>{p.sku}</span>
+                )
+              },
+              {
+                header: "Producto",
+                key: "nombre",
+                render: (p: any) => (
+                  <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--neutral-100)", textTransform: "uppercase" }}>{p.nombre}</span>
+                )
+              },
+              {
+                header: "Unit.",
+                key: "unit",
+                align: "center",
+                render: (p: any) => (
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--neutral-500)", textTransform: "uppercase" }}>{p.unit || "UND"}</span>
+                )
+              },
+              {
+                header: "Stock Actual",
+                key: "stockActual",
+                align: "right",
+                render: (p: any) => {
+                  const inv = inventoryMap.get(p.id!) as any;
+                  return <StockStatus current={inv?.stockActual ?? 0} minimum={inv?.stockMinimo ?? 0} unit={p.unit || "UND"} />;
+                }
+              },
+              {
+                header: "Stock Mín.",
+                key: "stockMinimo",
+                align: "right",
+                render: (p: any) => {
+                  const inv = inventoryMap.get(p.id!) as any;
+                  return <span className="tabular" style={{ fontSize: "13px", fontWeight: 600, color: "var(--neutral-400)" }}>{inv?.stockMinimo ?? 0}</span>;
+                }
+              },
+              {
+                header: "Costo Prom.",
+                key: "costoPromedio",
+                align: "right",
+                render: (p: any) => (
+                  <span className="tabular" style={{ fontSize: "14px", fontWeight: 700, color: "var(--neutral-400)" }}>
+                    {formatCurrency(p.costoPromedio || 0)}
+                  </span>
+                )
+              },
+              {
+                header: "Precio Venta",
+                key: "precioVenta",
+                align: "right",
+                render: (p: any) => (
+                  <span className="tabular" style={{ fontSize: "15px", fontWeight: 800, color: "var(--neutral-100)" }}>
+                    {formatCurrency(p.precioVenta || 0)}
+                  </span>
+                )
+              },
+              {
+                header: "Última OP",
+                key: "lastUpdated",
+                render: (p: any) => {
+                  const inv = inventoryMap.get(p.id!) as any;
+                  return (
+                    <span style={{ fontSize: "11px", color: "var(--neutral-500)", fontWeight: 500, lineBreak: "anywhere" }}>
+                      {inv?.lastUpdated ? new Date(inv.lastUpdated).toLocaleString("es-CO", { hour12: true, dateStyle: 'short', timeStyle: 'short' }) : "---"}
+                    </span>
+                  );
+                }
+              },
+              ...(canEdit ? [{
+                header: "Acciones",
+                key: "actions",
+                align: "right" as const,
+                render: (p: any) => {
+                  const inv = inventoryMap.get(p.id!) as any;
+                  return (
+                    <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                      {!isSeller && (
+                        <>
+                          <Button variant="ghost" size="sm" onClick={() => {
+                            setAdjustingProduct(p);
+                            setAdjustData({ type: "INGRESO", quantity: 0, reason: "", unitCost: p.costoPromedio ?? 0 });
+                          }}>
+                            Mov.
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => {
+                            setConfigProduct({ p, inv: inv || { productId: p.id, minimumStock: 0, currentQuantity: 0 } });
+                            setMinStockValue(inv?.stockMinimo ?? 0);
+                          }}>
+                            Conf.
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  );
+                }
+              }] : [])
+            ]}
+            data={products}
+            isLoading={loadingInv}
+            minWidth="1200px"
+          />
         </Card>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -392,48 +437,56 @@ export default function InventoryPage() {
           </div>
 
           <Card style={{ padding: 0, overflow: "hidden", border: "1px solid var(--border-default)" }}>
-            {kardexLoading ? <div style={{ height: "400px", display: "flex", alignItems: "center", justifyContent: "center" }}><Spinner /></div> : (
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border-default)" }}>
-                    <th style={thStyle}>Fecha y Hora</th>
-                    <th style={thStyle}>Producto</th>
-                    <th style={thStyle}>Tipo</th>
-                    <th style={thStyle}>Motivo</th>
-                    <th style={{ ...thStyle, textAlign: "right" }}>Cantidad</th>
-                    <th style={{ ...thStyle, textAlign: "right" }}>Saldo Resultante</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {kardexMovements.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} style={{ padding: "40px" }}>
-                        <EmptyState 
-                          title="Sin movimientos" 
-                          description="No se han registrado transacciones de inventario para estos filtros." 
-                          icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
-                        />
-                      </td>
-                    </tr>
-                  ) : kardexMovements.map(m => (
-                    <tr key={m.id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                      <td style={{ padding: "12px 16px", fontSize: "13px", color: "var(--neutral-400)" }}>{new Date(m.date).toLocaleString()}</td>
-                      <td style={{ padding: "12px 16px", fontSize: "14px", fontWeight: 600 }}>{getProductName(m.productId)}</td>
-                      <td style={{ padding: "12px 16px" }}>
-                        <Badge variant={m.type === "INGRESO" ? "success" : "danger"}>{m.type}</Badge>
-                      </td>
-                      <td style={{ padding: "12px 16px", fontSize: "13px" }}>{m.reason}</td>
-                      <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: 700, color: m.type === "INGRESO" ? "var(--color-success)" : "var(--color-danger)" }}>
-                        {m.type === "INGRESO" ? "+" : "-"}{m.quantity}
-                      </td>
-                      <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: 800, color: "var(--neutral-100)" }}>
-                        {m.finalBalance} <small style={{ color: "var(--neutral-500)" }}>{getProductUnit(m.productId)}</small>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            <DataTable<InventoryMovementExtended>
+              columns={[
+                {
+                  header: "Fecha y Hora",
+                  key: "date",
+                  render: (m) => <span style={{ fontSize: "13px", color: "var(--neutral-400)" }}>{new Date(m.date).toLocaleString("es-CO", { hour12: true, dateStyle: 'short', timeStyle: 'short' })}</span>
+                },
+                {
+                  header: "Producto",
+                  key: "productId",
+                  render: (m) => <span style={{ fontSize: "14px", fontWeight: 600 }}>{getProductName(m.productId)}</span>
+                },
+                {
+                  header: "Tipo",
+                  key: "type",
+                  render: (m) => <Badge variant={m.type === "INGRESO" ? "success" : "danger"}>{m.type}</Badge>
+                },
+                {
+                  header: "Motivo",
+                  key: "reason",
+                },
+                {
+                  header: "Cantidad",
+                  key: "quantity",
+                  align: "right",
+                  render: (m) => (
+                    <span style={{ fontWeight: 700, color: m.type === "INGRESO" ? "var(--color-success)" : "var(--color-danger)" }}>
+                      {m.type === "INGRESO" ? "+" : "-"}{m.quantity}
+                    </span>
+                  )
+                },
+                {
+                  header: "Saldo Resultante",
+                  key: "finalBalance",
+                  align: "right",
+                  render: (m) => (
+                    <span style={{ fontWeight: 800, color: "var(--neutral-100)" }}>
+                      {m.finalBalance} <small style={{ color: "var(--neutral-500)" }}>{getProductUnit(m.productId)}</small>
+                    </span>
+                  )
+                }
+              ]}
+              data={kardexMovements}
+              isLoading={kardexLoading}
+              emptyState={{
+                title: "Sin movimientos",
+                description: "No se han registrado transacciones de inventario para estos filtros.",
+                icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              }}
+            />
           </Card>
         </div>
       )}
@@ -539,8 +592,3 @@ export default function InventoryPage() {
     </div>
   );
 }
-
-const thStyle = { 
-  padding: "16px", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" as const, 
-  fontWeight: 600, letterSpacing: "1px" 
-};

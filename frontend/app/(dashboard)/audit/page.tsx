@@ -3,17 +3,17 @@
 import { useEffect, useState } from "react";
 import { apiClient } from "@/api/client";
 import type { components } from "@/api/schema";
+import { History, Search } from "lucide-react";
+
 import Spinner from "@/components/ui/Spinner";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
-import EmptyState from "@/components/ui/EmptyState";
+import DataTable, { Column } from "@/components/ui/DataTable";
 import { useToast } from "@/context/ToastContext";
 
 type InventoryMovement = components["schemas"]["InventoryMovement"];
 type UserResponse = components["schemas"]["UserResponse"];
-type ProductResponse = components["schemas"]["ProductResponse"];
-type BranchResponse = components["schemas"]["BranchResponse"];
 
 export default function AuditPage() {
   const { showToast } = useToast();
@@ -46,77 +46,86 @@ export default function AuditPage() {
     fetchData();
   }, [showToast]);
 
-  if (loading) return <Spinner fullPage />;
+  const columns: Column<InventoryMovement>[] = [
+    {
+      header: "Fecha",
+      key: "date",
+      width: "160px",
+      render: (m) => (
+        <span style={{ fontSize: "12px", color: "var(--neutral-400)" }}>
+          {m.date ? new Date(m.date).toLocaleString("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}
+        </span>
+      )
+    },
+    {
+      header: "Tipo",
+      key: "type",
+      width: "100px",
+      render: (m) => (
+        <Badge variant={m.type === "INGRESO" ? "success" : "danger"} dot>
+          {m.type}
+        </Badge>
+      )
+    },
+    {
+      header: "Motivo",
+      key: "reason",
+      render: (m) => <span style={{ fontSize: "13px", color: "var(--neutral-300)" }}>{m.reason || "—"}</span>
+    },
+    {
+      header: "Producto",
+      key: "productId",
+      render: (m) => <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--neutral-100)" }}>{products.get(m.productId!) || m.productId}</span>
+    },
+    {
+      header: "Sucursal",
+      key: "branchId",
+      render: (m) => <span style={{ fontSize: "12px", color: "var(--neutral-400)" }}>{branches.get(m.branchId!) || m.branchId}</span>
+    },
+    {
+      header: "Cantidad",
+      key: "quantity",
+      align: "right",
+      width: "100px",
+      render: (m) => (
+        <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--brand-400)", fontFamily: "monospace" }}>
+          {m.quantity}
+        </span>
+      )
+    },
+    {
+      header: "Responsable",
+      key: "userId",
+      render: (m) => (
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "var(--neutral-800)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "var(--neutral-400)" }}>
+            {(users.get(m.userId!)?.[0] || "U").toUpperCase()}
+          </div>
+          <span style={{ fontSize: "13px", color: "var(--neutral-300)" }}>{users.get(m.userId!) || m.userId}</span>
+        </div>
+      )
+    }
+  ];
 
   return (
     <div style={{ padding: "36px 40px", maxWidth: "1200px" }}>
       <PageHeader
-        title="Auditoría Global de Inventario"
+        title="Auditoría Global"
         description="Seguimiento detallado de todos los movimientos de stock realizados en la red OptiPlant."
       />
 
-      <Card style={{ padding: 0, overflow: "hidden", border: "1px solid var(--border-subtle)" }}>
-        {movements.length === 0 ? (
-          <EmptyState
-            title="Sin movimientos"
-            description="No se han registrado movimientos de inventario en el sistema."
-            icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>}
-          />
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border-default)" }}>
-                  <th style={headerStyle}>Fecha</th>
-                  <th style={headerStyle}>Tipo</th>
-                  <th style={headerStyle}>Motivo</th>
-                  <th style={headerStyle}>Producto</th>
-                  <th style={headerStyle}>Sucursal</th>
-                  <th style={headerStyle}>Cantidad</th>
-                  <th style={headerStyle}>Responsable</th>
-                </tr>
-              </thead>
-              <tbody>
-                {movements.map((m) => (
-                  <tr key={m.id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                    <td style={cellStyle}>
-                      {m.date ? new Date(m.date).toLocaleString("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}
-                    </td>
-                    <td style={cellStyle}>
-                      <Badge variant={m.type === "INGRESO" ? "success" : "danger"}>
-                        {m.type}
-                      </Badge>
-                    </td>
-                    <td style={cellStyle}>{m.reason || "—"}</td>
-                    <td style={cellStyle}>{products.get(m.productId!) || m.productId}</td>
-                    <td style={cellStyle}>{branches.get(m.branchId!) || m.branchId}</td>
-                    <td style={{ ...cellStyle, fontWeight: 700, textAlign: "right", fontFamily: "var(--font-serif)" }}>
-                      {m.quantity}
-                    </td>
-                    <td style={cellStyle}>{users.get(m.userId!) || m.userId}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <Card style={{ padding: 0, overflow: "hidden", marginTop: "32px" }}>
+        <DataTable<InventoryMovement>
+          columns={columns}
+          data={movements}
+          isLoading={loading}
+          emptyState={{
+            title: "Sin movimientos",
+            description: "No se han registrado movimientos de inventario en el sistema.",
+            icon: <History size={40} />
+          }}
+        />
       </Card>
     </div>
   );
 }
-
-const headerStyle = {
-  padding: "14px 16px",
-  fontSize: "11px",
-  fontWeight: 600,
-  color: "var(--neutral-500)",
-  textAlign: "left" as const,
-  textTransform: "uppercase" as const,
-  letterSpacing: "0.05em",
-};
-
-const cellStyle = {
-  padding: "12px 16px",
-  fontSize: "13px",
-  color: "var(--neutral-100)",
-};

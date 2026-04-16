@@ -1,7 +1,6 @@
 package co.com.optiplant.inventario.inventory.infrastructure.adapter.in.web.dto;
 
 import lombok.Builder;
-import java.math.BigDecimal;
 
 /**
  * DTO enriquecido que combina información de inventario y catálogo.
@@ -13,7 +12,10 @@ public record InventoryProductResponse(
         Long productId,
         String productoNombre,
         String sku,
-        BigDecimal stockActual,
-        BigDecimal stockMinimo,
-        BigDecimal precioVenta
+        java.math.BigDecimal stockActual,
+        java.math.BigDecimal stockMinimo,
+        java.math.BigDecimal precioVenta,
+        java.math.BigDecimal costoPromedio,
+        String unit,
+        java.time.LocalDateTime lastUpdated
 ) {}

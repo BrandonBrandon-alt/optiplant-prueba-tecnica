@@ -17,6 +17,7 @@ import {
   CreditCard
 } from "lucide-react";
 import SaleReceipt from "./SaleReceipt";
+import DataTable, { Column } from "@/components/ui/DataTable";
 
 interface SaleDetailModalProps {
   isOpen: boolean;
@@ -76,6 +77,37 @@ export default function SaleDetailModal({
       maximumFractionDigits: 0,
     }).format(amount);
 
+  const columns: Column<any>[] = [
+    {
+      header: "Item",
+      key: "productName",
+      render: (d) => (
+        <div>
+          <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--neutral-100)", textTransform: "uppercase" }}>{d.productName || "Producto"}</p>
+          <p style={{ fontSize: "11px", color: "var(--neutral-500)" }}>{formatCurrency(d.unitPriceApplied)} c/u</p>
+        </div>
+      )
+    },
+    {
+      header: "Cant.",
+      key: "quantity",
+      align: "center",
+      width: "60px",
+      render: (d) => <span className="tabular" style={{ fontSize: "13px", fontWeight: 600, color: "var(--neutral-400)" }}>{d.quantity}</span>
+    },
+    {
+      header: "Total",
+      key: "subtotalLine",
+      align: "right",
+      width: "100px",
+      render: (d) => (
+        <span className="tabular" style={{ fontSize: "13px", fontWeight: 700, color: "var(--neutral-100)" }}>
+          {formatCurrency(d.subtotalLine)}
+        </span>
+      )
+    }
+  ];
+
   return (
     <Drawer
       open={isOpen}
@@ -113,35 +145,14 @@ export default function SaleDetailModal({
             <p className="tabular" style={{ fontSize: "12px", color: "var(--neutral-500)", marginTop: "2px" }}>DNI: {sale.customerDocument || "No registrado"}</p>
         </div>
 
-        {/* Itemized Table - High Density */}
+        {/* Itemized Table - Unified DataTable */}
         <div style={{ border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", background: "transparent" }}>
-                <thead style={{ background: "var(--bg-card)", borderBottom: "1px solid var(--border-default)" }}>
-                    <tr>
-                        <th style={{ padding: "12px 16px", fontSize: "10px", fontWeight: 700, color: "var(--neutral-500)", textTransform: "uppercase", textAlign: "left" }}>Item</th>
-                        <th style={{ padding: "12px 16px", fontSize: "10px", fontWeight: 700, color: "var(--neutral-500)", textTransform: "uppercase", textAlign: "center" }}>Cant.</th>
-                        <th style={{ padding: "12px 16px", fontSize: "10px", fontWeight: 700, color: "var(--neutral-500)", textTransform: "uppercase", textAlign: "right" }}>Total</th>
-                    </tr>
-                </thead>
-                <tbody style={{ borderTop: "1px solid var(--border-subtle)" }}>
-                    {sale.details?.map((detail: any, idx: number) => (
-                        <tr key={idx} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                            <td style={{ padding: "12px 16px" }}>
-                                <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--neutral-100)", textTransform: "uppercase" }}>{detail.productName || "Producto"}</p>
-                                <p style={{ fontSize: "11px", color: "var(--neutral-500)" }}>{formatCurrency(detail.unitPriceApplied)} c/u</p>
-                            </td>
-                            <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                                <span className="tabular" style={{ fontSize: "13px", fontWeight: 600, color: "var(--neutral-400)" }}>{detail.quantity}</span>
-                            </td>
-                            <td style={{ padding: "12px 16px", textAlign: "right" }}>
-                                <span className="tabular" style={{ fontSize: "13px", fontWeight: 700, color: "var(--neutral-100)" }}>
-                                    {formatCurrency(detail.subtotalLine)}
-                                </span>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+            <DataTable<any>
+                columns={columns}
+                data={sale.details ?? []}
+                density="compact"
+                minWidth="100%"
+            />
         </div>
 
         {/* Financial Recap - Minimalist */}

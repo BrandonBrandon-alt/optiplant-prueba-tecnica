@@ -99,6 +99,13 @@ export default function SalesHistoryPage() {
             onSearchChange={setSearchTerm}
             onRefresh={fetchSales}
           />
+
+          <HistoryTable 
+            sales={filteredSales}
+            onOpenDetail={openDetail}
+            formatCurrency={formatCurrency}
+            onRefresh={fetchSales}
+          />
         </Card>
       </div>
 

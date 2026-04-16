@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Search, RefreshCcw } from "lucide-react";
+import Input from "@/components/ui/Input";
 
 interface HistoryFiltersProps {
   searchTerm: string;
@@ -17,47 +18,32 @@ export default function HistoryFilters({ searchTerm, onSearchChange, onRefresh }
       display: "flex", 
       flexDirection: "row",
       flexWrap: "wrap",
-      alignItems: "center", 
+      alignItems: "flex-end", // Align with bottom of inputs
       justifyContent: "space-between",
       gap: "16px",
       background: "var(--bg-surface)"
     }}>
       
-      {/* Search Input - Inventory Style */}
-      <div style={{ position: "relative", width: "100%", maxWidth: "450px" }}>
-        <Search 
-          size={16} 
-          style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--neutral-500)" }} 
-        />
-        <input 
-          type="text"
-          placeholder="Filtrar por ID de venta, sucursal o cliente..."
-          style={{ 
-            width: "100%", 
-            background: "var(--bg-base)", 
-            border: "1px solid var(--border-default)", 
-            borderRadius: "10px", 
-            padding: "12px 16px 12px 48px", 
-            fontSize: "14px", 
-            color: "var(--neutral-200)",
-            outline: "none",
-            transition: "all 0.2s"
-          }}
+      {/* Search Input - Using custom UI Component */}
+      <div style={{ width: "100%", maxWidth: "450px" }}>
+        <Input 
+          label="Búsqueda de Auditoría"
+          placeholder="ID venta, sucursal o cliente..."
+          icon={<Search size={16} />}
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="focus:border-brand-500"
         />
       </div>
       
       {/* Functional Controls */}
-      <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+      <div style={{ display: "flex", gap: "10px", alignItems: "center", paddingBottom: "2px" }}>
         <button 
             onClick={onRefresh}
             style={{ 
-                padding: "10px", 
-                background: "var(--bg-base)", 
+                padding: "11px", 
+                background: "var(--bg-card)", 
                 border: "1px solid var(--border-default)", 
-                borderRadius: "10px",
+                borderRadius: "var(--radius-md)",
                 color: "var(--neutral-500)",
                 cursor: "pointer",
                 transition: "all 0.2s",
@@ -74,9 +60,9 @@ export default function HistoryFilters({ searchTerm, onSearchChange, onRefresh }
 
         <div style={{ 
             display: "flex", 
-            background: "var(--bg-base)", 
+            background: "var(--bg-card)", 
             padding: "4px", 
-            borderRadius: "10px", 
+            borderRadius: "var(--radius-md)", 
             border: "1px solid var(--border-default)" 
         }}>
             {['Todas', 'Anuladas'].map((label) => (
@@ -84,7 +70,7 @@ export default function HistoryFilters({ searchTerm, onSearchChange, onRefresh }
                     key={label}
                     style={{ 
                         padding: "8px 16px", 
-                        borderRadius: "8px", 
+                        borderRadius: "6px", 
                         border: "none", 
                         cursor: "pointer", 
                         fontSize: "12px", 

@@ -1,13 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { apiClient } from "@/api/client";
 import type { components } from "@/api/schema";
 import { getSession } from "@/api/auth";
 import { useRouter } from "next/navigation";
+import { Package, Plus, Edit, Trash2, Search, Tag, Truck } from "lucide-react";
+
 import Select from "@/components/ui/Select";
 import Badge from "@/components/ui/Badge";
 import { useToast } from "@/context/ToastContext";
+import PageHeader from "@/components/ui/PageHeader";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import DataTable, { Column } from "@/components/ui/DataTable";
+import Modal from "@/components/ui/Modal";
+import Input from "@/components/ui/Input";
+import Spinner from "@/components/ui/Spinner";
 
 // Types from schema
 type ProductResponse = components["schemas"]["ProductResponse"];
@@ -20,6 +29,7 @@ export default function MasterProductsPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductResponse | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -42,6 +52,7 @@ export default function MasterProductsPage() {
   }, [router]);
 
   async function fetchData() {
+    setLoading(true);
     try {
       const [prodRes, suppRes] = await Promise.all([
         apiClient.GET("/api/catalog/products"),
@@ -51,6 +62,7 @@ export default function MasterProductsPage() {
       setSuppliers(suppRes.data ?? []);
     } catch (error) {
       console.error("Error fetching master data:", error);
+      showToast("Error al cargar los datos del catálogo.", "error");
     } finally {
       setLoading(false);
     }
@@ -81,24 +93,28 @@ export default function MasterProductsPage() {
     setShowModal(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (editingProduct) {
-        await apiClient.PUT("/api/catalog/products/{id}", {
-          params: { path: { id: editingProduct.id! } },
-          body: formData,
-        });
-      } else {
-        await apiClient.POST("/api/catalog/products", {
-          body: formData,
-        });
+    startTransition(async () => {
+      try {
+        if (editingProduct) {
+          await apiClient.PUT("/api/catalog/products/{id}", {
+            params: { path: { id: editingProduct.id! } },
+            body: formData as any,
+          });
+          showToast("Producto actualizado correctamente.", "success", "Cambios guardados");
+        } else {
+          await apiClient.POST("/api/catalog/products", {
+            body: formData as any,
+          });
+          showToast("Nuevo producto registrado en el catálogo.", "success", "Registro exitoso");
+        }
+        setShowModal(false);
+        fetchData();
+      } catch (error) {
+        showToast("Error al guardar el producto. Verifica el SKU.", "error");
       }
-      setShowModal(false);
-      fetchData();
-    } catch (error) {
-      alert("Error al guardar el producto. Verifica que el SKU sea único y los campos requeridos.");
-    }
+    });
   };
 
   const handleDelete = async (id: number) => {
@@ -107,150 +123,169 @@ export default function MasterProductsPage() {
       await apiClient.DELETE("/api/catalog/products/{id}", {
         params: { path: { id } },
       });
+      showToast("El producto ha sido eliminado del catálogo.", "success");
       fetchData();
     } catch (error) {
-      alert("No se puede eliminar el producto porque tiene movimientos o existencias vinculadas.");
+      showToast("No se puede eliminar: tiene movimientos asociados.", "error");
     }
   };
 
-  if (loading) return <div style={{ padding: "40px", color: "var(--neutral-400)" }}>Cargando catálogo maestro...</div>;
+  const columns: Column<ProductResponse>[] = [
+    {
+      header: "SKU",
+      key: "sku",
+      width: "120px",
+      render: (p: ProductResponse) => <span style={{ fontFamily: "monospace", fontSize: "13px", fontWeight: 600, color: "var(--brand-400)" }}>{p.sku}</span>
+    },
+    {
+      header: "Nombre",
+      key: "nombre",
+      render: (p: ProductResponse) => <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--neutral-100)" }}>{p.nombre}</span>
+    },
+    {
+      header: "Unidad",
+      key: "unit",
+      width: "100px",
+      render: (p: ProductResponse) => <Badge variant="neutral">{(p as any).unit || "UNIDADES"}</Badge>
+    },
+    {
+      header: "Proveedor",
+      key: "proveedorId",
+      render: (p: ProductResponse) => (
+        <span style={{ fontSize: "13px", color: "var(--neutral-400)" }}>
+          {suppliers.find(s => s.id === p.proveedorId)?.nombre ?? "N/A"}
+        </span>
+      )
+    },
+    {
+      header: "Precio Venta",
+      key: "precioVenta",
+      align: "right",
+      render: (p: ProductResponse) => (
+        <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--neutral-200)" }}>
+          ${(p.precioVenta ?? 0).toLocaleString()}
+        </span>
+      )
+    },
+    {
+      header: "Acciones",
+      key: "actions",
+      align: "right",
+      width: "100px",
+      render: (p: ProductResponse) => (
+        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+          <Button variant="ghost" size="sm" onClick={() => handleOpenModal(p)} title="Editar producto">
+            <Edit size={14} />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id!)} title="Eliminar producto">
+            <span style={{ color: "var(--brand-500)" }}><Trash2 size={14} /></span>
+          </Button>
+        </div>
+      )
+    }
+  ];
 
   return (
-    <div style={{ padding: "32px", maxWidth: "1200px", margin: "0 auto" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-        <div>
-          <h1 style={{ fontSize: "28px", fontWeight: 700, color: "var(--neutral-50)", marginBottom: "8px" }}>
-            Catálogo Maestro de Productos
-          </h1>
-          <p style={{ color: "var(--neutral-400)", fontSize: "14px" }}>
-            Gestiona los productos base que se replican en todas las sucursales.
-          </p>
-        </div>
-        <button
-          onClick={() => handleOpenModal()}
-          style={{
-            background: "var(--brand-500)",
-            color: "white",
-            border: "none",
-            padding: "10px 20px",
-            borderRadius: "8px",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
-          + Nuevo Producto
-        </button>
-      </header>
-
-      <div style={{ background: "var(--bg-card)", borderRadius: "12px", border: "1px solid var(--border-default)", overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid var(--border-default)" }}>
-               <th style={{ padding: "16px 24px", textAlign: "left", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>SKU</th>
-              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Nombre</th>
-              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Unidad</th>
-              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Proveedor</th>
-              <th style={{ padding: "16px 24px", textAlign: "right", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Precio Venta</th>
-              <th style={{ padding: "16px 24px", textAlign: "right", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((p) => (
-              <tr key={p.id} style={{ borderBottom: "1px solid var(--border-default)" }}>
-                <td style={{ padding: "16px 24px", fontSize: "14px", color: "var(--brand-400)", fontWeight: 600 }}>{p.sku}</td>
-                 <td style={{ padding: "16px 24px", fontSize: "14px", color: "var(--neutral-100)" }}>{p.nombre}</td>
-                <td style={{ padding: "16px 24px", fontSize: "12px", color: "var(--neutral-500)" }}>
-                    <Badge variant="neutral">{(p as any).unit || "UNIDADES"}</Badge>
-                </td>
-                <td style={{ padding: "16px 24px", fontSize: "14px", color: "var(--neutral-400)" }}>
-                  {suppliers.find(s => s.id === p.proveedorId)?.nombre ?? "N/A"}
-                </td>
-                <td style={{ padding: "16px 24px", fontSize: "14px", color: "var(--neutral-200)", textAlign: "right" }}>
-                  ${(p.precioVenta ?? 0).toLocaleString()}
-                </td>
-                <td style={{ padding: "16px 24px", textAlign: "right" }}>
-                  <button onClick={() => handleOpenModal(p)} style={{ background: "none", border: "none", color: "var(--brand-500)", cursor: "pointer", marginRight: "12px" }}>Editar</button>
-                  <button onClick={() => handleDelete(p.id!)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}>Eliminar</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div style={{ padding: "36px 40px", maxWidth: "1200px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px", gap: "16px", flexWrap: "wrap" }}>
+        <PageHeader
+          title="Catálogo Maestro"
+          description="Gestiona los productos base que se replican en todas las sucursales del sistema."
+        />
+        <Button leftIcon={<Plus size={15} />} onClick={() => handleOpenModal()} style={{ marginTop: "4px" }}>
+          Nuevo Producto
+        </Button>
       </div>
 
-      {showModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "var(--bg-card)", padding: "32px", borderRadius: "16px", width: "100%", maxWidth: "500px", border: "1px solid var(--border-default)" }}>
-            <h2 style={{ marginBottom: "24px", color: "var(--neutral-50)" }}>{editingProduct ? "Editar Producto" : "Nuevo Producto"}</h2>
-            <form onSubmit={handleSubmit}>
-              <div style={{ marginBottom: "16px" }}>
-                <label style={{ display: "block", marginBottom: "8px", fontSize: "13px", color: "var(--neutral-400)" }}>SKU (Único)</label>
-                <input
-                  value={formData.sku}
-                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                  style={{ width: "100%", padding: "10px", background: "var(--bg-base)", border: "1px solid var(--border-default)", borderRadius: "8px", color: "white" }}
-                  required
-                />
-              </div>
-              <div style={{ marginBottom: "16px" }}>
-                <label style={{ display: "block", marginBottom: "8px", fontSize: "13px", color: "var(--neutral-400)" }}>Nombre</label>
-                <input
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  style={{ width: "100%", padding: "10px", background: "var(--bg-base)", border: "1px solid var(--border-default)", borderRadius: "8px", color: "white" }}
-                  required
-                />
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
-                <div>
-                  <label style={{ display: "block", marginBottom: "8px", fontSize: "13px", color: "var(--neutral-400)" }}>Costo Promedio</label>
-                  <input
-                    type="number"
-                    value={formData.costoPromedio}
-                    onChange={(e) => setFormData({ ...formData, costoPromedio: Number(e.target.value) })}
-                    style={{ width: "100%", padding: "10px", background: "var(--bg-base)", border: "1px solid var(--border-default)", borderRadius: "8px", color: "white" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", marginBottom: "8px", fontSize: "13px", color: "var(--neutral-400)" }}>Precio Venta</label>
-                  <input
-                    type="number"
-                    value={formData.precioVenta}
-                    onChange={(e) => setFormData({ ...formData, precioVenta: Number(e.target.value) })}
-                    style={{ width: "100%", padding: "10px", background: "var(--bg-base)", border: "1px solid var(--border-default)", borderRadius: "8px", color: "white" }}
-                  />
-                </div>
-              </div>
-               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
-                <Select
-                  label="Unidad de Medida"
-                  value={formData.unit}
-                  onChange={(val) => setFormData({ ...formData, unit: val })}
-                  options={[
-                    { value: "KILOS", label: "Kilogramos (Kg)" },
-                    { value: "LITROS", label: "Litros (L)" },
-                    { value: "UNIDADES", label: "Unidades (Und)" },
-                    { value: "METROS_CUADRADOS", label: "Metros Cuadrados (M2)" },
-                  ]}
-                />
-                <Select
-                  label="Proveedor"
-                  value={formData.proveedorId.toString()}
-                  onChange={(val) => setFormData({ ...formData, proveedorId: Number(val) })}
-                  options={[
-                    { value: "0", label: "Selecciona proveedor" },
-                    ...suppliers.map(s => ({ value: s.id!.toString(), label: s.nombre! }))
-                  ]}
-                />
-              </div>
-              <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
-                <button type="button" onClick={() => setShowModal(false)} style={{ background: "none", border: "1px solid var(--border-default)", color: "white", padding: "10px 20px", borderRadius: "8px", cursor: "pointer" }}>Cancelar</button>
-                <button type="submit" style={{ background: "var(--brand-500)", border: "none", color: "white", padding: "10px 20px", borderRadius: "8px", fontWeight: 600, cursor: "pointer" }}>Guardar</button>
-              </div>
-            </form>
+      <Card style={{ padding: 0, overflow: "hidden" }}>
+        <DataTable<ProductResponse>
+          columns={columns}
+          data={products}
+          isLoading={loading}
+          emptyState={{
+            title: "Catálogo vacío",
+            description: "No hay productos registrados en el catálogo maestro.",
+            icon: <Package size={40} />,
+            action: (
+              <Button size="sm" onClick={() => handleOpenModal()} leftIcon={<Plus size={13} />}>
+                Crear primer producto
+              </Button>
+            )
+          }}
+        />
+      </Card>
+
+      <Modal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingProduct ? "Editar Producto" : "Nuevo Producto"}
+        description="Define las características globales del producto."
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onClick={() => setShowModal(false)} disabled={isPending}>Cancelar</Button>
+            <Button size="sm" loading={isPending} onClick={handleSubmit as any}>Guardar Producto</Button>
+          </>
+        }
+      >
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <Input
+            label="SKU (Identificador Único)"
+            value={formData.sku}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, sku: e.target.value })}
+            icon={<Tag size={15} />}
+            placeholder="Ej. OPT-001"
+            required
+          />
+          <Input
+            label="Nombre del Producto"
+            value={formData.nombre}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, nombre: e.target.value })}
+            icon={<Package size={15} />}
+            placeholder="Ej. Gafas de Sol Clásicas"
+            required
+          />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <Input
+              type="number"
+              label="Costo Promedio"
+              value={formData.costoPromedio.toString()}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, costoPromedio: Number(e.target.value) })}
+              icon={<span style={{ fontSize: "12px", fontWeight: 700 }}>$</span>}
+            />
+            <Input
+              type="number"
+              label="Precio Venta"
+              value={formData.precioVenta.toString()}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, precioVenta: Number(e.target.value) })}
+              icon={<span style={{ fontSize: "12px", fontWeight: 700 }}>$</span>}
+            />
           </div>
-        </div>
-      )}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <Select
+              label="Unidad de Medida"
+              value={formData.unit}
+              onChange={(val: string) => setFormData({ ...formData, unit: val })}
+              icon={<Search size={15} />}
+              options={[
+                { value: "KILOS", label: "Kilogramos (Kg)" },
+                { value: "LITROS", label: "Litros (L)" },
+                { value: "UNIDADES", label: "Unidades (Und)" },
+                { value: "METROS_CUADRADOS", label: "Metros Cuadrados (M2)" },
+              ]}
+            />
+            <Select
+              label="Proveedor"
+              value={formData.proveedorId.toString()}
+              onChange={(val: string) => setFormData({ ...formData, proveedorId: Number(val) })}
+              icon={<Truck size={15} />}
+              options={[
+                { value: "0", label: "Selecciona proveedor" },
+                ...suppliers.map(s => ({ value: s.id!.toString(), label: s.nombre! }))
+              ]}
+            />
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

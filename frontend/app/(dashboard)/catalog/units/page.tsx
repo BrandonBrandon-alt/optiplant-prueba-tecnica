@@ -1,10 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { apiClient } from "@/api/client";
 import type { components } from "@/api/schema";
 import { getSession } from "@/api/auth";
 import { useRouter } from "next/navigation";
+import { Ruler, Plus, Edit, Trash2, Tag, Type } from "lucide-react";
+
+import Badge from "@/components/ui/Badge";
+import { useToast } from "@/context/ToastContext";
+import PageHeader from "@/components/ui/PageHeader";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import DataTable, { Column } from "@/components/ui/DataTable";
+import Modal from "@/components/ui/Modal";
+import Input from "@/components/ui/Input";
+import Spinner from "@/components/ui/Spinner";
 
 type UnitOfMeasureResponse = components["schemas"]["UnitOfMeasureResponse"];
 
@@ -14,11 +25,13 @@ export default function MasterUnitsPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingUnit, setEditingUnit] = useState<UnitOfMeasureResponse | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const [formData, setFormData] = useState({
     nombre: "",
     abreviatura: "",
   });
+  const { showToast } = useToast();
 
   useEffect(() => {
     const session = getSession();
@@ -30,11 +43,13 @@ export default function MasterUnitsPage() {
   }, [router]);
 
   async function fetchData() {
+    setLoading(true);
     try {
       const res = await apiClient.GET("/api/catalog/units");
       setUnits(res.data ?? []);
     } catch (error) {
       console.error("Error fetching units:", error);
+      showToast("Error al cargar las unidades de medida.", "error");
     } finally {
       setLoading(false);
     }
@@ -57,24 +72,28 @@ export default function MasterUnitsPage() {
     setShowModal(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (editingUnit) {
-        await apiClient.PUT("/api/catalog/units/{id}", {
-          params: { path: { id: editingUnit.id! } },
-          body: formData,
-        });
-      } else {
-        await apiClient.POST("/api/catalog/units", {
-          body: formData,
-        });
+    startTransition(async () => {
+      try {
+        if (editingUnit) {
+          await apiClient.PUT("/api/catalog/units/{id}", {
+            params: { path: { id: editingUnit.id! } },
+            body: formData as any,
+          });
+          showToast("Unidad actualizada correctamente.", "success", "Cambios guardados");
+        } else {
+          await apiClient.POST("/api/catalog/units", {
+            body: formData as any,
+          });
+          showToast("Nueva unidad de medida registrada.", "success", "Registro exitoso");
+        }
+        setShowModal(false);
+        fetchData();
+      } catch (error) {
+        showToast("Error al guardar la unidad de medida.", "error");
       }
-      setShowModal(false);
-      fetchData();
-    } catch (error) {
-      alert("Error al guardar la unidad de medida.");
-    }
+    });
   };
 
   const handleDelete = async (id: number) => {
@@ -83,98 +102,111 @@ export default function MasterUnitsPage() {
       await apiClient.DELETE("/api/catalog/units/{id}", {
         params: { path: { id } },
       });
+      showToast("La unidad ha sido eliminada.", "success");
       fetchData();
     } catch (error) {
-      alert("No se puede eliminar la unidad. Podría estar en uso por algún producto.");
+      showToast("No se puede eliminar: está en uso por productos.", "error");
     }
   };
 
-  if (loading) return <div style={{ padding: "40px", color: "var(--neutral-400)" }}>Cargando catálogo de unidades...</div>;
+  const columns: Column<UnitOfMeasureResponse>[] = [
+    {
+      header: "Nombre Completo",
+      key: "nombre",
+      render: (u: UnitOfMeasureResponse) => (
+        <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--neutral-100)" }}>{u.nombre}</span>
+      )
+    },
+    {
+      header: "Abreviatura",
+      key: "abreviatura",
+      width: "150px",
+      render: (u: UnitOfMeasureResponse) => (
+        <Badge variant="neutral">
+          <span style={{ fontWeight: 700, letterSpacing: "0.05em" }}>{u.abreviatura}</span>
+        </Badge>
+      )
+    },
+    {
+      header: "Acciones",
+      key: "actions",
+      align: "right",
+      width: "100px",
+      render: (u: UnitOfMeasureResponse) => (
+        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+          <Button variant="ghost" size="sm" onClick={() => handleOpenModal(u)} title="Editar unidad">
+            <Edit size={14} />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => handleDelete(u.id!)} title="Eliminar unidad">
+            <span style={{ color: "var(--brand-500)" }}><Trash2 size={14} /></span>
+          </Button>
+        </div>
+      )
+    }
+  ];
 
   return (
-    <div style={{ padding: "32px", maxWidth: "800px", margin: "0 auto" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-        <div>
-          <h1 style={{ fontSize: "28px", fontWeight: 700, color: "var(--neutral-50)", marginBottom: "8px" }}>
-            Unidades de Medida
-          </h1>
-          <p style={{ color: "var(--neutral-400)", fontSize: "14px" }}>
-            Estandariza las unidades (Kg, Unidades, Litros) válidas en todo el sistema.
-          </p>
-        </div>
-        <button
-          onClick={() => handleOpenModal()}
-          style={{
-            background: "var(--brand-500)",
-            color: "white",
-            border: "none",
-            padding: "10px 20px",
-            borderRadius: "8px",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
-          + Nueva Unidad
-        </button>
-      </header>
-
-      <div style={{ background: "var(--bg-card)", borderRadius: "12px", border: "1px solid var(--border-default)", overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid var(--border-default)" }}>
-              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Nombre</th>
-              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Abreviatura</th>
-              <th style={{ padding: "16px 24px", textAlign: "right", fontSize: "12px", color: "var(--neutral-500)", textTransform: "uppercase" }}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {units.map((u) => (
-              <tr key={u.id} style={{ borderBottom: "1px solid var(--border-default)" }}>
-                <td style={{ padding: "16px 24px", fontSize: "14px", color: "var(--neutral-100)", fontWeight: 500 }}>{u.nombre}</td>
-                <td style={{ padding: "16px 24px", fontSize: "14px", color: "var(--brand-400)", fontWeight: 700 }}>{u.abreviatura}</td>
-                <td style={{ padding: "16px 24px", textAlign: "right" }}>
-                  <button onClick={() => handleOpenModal(u)} style={{ background: "none", border: "none", color: "var(--brand-500)", cursor: "pointer", marginRight: "12px" }}>Editar</button>
-                  <button onClick={() => handleDelete(u.id!)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}>Eliminar</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div style={{ padding: "36px 40px", maxWidth: "900px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px", gap: "16px", flexWrap: "wrap" }}>
+        <PageHeader
+          title="Unidades de Medida"
+          description="Estandariza las unidades (Kg, Unidades, Litros) válidas para todo el sistema."
+        />
+        <Button leftIcon={<Plus size={15} />} onClick={() => handleOpenModal()} style={{ marginTop: "4px" }}>
+          Nueva Unidad
+        </Button>
       </div>
 
-      {showModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "var(--bg-card)", padding: "32px", borderRadius: "16px", width: "100%", maxWidth: "400px", border: "1px solid var(--border-default)" }}>
-            <h2 style={{ marginBottom: "24px", color: "var(--neutral-50)" }}>{editingUnit ? "Editar Unidad" : "Nueva Unidad"}</h2>
-            <form onSubmit={handleSubmit}>
-              <div style={{ marginBottom: "16px" }}>
-                <label style={{ display: "block", marginBottom: "8px", fontSize: "13px", color: "var(--neutral-400)" }}>Nombre Completo</label>
-                <input
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  placeholder="Ej: Kilogramos"
-                  style={{ width: "100%", padding: "10px", background: "var(--bg-base)", border: "1px solid var(--border-default)", borderRadius: "8px", color: "white" }}
-                  required
-                />
-              </div>
-              <div style={{ marginBottom: "24px" }}>
-                <label style={{ display: "block", marginBottom: "8px", fontSize: "13px", color: "var(--neutral-400)" }}>Abreviatura</label>
-                <input
-                  value={formData.abreviatura}
-                  onChange={(e) => setFormData({ ...formData, abreviatura: e.target.value })}
-                  placeholder="Ej: Kg"
-                  style={{ width: "100%", padding: "10px", background: "var(--bg-base)", border: "1px solid var(--border-default)", borderRadius: "8px", color: "white" }}
-                  required
-                />
-              </div>
-              <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
-                <button type="button" onClick={() => setShowModal(false)} style={{ background: "none", border: "1px solid var(--border-default)", color: "white", padding: "10px 20px", borderRadius: "8px", cursor: "pointer" }}>Cancelar</button>
-                <button type="submit" style={{ background: "var(--brand-500)", border: "none", color: "white", padding: "10px 20px", borderRadius: "8px", fontWeight: 600, cursor: "pointer" }}>Guardar</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Card style={{ padding: 0, overflow: "hidden" }}>
+        <DataTable<UnitOfMeasureResponse>
+          columns={columns}
+          data={units}
+          isLoading={loading}
+          minWidth="100%"
+          emptyState={{
+            title: "Sin unidades",
+            description: "No hay unidades de medida registradas en el catálogo.",
+            icon: <Ruler size={40} />,
+            action: (
+              <Button size="sm" onClick={() => handleOpenModal()} leftIcon={<Plus size={13} />}>
+                Crear primera unidad
+              </Button>
+            )
+          }}
+        />
+      </Card>
+
+      <Modal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingUnit ? "Editar Unidad" : "Nueva Unidad"}
+        description="Define cómo se medirá este tipo de producto."
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onClick={() => setShowModal(false)} disabled={isPending}>Cancelar</Button>
+            <Button size="sm" loading={isPending} onClick={handleSubmit as any}>Guardar Unidad</Button>
+          </>
+        }
+      >
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <Input
+            label="Nombre Completo"
+            value={formData.nombre}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, nombre: e.target.value })}
+            icon={<Type size={15} />}
+            placeholder="Ej. Kilogramos"
+            required
+          />
+          <Input
+            label="Abreviatura"
+            value={formData.abreviatura}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, abreviatura: e.target.value })}
+            icon={<Tag size={15} />}
+            placeholder="Ej. Kg"
+            required
+          />
+        </form>
+      </Modal>
     </div>
   );
 }
