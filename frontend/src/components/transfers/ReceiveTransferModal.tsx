@@ -51,6 +51,16 @@ export default function ReceiveTransferModal({ open, onClose, onSuccess, transfe
   const handleSubmit = async () => {
     if (!transfer || !userId) return;
 
+    const hasDiscrepancy = Object.entries(receivedQuantities).some(([id, qty]) => {
+      const detail = transfer.details?.find(d => d.id === parseInt(id));
+      return qty < (detail?.sentQuantity || detail?.requestedQuantity || 0);
+    });
+
+    if (hasDiscrepancy && !notes.trim()) {
+      showToast("Debes ingresar observaciones detallando la razón de la discrepancia", "warning");
+      return;
+    }
+
     setLoading(true);
     try {
       await (apiClient as any).POST("/api/v1/transfers/{id}/receive", {

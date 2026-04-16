@@ -110,16 +110,16 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
             label="Sede Origen (De donde sale)"
             placeholder="Selecciona origen"
             value={formData.originBranchId}
+            error={formData.originBranchId && formData.originBranchId === formData.destinationBranchId ? "No puede ser la misma que el destino" : undefined}
             onChange={(val) => setFormData({ ...formData, originBranchId: val })}
-            options={branches
-              .filter(b => b.id?.toString() !== formData.destinationBranchId)
-              .map(b => ({ value: b.id!.toString(), label: b.nombre! }))}
+            options={branches.map(b => ({ value: b.id!.toString(), label: b.nombre! }))}
           />
 
           <Select
             label="Sede Destino (A donde llega)"
             placeholder="Selecciona destino"
             value={formData.destinationBranchId}
+            error={formData.destinationBranchId && formData.originBranchId === formData.destinationBranchId ? "No puede ser la misma que el origen" : undefined}
             disabled={!isAdmin}
             onChange={(val) => setFormData({ ...formData, destinationBranchId: val })}
             options={branches.map(b => ({ value: b.id!.toString(), label: b.nombre! }))}

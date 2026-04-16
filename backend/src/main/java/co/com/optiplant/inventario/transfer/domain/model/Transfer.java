@@ -16,9 +16,10 @@ public class Transfer {
     private Long destinationBranchId;
     private String carrier;
     private String receiptNotes;
+    private Long parentTransferId;
     private List<TransferDetail> details;
 
-    public Transfer(Long id, TransferStatus status, LocalDateTime requestDate, LocalDateTime estimatedArrivalDate, LocalDateTime actualArrivalDate, Long originBranchId, Long destinationBranchId, String carrier, String receiptNotes, List<TransferDetail> details) {
+    public Transfer(Long id, TransferStatus status, LocalDateTime requestDate, LocalDateTime estimatedArrivalDate, LocalDateTime actualArrivalDate, Long originBranchId, Long destinationBranchId, String carrier, String receiptNotes, List<TransferDetail> details, Long parentTransferId) {
         if (originBranchId == null || destinationBranchId == null) {
             throw new IllegalArgumentException("Las sucursales de origen y destino son obligatorias.");
         }
@@ -39,34 +40,60 @@ public class Transfer {
         this.carrier = carrier;
         this.receiptNotes = receiptNotes;
         this.details = details;
+        this.parentTransferId = parentTransferId;
     }
 
     public static Transfer create(Long originBranchId, Long destinationBranchId, LocalDateTime estimatedArrival, List<TransferDetail> details) {
-        return new Transfer(null, TransferStatus.PENDING, LocalDateTime.now(), estimatedArrival, null, originBranchId, destinationBranchId, null, null, details);
+        return new Transfer(null, TransferStatus.PENDING, LocalDateTime.now(), estimatedArrival, null, originBranchId, destinationBranchId, null, null, details, null);
+    }
+
+    public static Transfer resend(Transfer parent, List<TransferDetail> relativeDetails) {
+        return new Transfer(null, TransferStatus.PENDING, LocalDateTime.now(), LocalDateTime.now().plusDays(2), null, parent.getOriginBranchId(), parent.getDestinationBranchId(), null, "REENVÍO AUTOMÁTICO - REF #" + parent.getId(), relativeDetails, parent.getId());
+    }
+
+    public void prepare() {
+        if (this.status != TransferStatus.PENDING) {
+            throw new InvalidTransferStateException("Solo se puede preparar una transferencia en estado PENDING.");
+        }
+        this.status = TransferStatus.PREPARING;
     }
 
     public void dispatch(String carrier) {
-        if (this.status != TransferStatus.PENDING) {
-            throw new InvalidTransferStateException("Solo se puede despachar una transferencia en estado PENDING.");
+        if (this.status != TransferStatus.PREPARING) {
+            throw new InvalidTransferStateException("Solo se puede despachar una transferencia en estado PREPARING.");
         }
         this.status = TransferStatus.IN_TRANSIT;
         this.carrier = carrier;
     }
 
-    public void receive(String notes) {
+    public void receive(String notes, boolean hasIssues) {
         if (this.status != TransferStatus.IN_TRANSIT) {
             throw new InvalidTransferStateException("Solo se puede recibir una transferencia que está IN_TRANSIT.");
         }
-        this.status = TransferStatus.DELIVERED;
+        this.status = hasIssues ? TransferStatus.WITH_ISSUE : TransferStatus.DELIVERED;
         this.actualArrivalDate = LocalDateTime.now();
         this.receiptNotes = notes;
     }
 
     public void cancel() {
-        if (this.status != TransferStatus.PENDING) {
-            throw new InvalidTransferStateException("Solo se pueden cancelar transferencias en estado PENDING.");
+        if (this.status != TransferStatus.PENDING && this.status != TransferStatus.PREPARING) {
+            throw new InvalidTransferStateException("Solo se pueden cancelar transferencias en estado PENDING o PREPARING.");
         }
         this.status = TransferStatus.CANCELLED;
+    }
+
+    public void resolveAsShrinkage() {
+        if (this.status != TransferStatus.WITH_ISSUE) {
+            throw new InvalidTransferStateException("Solo se pueden resolver transferencias que tengan novedades.");
+        }
+        this.status = TransferStatus.DELIVERED;
+    }
+
+    public void resolveAsClaim() {
+        if (this.status != TransferStatus.WITH_ISSUE) {
+            throw new InvalidTransferStateException("Solo se pueden resolver como reclamo transferencias que tengan novedades.");
+        }
+        this.status = TransferStatus.UNDER_CLAIM;
     }
 
     public Long getId() { return id; }
@@ -78,5 +105,6 @@ public class Transfer {
     public Long getDestinationBranchId() { return destinationBranchId; }
     public String getCarrier() { return carrier; }
     public String getReceiptNotes() { return receiptNotes; }
+    public Long getParentTransferId() { return parentTransferId; }
     public List<TransferDetail> getDetails() { return Collections.unmodifiableList(details); }
 }

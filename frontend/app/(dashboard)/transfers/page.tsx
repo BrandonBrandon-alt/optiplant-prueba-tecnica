@@ -16,6 +16,7 @@ import { useToast } from "@/context/ToastContext";
 import NewTransferModal from "@/components/transfers/NewTransferModal";
 import ReceiveTransferModal from "@/components/transfers/ReceiveTransferModal";
 import DispatchTransferModal from "@/components/transfers/DispatchTransferModal";
+import PrepareTransferModal from "@/components/transfers/PrepareTransferModal";
 
 type TransferResponse = components["schemas"]["TransferResponse"];
 type BranchResponse = components["schemas"]["BranchResponse"];
@@ -31,6 +32,13 @@ export default function TransfersManagementPage() {
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [receivingTransfer, setReceivingTransfer] = useState<TransferResponse | null>(null);
   const [dispatchingTransfer, setDispatchingTransfer] = useState<TransferResponse | null>(null);
+  const [preparingTransfer, setPreparingTransfer] = useState<TransferResponse | null>(null);
+
+  // Filters
+  const [activeTab, setActiveTab] = useState<"all" | "resolutions">("all");
+  const [filterOrigin, setFilterOrigin] = useState<string>("all");
+  const [filterDestination, setFilterDestination] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   const session = typeof window !== "undefined" ? getSession() : null;
   const isAdmin = session?.rol === "ADMIN";
@@ -63,6 +71,48 @@ export default function TransfersManagementPage() {
     fetchTransfers();
   }, [fetchTransfers]);
 
+  const filteredTransfers = transfers.filter(t => {
+    if (activeTab === "resolutions" && t.status !== "WITH_ISSUE") return false;
+    if (filterOrigin !== "all" && t.originBranchId?.toString() !== filterOrigin) return false;
+    if (filterDestination !== "all" && t.destinationBranchId?.toString() !== filterDestination) return false;
+    if (filterStatus !== "all" && t.status !== filterStatus) return false;
+    return true;
+  });
+
+  const handleCancel = async (id: number) => {
+    if (!confirm("¿Estás seguro de que deseas cancelar este traslado?")) return;
+    
+    setProcessingId(id);
+    try {
+      await (apiClient as any).POST("/api/v1/transfers/{id}/cancel", {
+        params: { path: { id } }
+      });
+      showToast("Traslado cancelado", "success");
+      fetchTransfers();
+    } catch (err) {
+      showToast("Error al cancelar el traslado", "error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleResolve = async (id: number, type: "shrinkage" | "resend" | "claim") => {
+    if (!confirm(`¿Estás seguro de resolver esta novedad como ${type}?`)) return;
+    
+    setProcessingId(id);
+    try {
+      await (apiClient as any).POST(`/api/v1/transfers/{id}/resolve-${type}`, {
+        params: { path: { id } }
+      });
+      showToast("Novedad resuelta", "success");
+      fetchTransfers();
+    } catch (err) {
+      showToast("Error al resolver la novedad", "error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
 
   if (loading) return <Spinner fullPage />;
 
@@ -78,15 +128,99 @@ export default function TransfersManagementPage() {
         }
       />
 
+      <div style={{ display: "flex", gap: "20px", marginBottom: "24px", borderBottom: "1px solid var(--border-default)" }}>
+        <button 
+          onClick={() => setActiveTab("all")}
+          style={{ 
+            padding: "12px 20px", 
+            background: "none", 
+            border: "none", 
+            color: activeTab === "all" ? "var(--brand-500)" : "var(--neutral-400)",
+            borderBottom: activeTab === "all" ? "2px solid var(--brand-500)" : "none",
+            fontWeight: 600,
+            cursor: "pointer"
+          }}
+        >
+          Panel General
+        </button>
+        <button 
+          onClick={() => setActiveTab("resolutions")}
+          style={{ 
+            padding: "12px 20px", 
+            background: "none", 
+            border: "none", 
+            color: activeTab === "resolutions" ? "var(--brand-500)" : "var(--neutral-400)",
+            borderBottom: activeTab === "resolutions" ? "2px solid var(--brand-500)" : "none",
+            fontWeight: 600,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px"
+          }}
+        >
+          Centro de Resoluciones
+          {transfers.filter(t => t.status === "WITH_ISSUE").length > 0 && (
+            <span style={{ background: "var(--color-danger)", color: "white", borderRadius: "10px", padding: "2px 8px", fontSize: "10px" }}>
+              {transfers.filter(t => t.status === "WITH_ISSUE").length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", marginBottom: "24px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={{ fontSize: "12px", color: "var(--neutral-500)" }}>Sede Origen</label>
+            <select 
+              value={filterOrigin} 
+              onChange={(e) => setFilterOrigin(e.target.value)}
+              style={{ padding: "10px", background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", color: "var(--neutral-50)" }}
+            >
+              <option value="all">Todas las sedes</option>
+              {Array.from(branches.entries()).map(([id, name]) => (
+                <option key={id} value={id}>{name}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={{ fontSize: "12px", color: "var(--neutral-500)" }}>Sede Destino</label>
+            <select 
+              value={filterDestination} 
+              onChange={(e) => setFilterDestination(e.target.value)}
+              style={{ padding: "10px", background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", color: "var(--neutral-50)" }}
+            >
+              <option value="all">Todas las sedes</option>
+              {Array.from(branches.entries()).map(([id, name]) => (
+                <option key={id} value={id}>{name}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={{ fontSize: "12px", color: "var(--neutral-500)" }}>Estado</label>
+            <select 
+              value={filterStatus} 
+              onChange={(e) => setFilterStatus(e.target.value)}
+              style={{ padding: "10px", background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", color: "var(--neutral-50)" }}
+            >
+              <option value="all">Cualquier estado</option>
+              <option value="PENDING">Pendiente</option>
+              <option value="PREPARING">Preparando</option>
+              <option value="IN_TRANSIT">En Tránsito</option>
+              <option value="DELIVERED">Completado</option>
+              <option value="WITH_ISSUE">Con Novedad</option>
+              <option value="CANCELLED">Cancelado</option>
+            </select>
+          </div>
+      </div>
+
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-        {transfers.length === 0 ? (
+        {filteredTransfers.length === 0 ? (
           <EmptyState
-            title="Sin traslados"
-            description="Aún no hay solicitudes de movimiento de mercancía."
+            title="Sin resultados"
+            description="No se encontraron traslados con los filtros seleccionados."
             icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>}
           />
         ) : (
-          transfers.map((t) => (
+          filteredTransfers.map((t) => (
             <Card key={t.id} style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: "24px" }}>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "32px", alignItems: "center" }}>
                 <div>
@@ -100,8 +234,8 @@ export default function TransfersManagementPage() {
 
                 <div>
                   <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "4px" }}>Estado</p>
-                  <Badge variant={t.status === "RECEIVED" ? "success" : t.status === "DISPATCHED" ? "warning" : "neutral"}>
-                    {t.status === "REQUESTED" ? "Solicitado" : t.status === "DISPATCHED" ? "En Tránsito" : "Recibido"}
+                  <Badge variant={t.status === "DELIVERED" ? "success" : t.status === "IN_TRANSIT" ? "warning" : t.status === "WITH_ISSUE" ? "danger" : t.status === "CANCELLED" ? "neutral" : "neutral"}>
+                    {t.status === "PENDING" ? "Pendiente" : t.status === "PREPARING" ? "Preparando" : t.status === "IN_TRANSIT" ? "En Tránsito" : t.status === "DELIVERED" ? "Entregado" : t.status === "WITH_ISSUE" ? "Con Novedad" : t.status === "CANCELLED" ? "Cancelado" : t.status}
                   </Badge>
                 </div>
 
@@ -114,11 +248,38 @@ export default function TransfersManagementPage() {
                   <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "4px" }}>Creado</p>
                   <p style={{ fontSize: "14px" }}>{new Date(t.requestDate!).toLocaleDateString()}</p>
                 </div>
+
+                {(t as any).carrier && (
+                  <div>
+                    <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "4px" }}>Transportista</p>
+                    <p style={{ fontSize: "14px" }}>{(t as any).carrier}</p>
+                  </div>
+                )}
               </div>
 
               <div style={{ display: "flex", gap: "10px" }}>
                 {/* ACTIONS */}
-                {t.status === "REQUESTED" && (isAdmin || t.originBranchId === myBranchId) && (
+                {t.status === "PENDING" && (isAdmin || t.originBranchId === myBranchId) && (
+                  <>
+                    <Button 
+                      variant="primary" 
+                      size="sm" 
+                      onClick={() => setPreparingTransfer(t)}
+                    >
+                      Preparar
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleCancel(t.id!)}
+                      loading={processingId === t.id}
+                    >
+                      Cancelar
+                    </Button>
+                  </>
+                )}
+
+                {t.status === "PREPARING" && (isAdmin || t.originBranchId === myBranchId) && (
                   <Button 
                     variant="primary" 
                     size="sm" 
@@ -128,7 +289,7 @@ export default function TransfersManagementPage() {
                   </Button>
                 )}
 
-                {t.status === "DISPATCHED" && (isAdmin || t.destinationBranchId === myBranchId) && (
+                {t.status === "IN_TRANSIT" && (isAdmin || t.destinationBranchId === myBranchId) && (
                   <Button 
                     variant="primary" 
                     size="sm" 
@@ -138,8 +299,24 @@ export default function TransfersManagementPage() {
                   </Button>
                 )}
 
-                {t.status === "RECEIVED" && (
+                {t.status === "WITH_ISSUE" && isAdmin && (
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <Button size="sm" variant="ghost" onClick={() => handleResolve(t.id!, "shrinkage")}>Marcar Merma</Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleResolve(t.id!, "resend")}>Reenviar Faltante</Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleResolve(t.id!, "claim")}>Iniciar Reclamación</Button>
+                  </div>
+                )}
+
+                {t.status === "DELIVERED" && (
                   <span style={{ fontSize: "12px", color: "var(--color-success)", fontWeight: 600 }}>Completado</span>
+                )}
+
+                {t.status === "UNDER_CLAIM" && (
+                  <span style={{ fontSize: "12px", color: "var(--brand-500)", fontWeight: 600 }}>En Reclamación</span>
+                )}
+
+                {t.status === "CANCELLED" && (
+                  <span style={{ fontSize: "12px", color: "var(--neutral-500)", fontWeight: 600 }}>Cancelado</span>
                 )}
               </div>
             </Card>
@@ -170,6 +347,13 @@ export default function TransfersManagementPage() {
         onSuccess={fetchTransfers}
         transfer={dispatchingTransfer}
         userId={session?.id || null}
+      />
+
+      <PrepareTransferModal
+        open={!!preparingTransfer}
+        onClose={() => setPreparingTransfer(null)}
+        onSuccess={fetchTransfers}
+        transfer={preparingTransfer}
       />
     </div>
   );

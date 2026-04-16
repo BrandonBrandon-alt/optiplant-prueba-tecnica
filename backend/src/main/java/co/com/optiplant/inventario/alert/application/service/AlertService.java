@@ -49,6 +49,13 @@ public class AlertService implements AlertUseCase {
     }
 
     @Override
+    @Transactional
+    public void createAlert(Long branchId, Long productId, String message) {
+        StockAlert alert = StockAlert.create(branchId, productId, message);
+        alertRepository.save(alert);
+    }
+
+    @Override
     public List<StockAlert> getActiveAlerts(Long branchId) {
         return alertRepository.findActiveAlerts(branchId);
     }

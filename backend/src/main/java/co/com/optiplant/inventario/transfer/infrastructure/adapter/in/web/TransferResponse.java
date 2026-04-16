@@ -13,6 +13,9 @@ public record TransferResponse(
         LocalDateTime actualArrivalDate,
         Long originBranchId,
         Long destinationBranchId,
+        String carrier,
+        String receiptNotes,
+        Long parentTransferId,
         List<TransferDetailResponse> details
 ) {
     public record TransferDetailResponse(
@@ -33,6 +36,9 @@ public record TransferResponse(
                 transfer.getActualArrivalDate(),
                 transfer.getOriginBranchId(),
                 transfer.getDestinationBranchId(),
+                transfer.getCarrier(),
+                transfer.getReceiptNotes(),
+                transfer.getParentTransferId(),
                 transfer.getDetails().stream().map(d -> new TransferDetailResponse(
                         d.getId(),
                         d.getProductId(),

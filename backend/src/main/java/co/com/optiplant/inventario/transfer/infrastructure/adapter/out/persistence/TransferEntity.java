@@ -37,6 +37,9 @@ public class TransferEntity {
     @Column(name = "notas_recepcion")
     private String receiptNotes;
 
+    @Column(name = "parent_transfer_id")
+    private Long parentTransferId;
+
     @OneToMany(mappedBy = "transfer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TransferDetailEntity> details = new ArrayList<>();
 
@@ -78,6 +81,9 @@ public class TransferEntity {
 
     public String getReceiptNotes() { return receiptNotes; }
     public void setReceiptNotes(String receiptNotes) { this.receiptNotes = receiptNotes; }
+
+    public Long getParentTransferId() { return parentTransferId; }
+    public void setParentTransferId(Long parentTransferId) { this.parentTransferId = parentTransferId; }
 
     public List<TransferDetailEntity> getDetails() { return details; }
     public void setDetails(List<TransferDetailEntity> details) { this.details = details; }

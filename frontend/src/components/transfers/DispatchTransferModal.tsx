@@ -23,6 +23,7 @@ export default function DispatchTransferModal({ open, onClose, onSuccess, transf
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Map<number, string>>(new Map());
   const [carrier, setCarrier] = useState("");
+  const [estimatedArrivalDate, setEstimatedArrivalDate] = useState("");
   const [sentQuantities, setSentQuantities] = useState<{ [key: number]: number }>({});
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export default function DispatchTransferModal({ open, onClose, onSuccess, transf
       });
       setSentQuantities(initial);
       setCarrier("");
+      setEstimatedArrivalDate(new Date(Date.now() + 86400000).toISOString().split("T")[0]);
 
       // Fetch products to show names
       apiClient.GET("/api/catalog/products").then(res => {
@@ -87,13 +89,22 @@ export default function DispatchTransferModal({ open, onClose, onSuccess, transf
           Si no tienes stock suficiente, puedes ajustar la cantidad a enviar.
         </p>
 
-        <Input
-          label="Nombre del Transportista / Empresa Logística"
-          placeholder="Ej: Servientrega, Mensajería Interna..."
-          value={carrier}
-          onChange={(e) => setCarrier(e.target.value)}
-          required
-        />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+          <Input
+            label="Transportista"
+            placeholder="Empresa o conductor"
+            value={carrier}
+            onChange={(e) => setCarrier(e.target.value)}
+            required
+          />
+          <Input
+            label="Fecha Est. de Llegada"
+            type="date"
+            value={estimatedArrivalDate}
+            onChange={(e) => setEstimatedArrivalDate(e.target.value)}
+            required
+          />
+        </div>
 
         <div style={{ overflow: "hidden", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>

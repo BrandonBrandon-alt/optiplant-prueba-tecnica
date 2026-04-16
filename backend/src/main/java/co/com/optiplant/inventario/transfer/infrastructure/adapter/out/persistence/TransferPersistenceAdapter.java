@@ -49,6 +49,7 @@ public class TransferPersistenceAdapter implements TransferRepositoryPort {
         entity.setDestinationBranchId(domain.getDestinationBranchId());
         entity.setCarrier(domain.getCarrier());
         entity.setReceiptNotes(domain.getReceiptNotes());
+        entity.setParentTransferId(domain.getParentTransferId());
 
         if (domain.getDetails() != null) {
             for (TransferDetail detail : domain.getDetails()) {
@@ -84,7 +85,8 @@ public class TransferPersistenceAdapter implements TransferRepositoryPort {
                         d.getSentQuantity(),
                         d.getReceivedQuantity(),
                         d.getMissingQuantity()
-                )).collect(Collectors.toList())
+                )).collect(Collectors.toList()),
+                entity.getParentTransferId()
         );
     }
 }

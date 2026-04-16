@@ -52,6 +52,19 @@ public class TransferController {
         return ResponseEntity.ok(TransferResponse.fromDomain(transfer));
     }
 
+    @PostMapping("/{id}/prepare")
+    public ResponseEntity<TransferResponse> prepareTransfer(
+            @PathVariable Long id,
+            @Valid @RequestBody TransferPrepareRequest request) {
+        
+        java.util.List<co.com.optiplant.inventario.transfer.application.port.in.UpdateQuantityCommand> items = request.items().stream()
+                .map(item -> new co.com.optiplant.inventario.transfer.application.port.in.UpdateQuantityCommand(item.productId(), item.requestedQuantity()))
+                .toList();
+
+        Transfer transfer = transferUseCase.prepareTransfer(id, items);
+        return ResponseEntity.ok(TransferResponse.fromDomain(transfer));
+    }
+
     @PostMapping("/{id}/receive")
     public ResponseEntity<TransferResponse> receiveTransfer(
             @PathVariable Long id,
@@ -67,6 +80,30 @@ public class TransferController {
 
         Transfer transfer = transferUseCase.receiveTransfer(id, command);
         return ResponseEntity.ok(TransferResponse.fromDomain(transfer));
+    }
+
+    @PostMapping("/{id}/resolve-shrinkage")
+    public ResponseEntity<Void> resolveAsShrinkage(@PathVariable Long id) {
+        transferUseCase.resolveAsShrinkage(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/resolve-resend")
+    public ResponseEntity<Void> resolveAsResend(@PathVariable Long id) {
+        transferUseCase.resolveAsResend(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/resolve-claim")
+    public ResponseEntity<Void> resolveAsClaim(@PathVariable Long id) {
+        transferUseCase.resolveAsClaim(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<Void> cancelTransfer(@PathVariable Long id) {
+        transferUseCase.cancelTransfer(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}")
