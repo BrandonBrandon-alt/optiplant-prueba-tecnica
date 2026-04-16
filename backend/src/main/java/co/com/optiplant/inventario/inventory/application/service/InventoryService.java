@@ -11,6 +11,8 @@ import co.com.optiplant.inventario.inventory.domain.model.MovementReason;
 import co.com.optiplant.inventario.inventory.domain.model.MovementType;
 import co.com.optiplant.inventario.catalog.application.port.in.ProductUseCase;
 import co.com.optiplant.inventario.catalog.domain.model.Product;
+import co.com.optiplant.inventario.inventory.domain.event.StockLevelDroppedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,13 +27,16 @@ public class InventoryService implements InventoryUseCase {
     private final LocalInventoryRepositoryPort localInventoryRepository;
     private final InventoryMovementRepositoryPort inventoryMovementRepository;
     private final ProductUseCase productUseCase;
+    private final ApplicationEventPublisher eventPublisher;
 
     public InventoryService(LocalInventoryRepositoryPort localInventoryRepository,
                             InventoryMovementRepositoryPort inventoryMovementRepository,
-                            ProductUseCase productUseCase) {
+                            ProductUseCase productUseCase,
+                            ApplicationEventPublisher eventPublisher) {
         this.localInventoryRepository = localInventoryRepository;
         this.inventoryMovementRepository = inventoryMovementRepository;
         this.productUseCase = productUseCase;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -66,6 +71,9 @@ public class InventoryService implements InventoryUseCase {
                 .finalBalance(inventory.getCurrentQuantity())
                 .build();
         inventoryMovementRepository.save(movement);
+        
+        // Disparar evento de auditoría/alerta si el stock bajó
+        eventPublisher.publishEvent(new StockLevelDroppedEvent(this, branchId, productId));
     }
 
     @Override
@@ -138,7 +146,14 @@ public class InventoryService implements InventoryUseCase {
         LocalInventory inventory = getInventory(branchId, productId);
         inventory.setMinimumStock(minimumStock);
         inventory.setLastUpdated(LocalDateTime.now());
-        return localInventoryRepository.save(inventory);
+        LocalInventory saved = localInventoryRepository.save(inventory);
+
+        // Si el nuevo mínimo pone al producto en estado crítico, avisar
+        if (saved.getCurrentQuantity().compareTo(minimumStock) <= 0) {
+            eventPublisher.publishEvent(new StockLevelDroppedEvent(this, branchId, productId));
+        }
+        
+        return saved;
     }
 
     @Override

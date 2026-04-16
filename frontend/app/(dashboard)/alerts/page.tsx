@@ -58,7 +58,7 @@ function AlertCard({
         </p>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
           <span style={{ fontSize: "12px", color: "var(--neutral-500)" }}>
-            📍 {branchName}
+          {branchName}
           </span>
           <span style={{ fontSize: "12px", color: "var(--neutral-600)" }}>·</span>
           <span style={{ fontSize: "12px", color: "var(--neutral-500)" }}>
