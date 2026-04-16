@@ -2,6 +2,8 @@ package co.com.optiplant.inventario.shared.infrastructure.web;
 
 import co.com.optiplant.inventario.auth.domain.exception.InvalidCredentialsException;
 import co.com.optiplant.inventario.auth.domain.exception.UserNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import co.com.optiplant.inventario.branch.domain.exception.BranchNotFoundException;
 import co.com.optiplant.inventario.catalog.domain.exception.DuplicateSkuException;
 import co.com.optiplant.inventario.catalog.domain.exception.ProductNotFoundException;
@@ -29,6 +31,8 @@ import java.util.stream.Collectors;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /** 404 – Sucursal no encontrada. */
     @ExceptionHandler(BranchNotFoundException.class)
@@ -126,6 +130,7 @@ public class GlobalExceptionHandler {
     /** 500 – Fallback para excepciones no manejadas explícitamente. */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleGeneral(RuntimeException ex) {
+        log.error("Internal Server Error: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(ex.getMessage()));
     }
 }

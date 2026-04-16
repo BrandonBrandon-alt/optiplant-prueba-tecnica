@@ -67,6 +67,8 @@ export default function InventoryPage() {
   const { showToast } = useToast();
   const session = typeof window !== "undefined" ? getSession() : null;
   const isAdmin = session?.rol === "ADMIN";
+  const isManager = session?.rol === "MANAGER";
+  const isSeller = session?.rol === "SELLER";
   const myBranchId = session?.sucursalId || null;
 
   const [activeTab, setActiveTab] = useState<"matrix" | "kardex">("matrix");
@@ -96,7 +98,8 @@ export default function InventoryPage() {
   const [minStockValue, setMinStockValue] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
-  const canEdit = isAdmin || (selectedBranchId !== null && selectedBranchId === myBranchId);
+  const canEdit = isAdmin || (isManager && selectedBranchId === myBranchId);
+  const isReadOnly = isSeller || (!isAdmin && selectedBranchId !== myBranchId);
 
   // Initial load
   useEffect(() => {
@@ -129,8 +132,8 @@ export default function InventoryPage() {
       const res = await apiClient.GET("/api/v1/inventory/branches/{branchId}", {
         params: { path: { branchId } }
       });
-      const map = new Map<number, LocalInventory>();
-      (res.data ?? []).forEach((item: LocalInventory) => {
+      const map = new Map<number, any>();
+      (res.data ?? []).forEach((item: any) => {
         if (item.productId) map.set(item.productId, item);
       });
       setInventoryMap(map);
@@ -318,9 +321,9 @@ export default function InventoryPage() {
                 </thead>
                 <tbody>
                   {products.map(p => {
-                    const inv = inventoryMap.get(p.id!);
-                    const current = inv?.currentQuantity ?? 0;
-                    const minimum = inv?.minimumStock ?? 0;
+                    const inv = inventoryMap.get(p.id!) as any;
+                    const current = inv?.stockActual ?? 0;
+                    const minimum = inv?.stockMinimo ?? 0;
                     const unit = (p as any).unit || "UND";
 
                     return (
@@ -342,21 +345,27 @@ export default function InventoryPage() {
                             {inv?.lastUpdated ? new Date(inv.lastUpdated).toLocaleString() : "Sin actividad registrada"}
                           </span>
                         </td>
-                        {canEdit && (
+                        {!isSeller && (
                           <td style={{ padding: "16px", textAlign: "right" }}>
                             <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                              <Button variant="primary" size="sm" onClick={() => {
-                                setAdjustingProduct(p);
-                                setAdjustData({ type: "INGRESO", quantity: 0, reason: "", unitCost: p.costoPromedio ?? 0 });
-                              }}>
-                                Movimiento
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => {
-                                setConfigProduct({ p, inv: inv || { productId: p.id, minimumStock: 0, currentQuantity: 0 } });
-                                setMinStockValue(minimum);
-                              }}>
-                                Configurar
-                              </Button>
+                              {canEdit ? (
+                                <>
+                                  <Button variant="primary" size="sm" onClick={() => {
+                                    setAdjustingProduct(p);
+                                    setAdjustData({ type: "INGRESO", quantity: 0, reason: "", unitCost: p.costoPromedio ?? 0 });
+                                  }}>
+                                    Movimiento
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={() => {
+                                    setConfigProduct({ p, inv: inv || { productId: p.id, minimumStock: 0, currentQuantity: 0 } });
+                                    setMinStockValue(minimum);
+                                  }}>
+                                    Configurar
+                                  </Button>
+                                </>
+                              ) : (
+                                <Badge variant="warning">Solo Lectura (Otra Sede)</Badge>
+                              )}
                             </div>
                           </td>
                         )}

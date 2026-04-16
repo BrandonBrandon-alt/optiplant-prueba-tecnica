@@ -13,6 +13,9 @@ public record SaleRequest(
         @NotNull(message = "El ID del usuario es obligatorio.")
         Long userId,
 
+        String customerName,
+        String customerDocument,
+
         @NotEmpty(message = "La venta debe contener al menos un producto.")
         @Valid
         List<SaleDetailRequest> items
@@ -23,6 +26,8 @@ public record SaleRequest(
 
             @NotNull(message = "La cantidad es obligatoria.")
             @Positive(message = "La cantidad debe ser mayor a cero.")
-            Integer quantity
+            Integer quantity,
+
+            java.math.BigDecimal discountPercentage
     ) {}
 }

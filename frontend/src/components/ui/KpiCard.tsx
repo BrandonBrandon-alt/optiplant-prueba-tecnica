@@ -1,4 +1,6 @@
-// KpiCard.tsx – Tarjeta de métrica reutilizable
+"use client";
+
+import React from "react";
 
 interface KpiCardProps {
   label: string;
@@ -16,49 +18,49 @@ export default function KpiCard({ label, value, sub, icon, accent, delay }: KpiC
         background: "var(--bg-card)",
         border: "1px solid var(--border-default)",
         borderRadius: "var(--radius-lg)",
-        padding: "22px 24px",
+        padding: "24px",
         display: "flex",
         flexDirection: "column",
-        gap: "14px",
-        animation: `fadeInUp 0.4s ease ${delay ?? "0s"} both`,
+        gap: "16px",
+        animation: `fadeIn 0.4s ease-out ${delay ?? "0s"} both`,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: "13px", color: "var(--neutral-400)", fontWeight: 500 }}>
+        <span style={{ fontSize: "12px", color: "var(--neutral-500)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           {label}
         </span>
         <div
           style={{
-            width: "34px",
-            height: "34px",
-            borderRadius: "10px",
-            background: accent ? `${accent}15` : "var(--bg-hover)",
-            border: `1px solid ${accent ? `${accent}25` : "var(--border-default)"}`,
+            width: "40px",
+            height: "40px",
+            borderRadius: "var(--radius-md)",
+            background: accent ? `${accent}12` : "var(--bg-hover)",
+            border: `1px solid ${accent ? `${accent}20` : "var(--border-default)"}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: accent ?? "var(--neutral-300)",
+            color: accent ?? "var(--neutral-400)",
           }}
         >
-          {icon}
+          {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ size?: number }>, { size: 20 }) : icon}
         </div>
       </div>
       <div>
         <p
           style={{
-            fontFamily: "var(--font-serif)",
             fontSize: "28px",
-            fontWeight: 700,
+            fontWeight: 800,
             color: "var(--neutral-50)",
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            marginBottom: sub ? "4px" : 0,
+            marginBottom: sub ? "6px" : 0,
           }}
+          className="tabular"
         >
           {value}
         </p>
         {sub && (
-          <p style={{ fontSize: "12px", color: "var(--neutral-500)" }}>{sub}</p>
+          <p style={{ fontSize: "12px", color: "var(--neutral-500)", fontWeight: 500 }}>{sub}</p>
         )}
       </div>
     </div>

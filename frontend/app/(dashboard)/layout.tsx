@@ -1,7 +1,6 @@
 "use client";
 
 import Sidebar from "@/components/layout/Sidebar";
-import MobileHeader from "@/components/layout/MobileHeader";
 import GlobalAlertPoller from "@/components/alerts/GlobalAlertPoller";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -34,8 +33,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }}
     >
       <GlobalAlertPoller />
-      <MobileHeader onMenuOpen={() => setIsMobileMenuOpen(true)} />
-      
       <Sidebar 
         isOpen={isMobileMenuOpen} 
         onClose={() => setIsMobileMenuOpen(false)} 
@@ -46,7 +43,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           flex: 1,
           overflowY: "auto",
           minHeight: "100dvh",
-          paddingTop: "var(--header-height)", // Reservar espacio para el header móvil
         }}
       >
         {children}

@@ -8,13 +8,16 @@ import java.util.List;
 
 public record PurchaseResponse(
         Long id,
-        String status,
+        String receptionStatus,
+        String paymentStatus,
         LocalDateTime requestDate,
         LocalDateTime estimatedArrivalDate,
+        LocalDateTime actualArrivalDate,
         Long supplierId,
         Long userId,
+        Long receivingUserId,
         Long branchId,
-        BigDecimal totalAmount,
+        BigDecimal total,
         List<PurchaseDetailResponse> details
 ) {
     public record PurchaseDetailResponse(
@@ -26,25 +29,24 @@ public record PurchaseResponse(
     ) {}
 
     public static PurchaseResponse fromDomain(PurchaseOrder order) {
-        BigDecimal total = order.getDetails().stream()
-                .map(d -> d.getUnitPrice().multiply(d.getQuantity()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
         return new PurchaseResponse(
                 order.getId(),
-                order.getStatus().name(),
+                order.getReceptionStatus().name(),
+                order.getPaymentStatus().name(),
                 order.getRequestDate(),
                 order.getEstimatedArrivalDate(),
+                order.getActualArrivalDate(),
                 order.getSupplierId(),
                 order.getUserId(),
+                order.getReceivingUserId(),
                 order.getBranchId(),
-                total,
+                order.getTotal(),
                 order.getDetails().stream().map(d -> new PurchaseDetailResponse(
                         d.getId(),
                         d.getProductId(),
                         d.getQuantity(),
                         d.getUnitPrice(),
-                        d.getQuantity().multiply(d.getUnitPrice())
+                        d.computeSubtotal()
                 )).toList()
         );
     }

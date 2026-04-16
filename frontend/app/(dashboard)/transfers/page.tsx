@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { apiClient } from "@/api/client";
 import { getSession } from "@/api/auth";
 import type { components } from "@/api/schema";
@@ -42,8 +43,16 @@ export default function TransfersManagementPage() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
   const session = typeof window !== "undefined" ? getSession() : null;
+  const router = useRouter();
   const isAdmin = session?.rol === "ADMIN";
+  const isSeller = session?.rol === "SELLER";
   const myBranchId = session?.sucursalId || null;
+
+  useEffect(() => {
+    if (isSeller) {
+      router.push("/sales/pos");
+    }
+  }, [isSeller, router]);
 
   const fetchTransfers = useCallback(async () => {
     try {

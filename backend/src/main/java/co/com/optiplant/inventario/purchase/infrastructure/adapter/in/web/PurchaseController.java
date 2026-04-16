@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/purchases")
+@org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
 public class PurchaseController {
 
     private final PurchaseUseCase purchaseUseCase;

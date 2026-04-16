@@ -59,11 +59,11 @@ public class AnalyticsPersistenceAdapter implements AnalyticsRepositoryPort {
     public GlobalSummary findGlobalSummary() {
         String query = """
                 SELECT 
-                    (SELECT COALESCE(SUM(total), 0) FROM ventas) as total_revenue,
+                    (SELECT COALESCE(SUM(total_final), 0) FROM ventas) as total_revenue,
                     (SELECT COALESCE(SUM(cantidad), 0) FROM detalles_venta) as total_units,
                     (SELECT COALESCE(SUM(i.cantidad_actual * p.costo_promedio), 0) 
                      FROM inventario_local i JOIN producto p ON i.producto_id = p.id) as total_value,
-                    (SELECT COALESCE(AVG(total), 0) FROM ventas) as avg_ticket,
+                    (SELECT COALESCE(AVG(total_final), 0) FROM ventas) as avg_ticket,
                     (SELECT COUNT(*) FROM sucursal WHERE activa = true) as branch_count
                 """;
 
@@ -82,7 +82,7 @@ public class AnalyticsPersistenceAdapter implements AnalyticsRepositoryPort {
                 SELECT 
                     s.id as branch_id, 
                     s.nombre as branch_name, 
-                    COALESCE(SUM(v.total), 0) as revenue,
+                    COALESCE(SUM(v.total_final), 0) as revenue,
                     COALESCE(SUM(dv.cantidad), 0) as units_sold,
                     COUNT(DISTINCT v.id) as sales_count
                 FROM sucursal s

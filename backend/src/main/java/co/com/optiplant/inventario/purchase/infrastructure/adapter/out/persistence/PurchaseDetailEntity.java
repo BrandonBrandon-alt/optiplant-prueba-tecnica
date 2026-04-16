@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "detalles_compra")
+@Table(name = "detalles_orden_compra")
 public class PurchaseDetailEntity {
 
     @Id
@@ -13,7 +13,7 @@ public class PurchaseDetailEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "orden_compra_id", nullable = false)
+    @JoinColumn(name = "orden_id", nullable = false)
     private PurchaseOrderEntity purchaseOrder;
 
     @Column(name = "producto_id", nullable = false)
@@ -22,8 +22,11 @@ public class PurchaseDetailEntity {
     @Column(name = "cantidad", nullable = false, precision = 12, scale = 4)
     private BigDecimal quantity;
 
-    @Column(name = "precio_unitario", nullable = false, precision = 12, scale = 2)
+    @Column(name = "precio_unitario_pactado", nullable = false, precision = 12, scale = 2)
     private BigDecimal unitPrice;
+
+    @Column(name = "subtotal", nullable = false, precision = 12, scale = 2)
+    private BigDecimal subtotal;
 
     public PurchaseDetailEntity() {}
 
@@ -41,4 +44,7 @@ public class PurchaseDetailEntity {
 
     public BigDecimal getUnitPrice() { return unitPrice; }
     public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
+
+    public BigDecimal getSubtotal() { return subtotal; }
+    public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
 }

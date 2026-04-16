@@ -1,6 +1,6 @@
 // Card.tsx – Panel con borde/fondo + header opcional
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   title?: string;
   headerRight?: React.ReactNode;
@@ -8,9 +8,10 @@ interface CardProps {
   style?: React.CSSProperties;
 }
 
-export default function Card({ children, title, headerRight, delay, style }: CardProps) {
+export default function Card({ children, title, headerRight, delay, style, className, ...props }: CardProps) {
   return (
     <div
+      className={className}
       style={{
         background: "var(--bg-card)",
         border: "1px solid var(--border-default)",
@@ -19,6 +20,7 @@ export default function Card({ children, title, headerRight, delay, style }: Car
         animation: `fadeInUp 0.4s ease ${delay ?? "0s"} both`,
         ...style,
       }}
+      {...props}
     >
       {(title || headerRight) && (
         <div

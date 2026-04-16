@@ -22,6 +22,7 @@ public class InventoryController {
     }
 
     @GetMapping("/branches/{branchId}/products/{productId}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SELLER')")
     public ResponseEntity<LocalInventory> getInventory(
             @PathVariable Long branchId, 
             @PathVariable Long productId) {
@@ -30,12 +31,24 @@ public class InventoryController {
     }
 
     @GetMapping("/branches/{branchId}")
-    public ResponseEntity<List<LocalInventory>> getInventoryByBranch(
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SELLER')")
+    public ResponseEntity<List<co.com.optiplant.inventario.inventory.infrastructure.adapter.in.web.dto.InventoryProductResponse>> getInventoryByBranch(
             @PathVariable Long branchId) {
-        return ResponseEntity.ok(inventoryUseCase.getInventoryByBranch(branchId));
+        return ResponseEntity.ok(inventoryUseCase.getEnrichedInventoryByBranch(branchId).stream()
+                .map(inv -> co.com.optiplant.inventario.inventory.infrastructure.adapter.in.web.dto.InventoryProductResponse.builder()
+                        .id(inv.getId())
+                        .productId(inv.getProductId())
+                        .productoNombre(inv.getProductNombre())
+                        .sku(inv.getSku())
+                        .stockActual(inv.getCurrentQuantity())
+                        .stockMinimo(inv.getMinimumStock())
+                        .precioVenta(inv.getSalePrice())
+                        .build())
+                .toList());
     }
 
     @PutMapping("/branches/{branchId}/products/{productId}/config")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<LocalInventory> updateConfig(
             @PathVariable Long branchId,
             @PathVariable Long productId,
@@ -44,6 +57,7 @@ public class InventoryController {
     }
 
     @GetMapping("/branches/{branchId}/products/{productId}/kardex")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SELLER')")
     public ResponseEntity<List<InventoryMovement>> getKardex(
             @PathVariable Long branchId, 
             @PathVariable Long productId) {
@@ -52,6 +66,7 @@ public class InventoryController {
     }
 
     @PostMapping("/branches/{branchId}/products/{productId}/withdraw")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Void> withdrawStock(
             @PathVariable Long branchId,
             @PathVariable Long productId,
@@ -70,6 +85,7 @@ public class InventoryController {
     }
 
     @PostMapping("/branches/{branchId}/products/{productId}/add")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Void> addStock(
             @PathVariable Long branchId,
             @PathVariable Long productId,
@@ -89,6 +105,7 @@ public class InventoryController {
     }
 
     @GetMapping("/movements")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<InventoryMovement>> getAllMovements() {
         return ResponseEntity.ok(inventoryUseCase.getAllMovements());
     }

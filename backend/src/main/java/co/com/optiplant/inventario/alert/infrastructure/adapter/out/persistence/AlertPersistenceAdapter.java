@@ -62,7 +62,7 @@ public class AlertPersistenceAdapter implements AlertRepositoryPort {
                 entity.getProductId(),
                 entity.getMessage(),
                 entity.getAlertDate(),
-                entity.getResolved(),
+                Boolean.TRUE.equals(entity.getResolved()),
                 entity.getResolutionType(),
                 entity.getReferenceId(),
                 entity.getResolutionReason(),

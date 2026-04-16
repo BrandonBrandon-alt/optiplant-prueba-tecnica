@@ -1,13 +1,14 @@
 package co.com.optiplant.inventario.purchase.infrastructure.adapter.out.persistence;
 
 import co.com.optiplant.inventario.purchase.application.port.out.PurchaseRepositoryPort;
+import co.com.optiplant.inventario.purchase.domain.model.PaymentStatus;
 import co.com.optiplant.inventario.purchase.domain.model.PurchaseOrder;
 import co.com.optiplant.inventario.purchase.domain.model.PurchaseOrderDetail;
-import co.com.optiplant.inventario.purchase.domain.model.PurchaseOrderStatus;
+import co.com.optiplant.inventario.purchase.domain.model.ReceptionStatus;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Component
 public class PurchasePersistenceAdapter implements PurchaseRepositoryPort {
@@ -30,45 +31,51 @@ public class PurchasePersistenceAdapter implements PurchaseRepositoryPort {
         return repository.findById(id).map(this::toDomain);
     }
 
-    private PurchaseOrderEntity toEntity(PurchaseOrder domain) {
+    public PurchaseOrderEntity toEntity(PurchaseOrder domain) {
         PurchaseOrderEntity entity = new PurchaseOrderEntity();
         entity.setId(domain.getId());
-        entity.setStatus(domain.getStatus().name());
+        entity.setSupplierId(domain.getSupplierId());
+        entity.setBranchId(domain.getBranchId());
+        entity.setUserId(domain.getUserId());
+        entity.setReceivingUserId(domain.getReceivingUserId());
         entity.setRequestDate(domain.getRequestDate());
         entity.setEstimatedArrivalDate(domain.getEstimatedArrivalDate());
-        entity.setSupplierId(domain.getSupplierId());
-        entity.setUserId(domain.getUserId());
-        entity.setBranchId(domain.getBranchId());
+        entity.setActualArrivalDate(domain.getActualArrivalDate());
+        entity.setReceptionStatus(domain.getReceptionStatus().name());
+        entity.setPaymentStatus(domain.getPaymentStatus().name());
+        entity.setTotal(domain.getTotal());
 
-        if (domain.getDetails() != null) {
-            for (PurchaseOrderDetail detail : domain.getDetails()) {
-                PurchaseDetailEntity detailEntity = new PurchaseDetailEntity();
-                detailEntity.setId(detail.getId());
-                detailEntity.setProductId(detail.getProductId());
-                detailEntity.setQuantity(detail.getQuantity());
-                detailEntity.setUnitPrice(detail.getUnitPrice());
+        domain.getDetails().forEach(d -> {
+            PurchaseDetailEntity dEntity = new PurchaseDetailEntity();
+            dEntity.setId(d.getId());
+            dEntity.setProductId(d.getProductId());
+            dEntity.setQuantity(d.getQuantity());
+            dEntity.setUnitPrice(d.getUnitPrice());
+            dEntity.setSubtotal(d.computeSubtotal());
+            entity.addDetail(dEntity);
+        });
 
-                entity.addDetail(detailEntity);
-            }
-        }
         return entity;
     }
 
-    private PurchaseOrder toDomain(PurchaseOrderEntity entity) {
+    public PurchaseOrder toDomain(PurchaseOrderEntity entity) {
+        List<PurchaseOrderDetail> details = entity.getDetails().stream()
+                .map(d -> new PurchaseOrderDetail(d.getId(), d.getProductId(), d.getQuantity(), d.getUnitPrice()))
+                .toList();
+
         return new PurchaseOrder(
                 entity.getId(),
-                PurchaseOrderStatus.valueOf(entity.getStatus()),
+                entity.getSupplierId(),
+                entity.getBranchId(),
+                entity.getUserId(),
+                entity.getReceivingUserId(),
                 entity.getRequestDate(),
                 entity.getEstimatedArrivalDate(),
-                entity.getSupplierId(),
-                entity.getUserId(),
-                entity.getBranchId(),
-                entity.getDetails().stream().map(d -> new PurchaseOrderDetail(
-                        d.getId(),
-                        d.getProductId(),
-                        d.getQuantity(),
-                        d.getUnitPrice()
-                )).collect(Collectors.toList())
+                entity.getActualArrivalDate(),
+                ReceptionStatus.valueOf(entity.getReceptionStatus()),
+                PaymentStatus.valueOf(entity.getPaymentStatus()),
+                entity.getTotal(),
+                details
         );
     }
 }

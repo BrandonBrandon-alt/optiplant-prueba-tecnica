@@ -5,10 +5,13 @@ import java.util.List;
 public record CreateSaleCommand(
         Long branchId,
         Long userId,
+        String customerName,
+        String customerDocument,
         List<Detail> items
 ) {
     public record Detail(
             Long productId,
-            Integer quantity
+            Integer quantity,
+            java.math.BigDecimal discountPercentage
     ) {}
 }

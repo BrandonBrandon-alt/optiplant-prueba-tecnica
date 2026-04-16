@@ -6,6 +6,15 @@
 UPDATE rol SET nombre = 'MANAGER' WHERE nombre = 'GERENTE_SUCURSAL';
 UPDATE rol SET nombre = 'SELLER' WHERE nombre = 'OPERADOR_INVENTARIO';
 
+/**
+ * Limpieza de esquema previo (V3/V6):
+ * Como estamos reconstruyendo el módulo de compras para soportar estados duales 
+ * y trazabilidad de recepción, reemplazamos las tablas existentes.
+ */
+DROP TABLE IF EXISTS detalles_compra CASCADE;
+DROP TABLE IF EXISTS detalles_orden_compra CASCADE;
+DROP TABLE IF EXISTS ordenes_compra CASCADE;
+
 -- 2. Tabla de Cabecera: ordenes_compra
 -- Maneja la transacción financiera y el ciclo de vida logístico
 CREATE TABLE ordenes_compra (

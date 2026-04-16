@@ -4,7 +4,23 @@
  */
 
 export interface paths {
-    "/api/catalog/suppliers/{id}": {
+    "/api/v1/inventory/branches/{branchId}/products/{productId}/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -14,7 +30,39 @@ export interface paths {
         get: operations["getById"];
         put: operations["update"];
         post?: never;
+        delete: operations["deactivate"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/units/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getById_1"];
+        put: operations["update_1"];
+        post?: never;
         delete: operations["delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/suppliers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getById_2"];
+        put: operations["update_2"];
+        post?: never;
+        delete: operations["delete_1"];
         options?: never;
         head?: never;
         patch?: never;
@@ -27,10 +75,26 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["getById_1"];
-        put: operations["update_1"];
+        get: operations["getById_3"];
+        put: operations["update_3"];
         post?: never;
-        delete: operations["delete_1"];
+        delete: operations["delete_2"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branches/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getById_4"];
+        put: operations["update_4"];
+        post?: never;
+        delete: operations["delete_3"];
         options?: never;
         head?: never;
         patch?: never;
@@ -46,6 +110,54 @@ export interface paths {
         get: operations["getAllTransfers"];
         put?: never;
         post: operations["requestTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers/{id}/resolve-shrinkage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resolveAsShrinkage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers/{id}/resolve-resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resolveAsResend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers/{id}/resolve-claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resolveAsClaim"];
         delete?: never;
         options?: never;
         head?: never;
@@ -68,6 +180,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/transfers/{id}/prepare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["prepareTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/transfers/{id}/dispatch": {
         parameters: {
             query?: never;
@@ -84,7 +212,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/sales": {
+    "/api/v1/transfers/{id}/cancel": {
         parameters: {
             query?: never;
             header?: never;
@@ -92,6 +220,22 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        put?: never;
+        post: operations["cancelTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAllSales"];
         put?: never;
         post: operations["createSale"];
         delete?: never;
@@ -180,6 +324,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/alerts/{id}/resolve/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resolveViaTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/alerts/{id}/resolve/purchase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resolveViaPurchase"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/alerts/{id}/resolve/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["dismissAlert"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/alerts/scan": {
         parameters: {
             query?: never;
@@ -196,7 +388,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/catalog/units": {
+    "/api/users": {
         parameters: {
             query?: never;
             header?: never;
@@ -212,7 +404,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/catalog/suppliers": {
+    "/api/catalog/units": {
         parameters: {
             query?: never;
             header?: never;
@@ -228,7 +420,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/catalog/products": {
+    "/api/catalog/suppliers": {
         parameters: {
             query?: never;
             header?: never;
@@ -238,6 +430,22 @@ export interface paths {
         get: operations["getAll_2"];
         put?: never;
         post: operations["create_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAll_3"];
+        put?: never;
+        post: operations["create_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -267,9 +475,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["getAll_3"];
+        get: operations["getAll_4"];
         put?: never;
-        post: operations["create_3"];
+        post: operations["create_4"];
         delete?: never;
         options?: never;
         head?: never;
@@ -324,6 +532,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sales/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getSale"];
+        put?: never;
+        post?: never;
+        delete: operations["cancelSale"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/purchases/{id}": {
         parameters: {
             query?: never;
@@ -332,6 +556,38 @@ export interface paths {
             cookie?: never;
         };
         get: operations["getOrder"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAllMovements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/branches/{branchId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getInventoryByBranch"];
         put?: never;
         post?: never;
         delete?: never;
@@ -367,152 +623,6 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/inventory/branches/{branchId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getInventoryByBranch"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/inventory/branches/{branchId}/products/{productId}/config": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put: operations["updateConfig"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/analytics/valuations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getBranchValuations"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/analytics/top-products": {
-        parameters: {
-            query?: {
-                /** Format: int32 */
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getTopSellingProducts"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/analytics/performance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getBranchPerformance"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/analytics/global-summary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getGlobalSummary"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/alerts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getActiveAlerts"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/catalog/units/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getUnitById"];
-        put: operations["updateUnit"];
-        delete: operations["deleteUnit"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/branches/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getById_3"];
-        put: operations["updateBranch"];
-        post?: never;
-        delete: operations["deleteBranch"];
         options?: never;
         head?: never;
         patch?: never;
@@ -582,33 +692,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users": {
+    "/api/v1/alerts": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["getAllUsers"];
+        get: operations["getActiveAlerts"];
         put?: never;
-        post: operations["createUser"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getUser"];
-        put: operations["updateUser"];
         post?: never;
-        delete: operations["deactivateUser"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -621,7 +715,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["getAllRoles"];
+        get: operations["getAll_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -634,6 +728,55 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        LocalInventory: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            branchId?: number;
+            /** Format: int64 */
+            productId?: number;
+            currentQuantity?: number;
+            minimumStock?: number;
+            /** Format: date-time */
+            lastUpdated?: string;
+        };
+        UserRequest: {
+            nombre: string;
+            email: string;
+            password?: string;
+            /** Format: int64 */
+            rolId: number;
+            /** Format: int64 */
+            sucursalId?: number;
+            activo?: boolean;
+        };
+        RoleResponse: {
+            /** Format: int64 */
+            id?: number;
+            nombre?: string;
+        };
+        UserResponse: {
+            /** Format: int64 */
+            id?: number;
+            nombre?: string;
+            email?: string;
+            role?: components["schemas"]["RoleResponse"];
+            /** Format: int64 */
+            sucursalId?: number;
+            activo?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        UnitOfMeasureRequest: {
+            nombre: string;
+            abreviatura: string;
+        };
+        UnitOfMeasureResponse: {
+            /** Format: int64 */
+            id?: number;
+            nombre?: string;
+            abreviatura?: string;
+        };
         SupplierRequest: {
             nombre: string;
             contacto?: string;
@@ -648,33 +791,6 @@ export interface components {
             /** Format: int32 */
             tiempoEntregaDias?: number;
         };
-        UserRequest: {
-            nombre: string;
-            email: string;
-            password?: string;
-            /** Format: int64 */
-            rolId: number;
-            /** Format: int64 */
-            sucursalId?: number;
-            activo?: boolean;
-        };
-        UserResponse: {
-            /** Format: int64 */
-            id?: number;
-            nombre?: string;
-            email?: string;
-            role?: components["schemas"]["RoleResponse"];
-            /** Format: int64 */
-            sucursalId?: number;
-            activo?: boolean;
-            /** Format: date-time */
-            createdAt?: string;
-        };
-        RoleResponse: {
-            /** Format: int64 */
-            id?: number;
-            nombre?: string;
-        };
         ProductRequest: {
             sku: string;
             nombre: string;
@@ -682,6 +798,7 @@ export interface components {
             precioVenta: number;
             /** Format: int64 */
             proveedorId?: number;
+            unit?: string;
         };
         ProductResponse: {
             /** Format: int64 */
@@ -692,8 +809,22 @@ export interface components {
             precioVenta?: number;
             /** Format: int64 */
             proveedorId?: number;
+            unit?: string;
             /** Format: date-time */
             creadoEn?: string;
+        };
+        BranchRequest: {
+            nombre: string;
+            direccion: string;
+            telefono?: string;
+        };
+        BranchResponse: {
+            /** Format: int64 */
+            id?: number;
+            nombre?: string;
+            direccion?: string;
+            telefono?: string;
+            activa?: boolean;
         };
         TransferDetailRequest: {
             /** Format: int64 */
@@ -738,6 +869,10 @@ export interface components {
             originBranchId?: number;
             /** Format: int64 */
             destinationBranchId?: number;
+            carrier?: string;
+            receiptNotes?: string;
+            /** Format: int64 */
+            parentTransferId?: number;
             details?: components["schemas"]["TransferDetailResponse"][];
         };
         ReceivedItemRequest: {
@@ -749,19 +884,44 @@ export interface components {
         TransferReceiveRequest: {
             /** Format: int64 */
             userId: number;
+            notes?: string;
             items: components["schemas"]["ReceivedItemRequest"][];
+        };
+        PrepareDetail: {
+            /** Format: int64 */
+            productId?: number;
+            /** Format: int32 */
+            requestedQuantity?: number;
+        };
+        TransferPrepareRequest: {
+            items: components["schemas"]["PrepareDetail"][];
+        };
+        DispatchItemRequest: {
+            /** Format: int64 */
+            detailId: number;
+            /** Format: int32 */
+            sentQuantity: number;
+        };
+        TransferDispatchRequest: {
+            /** Format: int64 */
+            userId: number;
+            carrier: string;
+            items: components["schemas"]["DispatchItemRequest"][];
         };
         SaleDetailRequest: {
             /** Format: int64 */
             productId: number;
             /** Format: int32 */
             quantity: number;
+            discountPercentage?: number;
         };
         SaleRequest: {
             /** Format: int64 */
             branchId: number;
             /** Format: int64 */
             userId: number;
+            customerName?: string;
+            customerDocument?: string;
             items: components["schemas"]["SaleDetailRequest"][];
         };
         SaleDetailResponse: {
@@ -772,18 +932,25 @@ export interface components {
             /** Format: int32 */
             quantity?: number;
             unitPriceApplied?: number;
-            subtotal?: number;
+            discountPercentage?: number;
+            subtotalLine?: number;
         };
         SaleResponse: {
             /** Format: int64 */
             id?: number;
             /** Format: date-time */
             date?: string;
-            total?: number;
+            subtotal?: number;
+            totalDiscount?: number;
+            totalFinal?: number;
             /** Format: int64 */
             branchId?: number;
             /** Format: int64 */
             userId?: number;
+            status?: string;
+            cancellationReason?: string;
+            customerName?: string;
+            customerDocument?: string;
             details?: components["schemas"]["SaleDetailResponse"][];
         };
         PurchaseDetailRequest: {
@@ -815,24 +982,29 @@ export interface components {
         PurchaseResponse: {
             /** Format: int64 */
             id?: number;
-            status?: string;
+            receptionStatus?: string;
+            paymentStatus?: string;
             /** Format: date-time */
             requestDate?: string;
             /** Format: date-time */
             estimatedArrivalDate?: string;
+            /** Format: date-time */
+            actualArrivalDate?: string;
             /** Format: int64 */
             supplierId?: number;
             /** Format: int64 */
             userId?: number;
             /** Format: int64 */
+            receivingUserId?: number;
+            /** Format: int64 */
             branchId?: number;
-            totalAmount?: number;
+            total?: number;
             details?: components["schemas"]["PurchaseDetailResponse"][];
         };
         StockRequest: {
             quantity: number;
             /** @enum {string} */
-            reason: "VENTA" | "COMPRA" | "TRASLADO" | "MERMA" | "AJUSTE";
+            reason: "VENTA" | "COMPRA" | "TRASLADO" | "MERMA" | "DEVOLUCION" | "AJUSTE_POSITIVO" | "AJUSTE_NEGATIVO";
             /** Format: int64 */
             userId: number;
             /** Format: int64 */
@@ -840,18 +1012,22 @@ export interface components {
             referenceType?: string;
             unitCost?: number;
         };
+        TransferResolutionRequest: {
+            /** Format: int64 */
+            originBranchId?: number;
+            /** Format: int32 */
+            quantity?: number;
+        };
         MessageResponse: {
             message?: string;
         };
-        UnitOfMeasureRequest: {
-            nombre: string;
-            abreviatura: string;
+        PurchaseResolutionRequest: {
+            /** Format: date-time */
+            estimatedArrival?: string;
+            quantity?: number;
         };
-        UnitOfMeasureResponse: {
-            /** Format: int64 */
-            id?: number;
-            nombre?: string;
-            abreviatura?: string;
+        DismissResolutionRequest: {
+            reason?: string;
         };
         ProductUnitRequest: {
             /** Format: int64 */
@@ -871,19 +1047,6 @@ export interface components {
             factorConversion?: number;
             esBase?: boolean;
         };
-        BranchRequest: {
-            nombre: string;
-            direccion: string;
-            telefono?: string;
-        };
-        BranchResponse: {
-            /** Format: int64 */
-            id?: number;
-            nombre?: string;
-            direccion?: string;
-            telefono?: string;
-            activa?: boolean;
-        };
         LoginRequest: {
             email: string;
             password: string;
@@ -894,18 +1057,10 @@ export interface components {
             email?: string;
             nombre?: string;
             rol?: string;
-        };
-        LocalInventory: {
+            /** Format: int64 */
+            sucursalId?: number;
             /** Format: int64 */
             id?: number;
-            /** Format: int64 */
-            branchId?: number;
-            /** Format: int64 */
-            productId?: number;
-            currentQuantity?: number;
-            minimumStock?: number;
-            /** Format: date-time */
-            lastUpdated?: string;
         };
         InventoryMovement: {
             /** Format: int64 */
@@ -913,7 +1068,7 @@ export interface components {
             /** @enum {string} */
             type?: "INGRESO" | "RETIRO";
             /** @enum {string} */
-            reason?: "VENTA" | "COMPRA" | "TRASLADO" | "MERMA" | "AJUSTE";
+            reason?: "VENTA" | "COMPRA" | "TRASLADO" | "MERMA" | "DEVOLUCION" | "AJUSTE_POSITIVO" | "AJUSTE_NEGATIVO";
             quantity?: number;
             /** Format: date-time */
             date?: string;
@@ -926,6 +1081,18 @@ export interface components {
             /** Format: int64 */
             referenceId?: number;
             referenceType?: string;
+            finalBalance?: number;
+        };
+        InventoryProductResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            productId?: number;
+            productoNombre?: string;
+            sku?: string;
+            stockActual?: number;
+            stockMinimo?: number;
+            precioVenta?: number;
         };
         BranchValuation: {
             /** Format: int64 */
@@ -938,18 +1105,6 @@ export interface components {
             productId?: number;
             productName?: string;
             totalSoldQuantity?: number;
-        };
-        StockAlertResponse: {
-            /** Format: int64 */
-            id?: number;
-            /** Format: int64 */
-            branchId?: number;
-            /** Format: int64 */
-            productId?: number;
-            message?: string;
-            /** Format: date-time */
-            alertDate?: string;
-            resolved?: boolean;
         };
         GlobalSummary: {
             totalRevenue?: number;
@@ -968,6 +1123,18 @@ export interface components {
             /** Format: int64 */
             salesCount?: number;
         };
+        StockAlertResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            branchId?: number;
+            /** Format: int64 */
+            productId?: number;
+            message?: string;
+            /** Format: date-time */
+            alertDate?: string;
+            resolved?: boolean;
+        };
     };
     responses: never;
     parameters: never;
@@ -977,6 +1144,31 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    updateConfig: {
+        parameters: {
+            query: {
+                minimumStock: number;
+            };
+            header?: never;
+            path: {
+                branchId: number;
+                productId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LocalInventory"];
+                };
+            };
+        };
+    };
     getById: {
         parameters: {
             query?: never;
@@ -994,7 +1186,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["SupplierResponse"];
+                    "*/*": components["schemas"]["UserResponse"];
                 };
             };
         };
@@ -1010,7 +1202,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SupplierRequest"];
+                "application/json": components["schemas"]["UserRequest"];
             };
         };
         responses: {
@@ -1020,12 +1212,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["SupplierResponse"];
+                    "*/*": components["schemas"]["UserResponse"];
                 };
             };
         };
     };
-    delete: {
+    deactivate: {
         parameters: {
             query?: never;
             header?: never;
@@ -1062,12 +1254,148 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ProductResponse"];
+                    "*/*": components["schemas"]["UnitOfMeasureResponse"];
                 };
             };
         };
     };
     update_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnitOfMeasureRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UnitOfMeasureResponse"];
+                };
+            };
+        };
+    };
+    delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getById_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SupplierResponse"];
+                };
+            };
+        };
+    };
+    update_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SupplierResponse"];
+                };
+            };
+        };
+    };
+    delete_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getById_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProductResponse"];
+                };
+            };
+        };
+    };
+    update_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -1093,7 +1421,7 @@ export interface operations {
             };
         };
     };
-    delete_1: {
+    delete_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -1110,6 +1438,94 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    getById_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BranchResponse"];
+                };
+            };
+        };
+    };
+    update_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BranchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BranchResponse"];
+                };
+            };
+        };
+    };
+    delete_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getAllTransfers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TransferResponse"][];
+                };
             };
         };
     };
@@ -1134,6 +1550,66 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["TransferResponse"];
                 };
+            };
+        };
+    };
+    resolveAsShrinkage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resolveAsResend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resolveAsClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1163,11 +1639,61 @@ export interface operations {
             };
         };
     };
+    prepareTransfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferPrepareRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TransferResponse"];
+                };
+            };
+        };
+    };
     dispatchTransfer: {
         parameters: {
-            query: {
-                userId: number;
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
             };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferDispatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TransferResponse"];
+                };
+            };
+        };
+    };
+    cancelTransfer: {
+        parameters: {
+            query?: never;
             header?: never;
             path: {
                 id: number;
@@ -1181,8 +1707,28 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content?: never;
+            };
+        };
+    };
+    getAllSales: {
+        parameters: {
+            query?: {
+                branchId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "*/*": components["schemas"]["TransferResponse"];
+                    "*/*": components["schemas"]["SaleResponse"][];
                 };
             };
         };
@@ -1331,6 +1877,84 @@ export interface operations {
             };
         };
     };
+    resolveViaTransfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferResolutionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    resolveViaPurchase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseResolutionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    dismissAlert: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DismissResolutionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
     forceScan: {
         parameters: {
             query?: never;
@@ -1366,12 +1990,56 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["UnitOfMeasureResponse"][];
+                    "*/*": components["schemas"]["UserResponse"][];
                 };
             };
         };
     };
     create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserResponse"];
+                };
+            };
+        };
+    };
+    getAll_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UnitOfMeasureResponse"][];
+                };
+            };
+        };
+    };
+    create_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -1395,7 +2063,7 @@ export interface operations {
             };
         };
     };
-    getAll_1: {
+    getAll_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -1415,7 +2083,7 @@ export interface operations {
             };
         };
     };
-    create_1: {
+    create_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -1439,7 +2107,7 @@ export interface operations {
             };
         };
     };
-    getAll_2: {
+    getAll_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -1459,7 +2127,7 @@ export interface operations {
             };
         };
     };
-    create_2: {
+    create_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -1531,7 +2199,7 @@ export interface operations {
             };
         };
     };
-    getAll_3: {
+    getAll_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -1551,7 +2219,7 @@ export interface operations {
             };
         };
     };
-    create_3: {
+    create_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -1643,6 +2311,50 @@ export interface operations {
             };
         };
     };
+    getSale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SaleResponse"];
+                };
+            };
+        };
+    };
+    cancelSale: {
+        parameters: {
+            query: {
+                reason: string;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getOrder: {
         parameters: {
             query?: never;
@@ -1661,6 +2373,48 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PurchaseResponse"];
+                };
+            };
+        };
+    };
+    getAllMovements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InventoryMovement"][];
+                };
+            };
+        };
+    };
+    getInventoryByBranch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                branchId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InventoryProductResponse"][];
                 };
             };
         };
@@ -1753,6 +2507,46 @@ export interface operations {
             };
         };
     };
+    getGlobalSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["GlobalSummary"];
+                };
+            };
+        };
+    };
+    getBranchPerformance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BranchPerformance"][];
+                };
+            };
+        };
+    };
     getActiveAlerts: {
         parameters: {
             query: {
@@ -1775,97 +2569,7 @@ export interface operations {
             };
         };
     };
-    getById_2: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["UnitOfMeasureResponse"];
-                };
-            };
-        };
-    };
-    getById_3: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["BranchResponse"];
-                };
-            };
-        };
-    };
-    updateBranch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BranchRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["BranchResponse"];
-                };
-            };
-        };
-    };
-    deleteBranch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    getGlobalSummary: {
+    getAll_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -1880,116 +2584,8 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GlobalSummary"];
+                    "*/*": components["schemas"]["RoleResponse"][];
                 };
-            };
-        };
-    };
-    getBranchPerformance: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BranchPerformance"][];
-                };
-            };
-        };
-    };
-    getAllTransfers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TransferResponse"][];
-                };
-            };
-        };
-    };
-    getUnitById: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["UnitOfMeasureResponse"];
-                };
-            };
-        };
-    };
-    updateUnit: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UnitOfMeasureRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["UnitOfMeasureResponse"];
-                };
-            };
-        };
-    };
-    deleteUnit: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };

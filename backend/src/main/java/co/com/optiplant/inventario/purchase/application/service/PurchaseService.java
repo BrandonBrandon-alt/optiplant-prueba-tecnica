@@ -53,11 +53,13 @@ public class PurchaseService implements PurchaseUseCase {
     @Transactional
     public PurchaseOrder receiveOrder(Long orderId, Long userId) {
         PurchaseOrder order = getOrderById(orderId);
-        order.receive();
+        
+        // El dominio valida el estado y registra el usuario de recepción
+        order.receive(userId);
 
         PurchaseOrder savedOrder = repository.save(order);
 
-        // Al recibir validamos el aumento real físico del inventario (Source of truth)
+        // Orquestación: Al recibir, el stock debe aumentar físicamente en la sucursal de destino
         for (PurchaseOrderDetail detail : savedOrder.getDetails()) {
             inventoryUseCase.addStock(
                     savedOrder.getBranchId(),

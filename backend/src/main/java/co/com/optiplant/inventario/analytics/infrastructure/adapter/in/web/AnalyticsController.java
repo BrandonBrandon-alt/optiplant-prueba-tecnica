@@ -15,6 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/analytics")
+@org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
 public class AnalyticsController {
 
     private final AnalyticsUseCase analyticsUseCase;

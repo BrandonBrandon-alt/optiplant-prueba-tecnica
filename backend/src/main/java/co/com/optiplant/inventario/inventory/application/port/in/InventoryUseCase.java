@@ -34,6 +34,8 @@ public interface InventoryUseCase {
 
     List<LocalInventory> getInventoryByBranch(Long branchId);
 
+    List<co.com.optiplant.inventario.inventory.domain.model.LocalInventoryEnriched> getEnrichedInventoryByBranch(Long branchId);
+
     LocalInventory updateMinimumStock(Long branchId, Long productId, BigDecimal minimumStock);
 
     List<InventoryMovement> getKardex(Long branchId, Long productId);

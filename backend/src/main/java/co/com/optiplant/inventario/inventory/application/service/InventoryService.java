@@ -141,6 +141,25 @@ public class InventoryService implements InventoryUseCase {
     }
 
     @Override
+    public List<co.com.optiplant.inventario.inventory.domain.model.LocalInventoryEnriched> getEnrichedInventoryByBranch(Long branchId) {
+        List<LocalInventory> inventoryList = localInventoryRepository.findByBranchId(branchId);
+        return inventoryList.stream()
+                .map(inv -> {
+                    Product product = productUseCase.getProductById(inv.getProductId());
+                    return co.com.optiplant.inventario.inventory.domain.model.LocalInventoryEnriched.builder()
+                            .id(inv.getId())
+                            .productId(inv.getProductId())
+                            .productNombre(product.getName())
+                            .sku(product.getSku())
+                            .currentQuantity(inv.getCurrentQuantity())
+                            .minimumStock(inv.getMinimumStock())
+                            .salePrice(product.getSalePrice())
+                            .build();
+                })
+                .toList();
+    }
+
+    @Override
     @Transactional
     public LocalInventory updateMinimumStock(Long branchId, Long productId, BigDecimal minimumStock) {
         LocalInventory inventory = getInventory(branchId, productId);

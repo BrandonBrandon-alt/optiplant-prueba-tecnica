@@ -53,6 +53,18 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    href: "/sales/pos",
+    label: "Terminal POS",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M20 7h-9" />
+        <path d="M14 17H5" />
+        <circle cx="17" cy="17" r="3" />
+        <circle cx="7" cy="7" r="3" />
+      </svg>
+    ),
+  },
 ];
 
 const adminItems = [
@@ -109,6 +121,17 @@ const adminItems = [
         <line x1="16" y1="13" x2="8" y2="13" />
         <line x1="16" y1="17" x2="8" y2="17" />
         <polyline points="10 9 9 9 8 9" />
+      </svg>
+    ),
+  },
+  {
+    href: "/sales/history",
+    label: "Historial Ventas",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M12 8v4l3 3" />
+        <circle cx="12" cy="12" r="9" />
+        <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" />
       </svg>
     ),
   },
@@ -214,6 +237,20 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   };
 
   const isAdmin = session?.rol === "ADMIN";
+  const isManager = session?.rol === "MANAGER";
+  const isSeller = session?.rol === "SELLER";
+
+  // Definir qué roles ven qué items base
+  const visibleNavItems = navItems.filter(item => {
+    if (isSeller) {
+      return item.label === "Terminal POS" || item.label === "Inventario";
+    }
+    if (isAdmin) {
+      // Admin no necesita el POS Terminal, su rol es de gestión global
+      return item.label !== "Terminal POS";
+    }
+    return true; // Manager ve todos los navItems base
+  });
 
   const NavLink = ({ href, label, icon }: { href: string; label: string; icon: React.ReactNode }) => {
     const isActive = pathname === href;
@@ -380,7 +417,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           marginBottom: "8px",
         }}>Menú</p>
         
-        {navItems.map((item) => (
+        {visibleNavItems.map((item) => (
           <NavLink key={item.href} {...item} />
         ))}
 

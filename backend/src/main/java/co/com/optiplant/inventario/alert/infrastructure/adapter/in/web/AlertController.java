@@ -8,6 +8,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/alerts")
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
 public class AlertController {
 
     /** Envelope genérico para respuestas de mensaje — garantiza JSON válido. */

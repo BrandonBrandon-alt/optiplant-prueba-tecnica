@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { apiClient } from "@/api/client";
 import { getSession } from "@/api/auth";
 import type { components } from "@/api/schema";
@@ -69,9 +70,27 @@ export default function DashboardPage() {
   const [performance, setPerformance]     = useState<components["schemas"]["BranchPerformance"][]>([]);
   const [global, setGlobal]           = useState<components["schemas"]["GlobalSummary"] | null>(null);
   const [loading, setLoading]         = useState(true);
+  const router = useRouter();
   const session = typeof window !== "undefined" ? getSession() : null;
+  const isAdmin = session?.rol === "ADMIN";
+  const isManager = session?.rol === "MANAGER";
+  const isSeller = session?.rol === "SELLER";
 
   useEffect(() => {
+    if (isSeller) {
+      router.push("/sales/pos");
+    } else if (isManager) {
+      // Por ahora redirigimos al Manager al inventario ya que el dashboard es global
+      router.push("/inventory");
+    }
+  }, [isSeller, isManager, router]);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setLoading(false);
+      return;
+    }
+
     async function fetchAll() {
       try {
         const [val, top, bra, glo, perf, tra] = await Promise.all([
@@ -79,14 +98,16 @@ export default function DashboardPage() {
           apiClient.GET("/api/v1/analytics/top-products", { params: { query: { limit: 5 } } }),
           apiClient.GET("/api/branches"),
           apiClient.GET("/api/v1/analytics/global-summary"),
-          apiClient.GET("/api/v1/analytics/performance"),
+          apiClient.GET("/api/v1/analytics/branch-performance"),
           apiClient.GET("/api/v1/transfers"),
         ]);
+        
         setValuations(val.data ?? []);
         setTopProducts(top.data ?? []);
         setGlobal(glo.data ?? null);
         setPerformance(perf.data ?? []);
         setTransfers((tra.data ?? []).filter(t => t.status !== "RECEIVED"));
+        
         const branchList = bra.data ?? [];
         setBranches(branchList);
 
@@ -105,7 +126,7 @@ export default function DashboardPage() {
       }
     }
     fetchAll();
-  }, []);
+  }, [isAdmin]);
 
   if (loading) return <Spinner fullPage />;
 
@@ -132,47 +153,60 @@ export default function DashboardPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "16px",
-          marginBottom: "28px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+          gap: "24px",
+          marginBottom: "36px",
         }}
       >
         <KpiCard
           label="Ventas Netas"
           value={formatCOP(global?.totalRevenue ?? 0)}
           sub={`Ticket Promedio: ${formatCOP(global?.averageTicket ?? 0)}`}
-          accent="var(--color-success)"
-          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
+          accent="#10b981"
+          delay="0s"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
         />
         <KpiCard
           label="Valor Inventario"
           value={formatCOP(global?.totalInventoryValue ?? 0)}
           sub={`${branches.length} sedes operativas`}
-          accent="var(--neutral-200)"
-          delay="0.05s"
-          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 8l-9-4-9 4m18 8l-9 4-9-4m18-4l-9 4-9-4m9-11v11"/></svg>}
+          accent="#f59e0b"
+          delay="0.1s"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 8l-9-4-9 4m18 8l-9 4-9-4m18-4l-9 4-9-4m9-11v11"/></svg>}
         />
         <KpiCard
           label="Traslados Activos"
           value={String(transfers.length)}
           sub="Movimientos en proceso"
-          accent="var(--brand-300)"
-          delay="0.1s"
-          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>}
+          accent="#3b82f6"
+          delay="0.2s"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>}
         />
         <KpiCard
-          label="Sedes Críticas"
+          label="Alertas Críticas"
           value={String(activeAlerts)}
-          sub="Alertas de stock pendientes"
-          accent={activeAlerts > 0 ? "var(--brand-500)" : "var(--color-success)"}
-          delay="0.15s"
-          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>}
+          sub="Acciones requeridas"
+          accent={activeAlerts > 0 ? "var(--brand-500)" : "#10b981"}
+          delay="0.3s"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>}
         />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+      <div className="dashboard-grid">
+        <style jsx>{`
+          .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+          }
+          @media (max-width: 1024px) {
+            .dashboard-grid {
+              grid-template-columns: 1fr;
+            }
+          }
+        `}</style>
         {/* Rendimiento por Sucursal */}
-        <Card title="Rendimiento por Sucursal" delay="0.2s">
+        <Card title="Rendimiento por Sucursal" delay="0.4s">
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {performance.map((p, i) => (
               <div key={p.branchId} style={{ background: "var(--bg-surface)", padding: "14px", borderRadius: "12px", border: "1px solid var(--border-subtle)", display: "grid", gridTemplateColumns: "1fr auto auto", gap: "16px", alignItems: "center" }}>

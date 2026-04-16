@@ -154,8 +154,8 @@ function CreateUserModal({ open, onClose, roles, branches, onCreated }: {
                 onCreated(data);
                 onClose();
             } else {
-                showToast(error?.message || "No se pudo crear el usuario.", "error", "Error");
-                setServerError(error?.message || "Error al crear usuario.");
+                showToast((error as any)?.message || "No se pudo crear el usuario.", "error", "Error");
+                setServerError((error as any)?.message || "Error al crear usuario.");
             }
         });
     };
@@ -270,8 +270,8 @@ function EditUserModal({ open, onClose, user, roles, branches, onUpdated }: {
                 onUpdated(data);
                 onClose();
             } else {
-                showToast(error?.message || "No se pudo actualizar el usuario.", "error", "Error");
-                setServerError(error?.message || "Error al actualizar usuario.");
+                showToast((error as any)?.message || "No se pudo actualizar el usuario.", "error", "Error");
+                setServerError((error as any)?.message || "Error al actualizar usuario.");
             }
         });
     };

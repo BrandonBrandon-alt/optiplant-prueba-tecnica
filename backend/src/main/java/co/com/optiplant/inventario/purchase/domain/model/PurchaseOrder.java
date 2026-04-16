@@ -2,72 +2,105 @@ package co.com.optiplant.inventario.purchase.domain.model;
 
 import co.com.optiplant.inventario.purchase.domain.exception.InvalidPurchaseStateException;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Representa una Orden de Compra ante un proveedor.
+ * Maneja el ciclo de vida logístico y financiero.
+ */
 public class PurchaseOrder {
     private Long id;
-    private PurchaseOrderStatus status;
+    private Long supplierId;
+    private Long branchId;
+    private Long userId; // Autorizador
+    private Long receivingUserId; // Quien recibe la mercancía
+    
     private LocalDateTime requestDate;
     private LocalDateTime estimatedArrivalDate;
-    private Long supplierId;
-    private Long userId;
-    private Long branchId;
+    private LocalDateTime actualArrivalDate;
+    
+    private ReceptionStatus receptionStatus;
+    private PaymentStatus paymentStatus;
+    private BigDecimal total;
+    
     private List<PurchaseOrderDetail> details;
 
-    public PurchaseOrder(Long id, PurchaseOrderStatus status, LocalDateTime requestDate, LocalDateTime estimatedArrivalDate, Long supplierId, Long userId, Long branchId, List<PurchaseOrderDetail> details) {
-        if (supplierId == null) {
-            throw new IllegalArgumentException("El proveedor es obligatorio.");
-        }
-        if (branchId == null) {
-            throw new IllegalArgumentException("La sucursal de destino es obligatoria.");
+    public PurchaseOrder(Long id, Long supplierId, Long branchId, Long userId, Long receivingUserId,
+                         LocalDateTime requestDate, LocalDateTime estimatedArrivalDate, LocalDateTime actualArrivalDate,
+                         ReceptionStatus receptionStatus, PaymentStatus paymentStatus, BigDecimal total,
+                         List<PurchaseOrderDetail> details) {
+        if (supplierId == null || branchId == null || userId == null) {
+            throw new IllegalArgumentException("Proveedor, Sucursal y Usuario Autorizador son obligatorios.");
         }
         if (details == null || details.isEmpty()) {
-            throw new IllegalArgumentException("La orden de compra debe tener al menos un producto.");
+            throw new IllegalArgumentException("La orden debe tener al menos un item.");
         }
 
         this.id = id;
-        this.status = status != null ? status : PurchaseOrderStatus.PENDING;
-        this.requestDate = requestDate != null ? requestDate : LocalDateTime.now();
-        this.estimatedArrivalDate = estimatedArrivalDate;
         this.supplierId = supplierId;
-        this.userId = userId;
         this.branchId = branchId;
+        this.userId = userId;
+        this.receivingUserId = receivingUserId;
+        this.requestDate = (requestDate != null) ? requestDate : LocalDateTime.now();
+        this.estimatedArrivalDate = estimatedArrivalDate;
+        this.actualArrivalDate = actualArrivalDate;
+        this.receptionStatus = (receptionStatus != null) ? receptionStatus : ReceptionStatus.PENDING;
+        this.paymentStatus = (paymentStatus != null) ? paymentStatus : PaymentStatus.POR_PAGAR;
         this.details = details;
+        this.total = (total != null) ? total : calculateTotal();
     }
 
-    public static PurchaseOrder create(Long supplierId, Long userId, Long branchId, LocalDateTime estimatedArrivalDate, List<PurchaseOrderDetail> details) {
-        return new PurchaseOrder(null, PurchaseOrderStatus.PENDING, LocalDateTime.now(), estimatedArrivalDate, supplierId, userId, branchId, details);
+    public static PurchaseOrder create(Long supplierId, Long userId, Long branchId, 
+                                     LocalDateTime estimatedArrivalDate, List<PurchaseOrderDetail> details) {
+        return new PurchaseOrder(null, supplierId, branchId, userId, null, 
+                               LocalDateTime.now(), estimatedArrivalDate, null,
+                               ReceptionStatus.PENDING, PaymentStatus.POR_PAGAR, null, details);
+    }
+
+    private BigDecimal calculateTotal() {
+        return details.stream()
+                .map(PurchaseOrderDetail::computeSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public void markAsInTransit() {
-        if (this.status != PurchaseOrderStatus.PENDING) {
+        if (this.receptionStatus != ReceptionStatus.PENDING) {
             throw new InvalidPurchaseStateException("Solo se puede despachar una orden en estado PENDING.");
         }
-        this.status = PurchaseOrderStatus.IN_TRANSIT;
+        this.receptionStatus = ReceptionStatus.IN_TRANSIT;
     }
 
-    public void receive() {
-        if (this.status != PurchaseOrderStatus.IN_TRANSIT && this.status != PurchaseOrderStatus.PENDING) {
-            throw new InvalidPurchaseStateException("Solo se puede recibir una orden IN_TRANSIT o PENDING.");
+    /**
+     * Registra la recepción física de la mercancía.
+     * @param userId ID del usuario que recibe físicamente el pedido.
+     */
+    public void receive(Long userId) {
+        if (this.receptionStatus == ReceptionStatus.RECEIVED_TOTAL) {
+            throw new InvalidPurchaseStateException("La orden ya ha sido recibida completamente.");
         }
-        this.status = PurchaseOrderStatus.RECEIVED;
+        this.receptionStatus = ReceptionStatus.RECEIVED_TOTAL;
+        this.receivingUserId = userId;
+        this.actualArrivalDate = LocalDateTime.now();
     }
 
-    public void cancel() {
-        if (this.status != PurchaseOrderStatus.PENDING) {
-            throw new InvalidPurchaseStateException("Solo se pueden cancelar órdenes en estado PENDING.");
-        }
-        this.status = PurchaseOrderStatus.CANCELLED;
+    public void registerPayment() {
+        this.paymentStatus = PaymentStatus.PAGADO;
     }
 
+    // Getters
     public Long getId() { return id; }
-    public PurchaseOrderStatus getStatus() { return status; }
+    public Long getSupplierId() { return supplierId; }
+    public Long getBranchId() { return branchId; }
+    public Long getUserId() { return userId; }
+    public Long getReceivingUserId() { return receivingUserId; }
     public LocalDateTime getRequestDate() { return requestDate; }
     public LocalDateTime getEstimatedArrivalDate() { return estimatedArrivalDate; }
-    public Long getSupplierId() { return supplierId; }
-    public Long getUserId() { return userId; }
-    public Long getBranchId() { return branchId; }
+    public LocalDateTime getActualArrivalDate() { return actualArrivalDate; }
+    public ReceptionStatus getReceptionStatus() { return receptionStatus; }
+    public PaymentStatus getPaymentStatus() { return paymentStatus; }
+    public BigDecimal getTotal() { return total; }
     public List<PurchaseOrderDetail> getDetails() { return Collections.unmodifiableList(details); }
 }

@@ -29,21 +29,46 @@ public class SalePersistenceAdapter implements SaleRepositoryPort {
         return jpaSaleRepository.findById(id).map(this::toDomain);
     }
 
+    @Override
+    public java.util.List<Sale> findAll() {
+        return jpaSaleRepository.findAll().stream()
+                .map(this::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public java.util.List<Sale> findByBranchId(Long branchId) {
+        return jpaSaleRepository.findByBranchId(branchId).stream()
+                .map(this::toDomain)
+                .collect(Collectors.toList());
+    }
+
     private SaleEntity toEntity(Sale domain) {
         SaleEntity entity = new SaleEntity();
         entity.setId(domain.getId());
         entity.setDate(domain.getDate());
-        entity.setTotal(domain.getTotal());
+        entity.setSubtotal(domain.getSubtotal());
+        entity.setTotalDiscount(domain.getTotalDiscount());
+        entity.setTotalFinal(domain.getTotalFinal());
         entity.setBranchId(domain.getBranchId());
+        entity.setBranchName(domain.getBranchName());
         entity.setUserId(domain.getUserId());
+        entity.setUserName(domain.getUserName());
+        entity.setStatus(domain.getStatus());
+        entity.setCancellationReason(domain.getCancellationReason());
+        entity.setCustomerName(domain.getCustomerName());
+        entity.setCustomerDocument(domain.getCustomerDocument());
 
         if (domain.getDetails() != null) {
             for (SaleDetail detail : domain.getDetails()) {
                 SaleDetailEntity detailEntity = new SaleDetailEntity();
                 detailEntity.setId(detail.getId());
                 detailEntity.setProductId(detail.getProductId());
+                detailEntity.setProductName(detail.getProductName());
                 detailEntity.setQuantity(detail.getQuantity());
                 detailEntity.setUnitPriceApplied(detail.getUnitPriceApplied());
+                detailEntity.setDiscountPercentage(detail.getDiscountPercentage());
+                detailEntity.setSubtotalLine(detail.getSubtotalLine());
                 
                 entity.addDetail(detailEntity);
             }
@@ -55,14 +80,21 @@ public class SalePersistenceAdapter implements SaleRepositoryPort {
         return new Sale(
                 entity.getId(),
                 entity.getDate(),
-                entity.getTotal(),
                 entity.getBranchId(),
+                entity.getBranchName(),
                 entity.getUserId(),
+                entity.getUserName(),
+                entity.getStatus(),
+                entity.getCancellationReason(),
+                entity.getCustomerName(),
+                entity.getCustomerDocument(),
                 entity.getDetails().stream().map(d -> new SaleDetail(
                         d.getId(),
                         d.getProductId(),
+                        d.getProductName(),
                         d.getQuantity(),
-                        d.getUnitPriceApplied()
+                        d.getUnitPriceApplied(),
+                        d.getDiscountPercentage()
                 )).collect(Collectors.toList())
         );
     }

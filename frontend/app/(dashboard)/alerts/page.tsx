@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { apiClient } from "@/api/client";
+import { getSession } from "@/api/auth";
 import { useToast } from "@/context/ToastContext";
 import type { components } from "@/api/schema";
 
@@ -116,6 +118,19 @@ export default function AlertsPage() {
   const [confirmId, setConfirmId]     = useState<number | null>(null);
   const [filter, setFilter]           = useState<"all" | "active" | "resolved">("all");
   const [scanResult, setScanResult]   = useState<string | null>(null);
+
+  const router = useRouter();
+  const session = typeof window !== "undefined" ? getSession() : null;
+  const isAdmin = session?.rol === "ADMIN";
+  const isManager = session?.rol === "MANAGER";
+  const isSeller = session?.rol === "SELLER";
+
+  // Redirigir si es SELLER (no tiene permiso aquí)
+  useEffect(() => {
+    if (isSeller) {
+      router.push("/sales/pos");
+    }
+  }, [isSeller]);
 
   // Initial load
   useEffect(() => {

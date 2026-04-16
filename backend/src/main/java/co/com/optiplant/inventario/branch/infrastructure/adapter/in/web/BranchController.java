@@ -23,6 +23,7 @@ public class BranchController {
     }
 
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BranchResponse> create(@Valid @RequestBody BranchRequest request) {
         // 1. Mapear DTO a Dominio
         Branch branchToCreate = Branch.builder()
@@ -39,6 +40,7 @@ public class BranchController {
     }
 
     @GetMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SELLER')")
     public ResponseEntity<List<BranchResponse>> getAll() {
         List<BranchResponse> response = branchUseCase.getAllBranches().stream()
                 .map(this::mapToResponse)
@@ -47,11 +49,13 @@ public class BranchController {
     }
 
     @GetMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SELLER')")
     public ResponseEntity<BranchResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(mapToResponse(branchUseCase.getBranchById(id)));
     }
 
     @PutMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BranchResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody BranchRequest request) {
@@ -67,6 +71,7 @@ public class BranchController {
     }
 
     @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         branchUseCase.deleteBranch(id);
         return ResponseEntity.noContent().build();
