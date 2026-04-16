@@ -53,7 +53,8 @@ public class AuthController {
             result.token(), 
             result.user().getEmail(),
             result.user().getNombre(),
-            result.user().getRole().getNombre()
+            result.user().getRole().getNombre(),
+            result.user().getSucursalId()
         ));
     }
 }

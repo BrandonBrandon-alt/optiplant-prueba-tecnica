@@ -4,6 +4,7 @@ import co.com.optiplant.inventario.inventory.application.port.out.LocalInventory
 import co.com.optiplant.inventario.inventory.domain.model.LocalInventory;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -28,9 +29,21 @@ public class LocalInventoryPersistenceAdapter implements LocalInventoryRepositor
     }
 
     @Override
+    public List<LocalInventory> findByBranchId(Long branchId) {
+        return localInventoryRepository.findByBranchId(branchId).stream()
+                .map(LocalInventoryEntity::toDomain)
+                .toList();
+    }
+
+    @Override
     public java.util.List<LocalInventory> findLowStock() {
         return localInventoryRepository.findLowStock().stream()
                 .map(LocalInventoryEntity::toDomain)
                 .toList();
+    }
+
+    @Override
+    public java.math.BigDecimal sumQuantityByProductId(Long productId) {
+        return localInventoryRepository.sumQuantityByProductId(productId);
     }
 }

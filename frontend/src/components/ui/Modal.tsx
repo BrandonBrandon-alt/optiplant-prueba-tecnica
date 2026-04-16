@@ -73,7 +73,7 @@ export default function Modal({
           maxWidth: sizeWidths[size],
           boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
           animation: "fadeInUp 0.2s cubic-bezier(0.16,1,0.3,1)",
-          overflow: "hidden",
+          position: "relative",
         }}
       >
         {/* Header */}

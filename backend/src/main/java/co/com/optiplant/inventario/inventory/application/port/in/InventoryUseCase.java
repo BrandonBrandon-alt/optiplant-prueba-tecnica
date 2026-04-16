@@ -28,8 +28,13 @@ public interface InventoryUseCase {
             MovementReason reason, 
             Long userId, 
             Long referenceId, 
-            String referenceType
+            String referenceType,
+            BigDecimal unitCost
     );
+
+    List<LocalInventory> getInventoryByBranch(Long branchId);
+
+    LocalInventory updateMinimumStock(Long branchId, Long productId, BigDecimal minimumStock);
 
     List<InventoryMovement> getKardex(Long branchId, Long productId);
 

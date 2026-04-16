@@ -1,6 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { logout, getSession, type AuthSession } from "@/api/auth";
+import { apiClient } from "@/api/client";
+import type { components } from "@/api/schema";
+
+type BranchResponse = components["schemas"]["BranchResponse"];
 
 const navItems = [
   {
@@ -125,10 +129,53 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [session, setSession] = useState<AuthSession | null>(null);
+  const scrollRef = useRef<HTMLElement>(null);
+  const [alertCount, setAlertCount] = useState(0);
 
   useEffect(() => {
     setSession(getSession());
+    
+    // Restore scroll position
+    const savedScroll = sessionStorage.getItem("sidebar-scroll");
+    if (savedScroll && scrollRef.current) {
+      scrollRef.current.scrollTop = parseInt(savedScroll, 10);
+    }
   }, []);
+
+  useEffect(() => {
+    if (!session) return;
+
+    async function fetchAlerts() {
+      try {
+        let count = 0;
+        if (session?.rol === "ADMIN") {
+          const { data: branches } = await apiClient.GET("/api/branches");
+          if (branches) {
+            const results = await Promise.all(
+              branches.map((b) =>
+                apiClient.GET("/api/v1/alerts", { params: { query: { branchId: b.id! } } })
+              )
+            );
+            count = results.reduce((acc, r) => acc + (r.data?.filter(a => !a.resolved).length ?? 0), 0);
+          }
+        } else if (session?.sucursalId) {
+          const { data: alerts } = await apiClient.GET("/api/v1/alerts", { 
+            params: { query: { branchId: session.sucursalId } } 
+          });
+          count = alerts?.filter(a => !a.resolved).length ?? 0;
+        }
+        setAlertCount(count);
+      } catch (e) {
+        console.error("Error fetching alerts for sidebar", e);
+      }
+    }
+
+    fetchAlerts();
+  }, [session]);
+
+  const handleScroll = (e: React.UIEvent<HTMLElement>) => {
+    sessionStorage.setItem("sidebar-scroll", e.currentTarget.scrollTop.toString());
+  };
 
   const handleLogout = () => {
     logout();
@@ -174,7 +221,7 @@ export default function Sidebar() {
           {icon}
         </span>
         {label}
-        {label === "Alertas" && (
+        {label === "Alertas" && alertCount > 0 && (
           <span
             style={{
               marginLeft: "auto",
@@ -188,7 +235,7 @@ export default function Sidebar() {
               textAlign: "center",
             }}
           >
-            !
+            {alertCount}
           </span>
         )}
       </a>
@@ -252,7 +299,19 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav style={{ flex: 1, display: "flex", flexDirection: "column", gap: "2px", padding: "0 12px" }}>
+      <nav 
+        ref={scrollRef as any}
+        onScroll={handleScroll}
+        style={{ 
+          flex: 1, 
+          display: "flex", 
+          flexDirection: "column", 
+          gap: "2px", 
+          padding: "0 12px",
+          overflowY: "auto",
+          scrollbarWidth: "none", // For Firefox
+        }}
+      >
         <p style={{
           fontSize: "10.5px",
           fontWeight: 600,

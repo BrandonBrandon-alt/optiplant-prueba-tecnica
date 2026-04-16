@@ -17,6 +17,7 @@ type BranchValuation = components["schemas"]["BranchValuation"];
 type TopProduct      = components["schemas"]["TopSellingProduct"];
 type StockAlert      = components["schemas"]["StockAlertResponse"];
 type BranchResponse  = components["schemas"]["BranchResponse"];
+type TransferResponse = components["schemas"]["TransferResponse"];
 
 const formatCOP = (v: number) =>
   new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(v);
@@ -64,6 +65,8 @@ export default function DashboardPage() {
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [alerts, setAlerts]           = useState<StockAlert[]>([]);
   const [branches, setBranches]       = useState<BranchResponse[]>([]);
+  const [transfers, setTransfers]     = useState<TransferResponse[]>([]);
+  const [performance, setPerformance]     = useState<components["schemas"]["BranchPerformance"][]>([]);
   const [global, setGlobal]           = useState<components["schemas"]["GlobalSummary"] | null>(null);
   const [loading, setLoading]         = useState(true);
   const session = typeof window !== "undefined" ? getSession() : null;
@@ -71,15 +74,19 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchAll() {
       try {
-        const [val, top, bra, glo] = await Promise.all([
+        const [val, top, bra, glo, perf, tra] = await Promise.all([
           apiClient.GET("/api/v1/analytics/valuations"),
           apiClient.GET("/api/v1/analytics/top-products", { params: { query: { limit: 5 } } }),
           apiClient.GET("/api/branches"),
           apiClient.GET("/api/v1/analytics/global-summary"),
+          apiClient.GET("/api/v1/analytics/performance"),
+          apiClient.GET("/api/v1/transfers"),
         ]);
         setValuations(val.data ?? []);
         setTopProducts(top.data ?? []);
         setGlobal(glo.data ?? null);
+        setPerformance(perf.data ?? []);
+        setTransfers((tra.data ?? []).filter(t => t.status !== "RECEIVED"));
         const branchList = bra.data ?? [];
         setBranches(branchList);
 
@@ -89,7 +96,7 @@ export default function DashboardPage() {
               apiClient.GET("/api/v1/alerts", { params: { query: { branchId: b.id! } } })
             )
           );
-          setAlerts(alertResults.flatMap((r) => r.data ?? []));
+          setAlerts(alertResults.flatMap((r) => r.data ?? []).filter(a => !a.resolved));
         }
       } catch (e) {
         console.error("Dashboard fetch error:", e);
@@ -102,21 +109,21 @@ export default function DashboardPage() {
 
   if (loading) return <Spinner fullPage />;
 
-  const totalValue   = valuations.reduce((s, v) => s + (v.totalValue ?? 0), 0);
-  const activeAlerts = alerts.filter((a) => !a.resolved).length;
+  const activeAlerts = alerts.length;
   const topProduct   = topProducts[0];
+  const branchMap = new Map(branches.map(b => [b.id, b.nombre]));
 
   return (
-    <div style={{ padding: "36px 40px", maxWidth: "1100px" }}>
+    <div style={{ padding: "36px 40px", maxWidth: "1200px" }}>
       <PageHeader
-        title="Dashboard"
+        title="Panel de Control Administrativo"
         description={
           <>
             Bienvenido,{" "}
             <em style={{ color: "var(--brand-500)", fontStyle: "italic", fontFamily: "var(--font-serif)" }}>
-              {session?.email ?? "usuario"}
+              {session?.nombre ?? session?.email ?? "Administrador"}
             </em>
-            . Aquí está el resumen del sistema.
+            . Visualiza el estado global de tu red de sucursales.
           </>
         }
       />
@@ -125,136 +132,107 @@ export default function DashboardPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
           gap: "16px",
           marginBottom: "28px",
         }}
       >
         <KpiCard
-          label="Valorización total"
-          value={formatCOP(totalValue)}
-          sub={`${branches.length} sucursales activas`}
-          accent="var(--brand-500)"
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
-        />
-        <KpiCard
-          label="Ventas Globales"
+          label="Ventas Netas"
           value={formatCOP(global?.totalRevenue ?? 0)}
-          sub={`Ticket promedio: ${formatCOP(global?.averageTicket ?? 0)}`}
+          sub={`Ticket Promedio: ${formatCOP(global?.averageTicket ?? 0)}`}
           accent="var(--color-success)"
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
+        />
+        <KpiCard
+          label="Valor Inventario"
+          value={formatCOP(global?.totalInventoryValue ?? 0)}
+          sub={`${branches.length} sedes operativas`}
+          accent="var(--neutral-200)"
           delay="0.05s"
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 8l-9-4-9 4m18 8l-9 4-9-4m18-4l-9 4-9-4m9-11v11"/></svg>}
         />
         <KpiCard
-          label="Alertas activas"
+          label="Traslados Activos"
+          value={String(transfers.length)}
+          sub="Movimientos en proceso"
+          accent="var(--brand-300)"
+          delay="0.1s"
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>}
+        />
+        <KpiCard
+          label="Sedes Críticas"
           value={String(activeAlerts)}
-          sub={`${alerts.length - activeAlerts} resueltas`}
+          sub="Alertas de stock pendientes"
           accent={activeAlerts > 0 ? "var(--brand-500)" : "var(--color-success)"}
-          delay="0.1s"
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>}
-        />
-        <KpiCard
-          label="Producto estrella"
-          value={topProduct?.productName ?? "—"}
-          sub={topProduct ? `${topProduct.totalSoldQuantity} uds vendidas` : "Sin datos"}
-          accent="var(--neutral-300)"
-          delay="0.1s"
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>}
-        />
-        <KpiCard
-          label="Sucursales"
-          value={String(branches.length)}
-          sub="registradas en el sistema"
-          accent="var(--neutral-400)"
           delay="0.15s"
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>}
         />
       </div>
 
-      {/* Two-column panels */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-
-        {/* Alertas */}
-        <Card
-          title="Alertas de Stock"
-          delay="0.15s"
-          headerRight={
-            activeAlerts > 0 ? (
-              <Badge variant="danger">{activeAlerts} activas</Badge>
-            ) : undefined
-          }
-        >
-          {alerts.length === 0 ? (
-            <EmptyState
-              icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>}
-              title="No hay alertas"
-              description="El stock de todas las sucursales está en niveles normales."
-            />
-          ) : (
-            alerts.slice(0, 6).map((a) => <AlertRow key={a.id} alert={a} />)
-          )}
-        </Card>
-
-        {/* Top Productos + Valorización */}
-        <Card title="Top Productos Vendidos" delay="0.2s">
-          {topProducts.length === 0 ? (
-            <EmptyState
-              icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>}
-              title="Sin ventas aún"
-              description="Registra ventas para ver el ranking de productos."
-            />
-          ) : (
-            topProducts.map((p, i) => (
-              <div
-                key={p.productId}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  padding: "10px 0",
-                  borderBottom: i < topProducts.length - 1 ? "1px solid var(--border-subtle)" : "none",
-                }}
-              >
-                <span
-                  style={{
-                    width: "24px", height: "24px", borderRadius: "8px",
-                    background: i === 0 ? "rgba(217,99,79,0.15)" : "var(--bg-hover)",
-                    color: i === 0 ? "var(--brand-500)" : "var(--neutral-500)",
-                    fontSize: "12px", fontWeight: 700,
-                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                  }}
-                >
-                  {i + 1}
-                </span>
-                <span style={{ flex: 1, fontSize: "13.5px", color: "var(--neutral-100)" }}>
-                  {p.productName}
-                </span>
-                <Badge variant={i === 0 ? "danger" : "neutral"}>
-                  {p.totalSoldQuantity} uds
-                </Badge>
-              </div>
-            ))
-          )}
-
-          {valuations.length > 0 && (
-            <>
-              <h3 style={{ fontSize: "13px", fontWeight: 600, color: "var(--neutral-300)", margin: "20px 0 10px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                Valor por Sucursal
-              </h3>
-              {valuations.map((v) => (
-                <div
-                  key={v.branchId}
-                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: "1px solid var(--border-subtle)", fontSize: "13px" }}
-                >
-                  <span style={{ color: "var(--neutral-300)" }}>{v.branchName}</span>
-                  <span style={{ color: "var(--neutral-400)", fontFamily: "monospace", fontSize: "12px" }}>
-                    {formatCOP(v.totalValue ?? 0)}
-                  </span>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+        {/* Rendimiento por Sucursal */}
+        <Card title="Rendimiento por Sucursal" delay="0.2s">
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {performance.map((p, i) => (
+              <div key={p.branchId} style={{ background: "var(--bg-surface)", padding: "14px", borderRadius: "12px", border: "1px solid var(--border-subtle)", display: "grid", gridTemplateColumns: "1fr auto auto", gap: "16px", alignItems: "center" }}>
+                <div>
+                  <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--neutral-100)" }}>{p.branchName}</p>
+                  <p style={{ fontSize: "11px", color: "var(--neutral-500)" }}>{p.salesCount} ventas realizadas</p>
                 </div>
-              ))}
-            </>
-          )}
+                <div style={{ textAlign: "right" }}>
+                  <p style={{ fontSize: "13px", fontWeight: 700, color: "var(--neutral-100)" }}>{formatCOP(p.revenue ?? 0)}</p>
+                  <p style={{ fontSize: "11px", color: "var(--color-success)" }}>Ventas</p>
+                </div>
+                <div style={{ height: "40px", width: "40px", borderRadius: "10px", background: "var(--bg-hover)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: "11px", fontWeight: 800, color: i === 0 ? "var(--color-warning)" : "var(--neutral-400)" }}>#{i+1}</span>
+                </div>
+              </div>
+            ))}
+            {performance.length === 0 && (
+              <EmptyState 
+                title="Sin datos" 
+                description="No hay sucursales con ventas registradas." 
+                icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>}
+              />
+            )}
+          </div>
         </Card>
+
+        {/* Valorización de Inventario y Alertas */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          <Card title="Traslados en Curso" delay="0.25s">
+            {transfers.length === 0 ? (
+              <EmptyState title="Sin movimientos" description="No hay traslados activos actualmente." 
+                icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>}
+              />
+            ) : (
+              transfers.map((t, i) => (
+                <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: i < transfers.length -1 ? "1px solid var(--border-subtle)" : "none" }}>
+                  <div>
+                    <p style={{ fontSize: "13px", color: "var(--neutral-100)" }}>
+                      {branchMap.get(t.originBranchId!) || "Sede A"} → {branchMap.get(t.destinationBranchId!) || "Sede B"}
+                    </p>
+                    <p style={{ fontSize: "11px", color: "var(--neutral-500)" }}>{t.status === "REQUESTED" ? "Solicitado" : "Enviado"}</p>
+                  </div>
+                  <Badge variant={t.status === "DISPATCHED" ? "warning" : "neutral"}>
+                    ID #{t.id}
+                  </Badge>
+                </div>
+              ))
+            )}
+          </Card>
+
+          <Card title="Alertas de Stock" delay="0.3s">
+            {alerts.length === 0 ? (
+              <EmptyState title="Todo normal" description="No hay alertas críticas en la red." 
+                icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>}
+              />
+            ) : (
+              alerts.slice(0, 4).map(a => <AlertRow key={a.id} alert={a} />)
+            )}
+          </Card>
+        </div>
       </div>
     </div>
   );

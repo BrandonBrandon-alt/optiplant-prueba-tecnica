@@ -96,7 +96,8 @@ public class TransferService implements TransferUseCase {
                         MovementReason.TRASLADO,
                         command.userId(),
                         transfer.getId(),
-                        "TRANSFERENCIA_IN"
+                        "TRANSFERENCIA_IN",
+                        null // Las transferencias no afectan el costo promedio
                 );
             }
         }

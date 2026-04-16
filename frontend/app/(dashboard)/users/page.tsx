@@ -13,6 +13,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import Modal      from "@/components/ui/Modal";
 import Button     from "@/components/ui/Button";
 import Input      from "@/components/ui/Input";
+import Select     from "@/components/ui/Select";
 
 // ── Types ──────────────────────────────────────────────────
 type UserResponse   = components["schemas"]["UserResponse"];
@@ -198,28 +199,22 @@ function CreateUserModal({ open, onClose, roles, branches, onCreated }: {
                     onChange={e => setValues({...values, password: e.target.value})}
                     icon={<LockIcon />}
                 />
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--neutral-400)" }}>Rol del sistema</label>
-                    <select
-                        style={{ background: "var(--bg-surface)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", padding: "10px", color: "white" }}
-                        value={values.rolId}
-                        onChange={e => setValues({...values, rolId: Number(e.target.value)})}
-                    >
-                        {roles.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
-                    </select>
-                </div>
-                {values.rolId !== 1 && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--neutral-400)" }}>Sucursal asignada</label>
-                        <select
-                            style={{ background: "var(--bg-surface)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", padding: "10px", color: "white" }}
-                            value={values.sucursalId || ""}
-                            onChange={e => setValues({...values, sucursalId: Number(e.target.value)})}
-                        >
-                            <option value="">Seleccionar sede...</option>
-                            {branches.map(b => <option key={b.id} value={b.id}>{b.nombre}</option>)}
-                        </select>
-                    </div>
+                <Select
+                    label="Rol del sistema"
+                    value={values.rolId ?? ""}
+                    onChange={val => setValues({...values, rolId: Number(val)})}
+                    options={roles.map(r => ({ value: r.id!, label: r.nombre! }))}
+                    icon={<ShieldIcon />}
+                />
+                {values.rolId && Number(values.rolId) !== 1 && (
+                    <Select
+                        label="Sucursal asignada"
+                        value={values.sucursalId || ""}
+                        onChange={val => setValues({...values, sucursalId: Number(val)})}
+                        options={branches.map(b => ({ value: b.id!, label: b.nombre! }))}
+                        icon={<BuildingIcon />}
+                        placeholder="Seleccionar sede..."
+                    />
                 )}
             </form>
         </Modal>
@@ -318,28 +313,22 @@ function EditUserModal({ open, onClose, user, roles, branches, onUpdated }: {
                     onChange={e => setValues({...values, password: e.target.value})}
                     icon={<LockIcon />}
                 />
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--neutral-400)" }}>Rol del sistema</label>
-                    <select
-                        style={{ background: "var(--bg-surface)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", padding: "10px", color: "white" }}
-                        value={values.rolId}
-                        onChange={e => setValues({...values, rolId: Number(e.target.value)})}
-                    >
-                        {roles.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
-                    </select>
-                </div>
-                {values.rolId !== 1 && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--neutral-400)" }}>Sucursal asignada</label>
-                        <select
-                            style={{ background: "var(--bg-surface)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", padding: "10px", color: "white" }}
-                            value={values.sucursalId || ""}
-                            onChange={e => setValues({...values, sucursalId: Number(e.target.value)})}
-                        >
-                            <option value="">Seleccionar sede...</option>
-                            {branches.map(b => <option key={b.id} value={b.id}>{b.nombre}</option>)}
-                        </select>
-                    </div>
+                <Select
+                    label="Rol del sistema"
+                    value={values.rolId ?? ""}
+                    onChange={val => setValues({...values, rolId: Number(val)})}
+                    options={roles.map(r => ({ value: r.id!, label: r.nombre! }))}
+                    icon={<ShieldIcon />}
+                />
+                {values.rolId && Number(values.rolId) !== 1 && (
+                    <Select
+                        label="Sucursal asignada"
+                        value={values.sucursalId || ""}
+                        onChange={val => setValues({...values, sucursalId: Number(val)})}
+                        options={branches.map(b => ({ value: b.id!, label: b.nombre! }))}
+                        icon={<BuildingIcon />}
+                        placeholder="Seleccionar sede..."
+                    />
                 )}
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
                    <input 

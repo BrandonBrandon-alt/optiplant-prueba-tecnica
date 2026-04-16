@@ -13,4 +13,9 @@ public interface JpaLocalInventoryRepository extends JpaRepository<LocalInventor
 
     @Query("SELECT i FROM LocalInventoryEntity i WHERE i.currentQuantity <= i.minimumStock AND i.minimumStock > 0")
     List<LocalInventoryEntity> findLowStock();
+
+    List<LocalInventoryEntity> findByBranchId(Long branchId);
+
+    @Query("SELECT COALESCE(SUM(i.currentQuantity), 0) FROM LocalInventoryEntity i WHERE i.productId = :productId")
+    java.math.BigDecimal sumQuantityByProductId(Long productId);
 }

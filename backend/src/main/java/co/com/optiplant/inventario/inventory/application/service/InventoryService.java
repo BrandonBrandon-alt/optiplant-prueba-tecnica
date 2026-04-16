@@ -9,10 +9,13 @@ import co.com.optiplant.inventario.inventory.domain.model.InventoryMovement;
 import co.com.optiplant.inventario.inventory.domain.model.LocalInventory;
 import co.com.optiplant.inventario.inventory.domain.model.MovementReason;
 import co.com.optiplant.inventario.inventory.domain.model.MovementType;
+import co.com.optiplant.inventario.catalog.application.port.in.ProductUseCase;
+import co.com.optiplant.inventario.catalog.domain.model.Product;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -21,11 +24,14 @@ public class InventoryService implements InventoryUseCase {
 
     private final LocalInventoryRepositoryPort localInventoryRepository;
     private final InventoryMovementRepositoryPort inventoryMovementRepository;
+    private final ProductUseCase productUseCase;
 
     public InventoryService(LocalInventoryRepositoryPort localInventoryRepository,
-                            InventoryMovementRepositoryPort inventoryMovementRepository) {
+                            InventoryMovementRepositoryPort inventoryMovementRepository,
+                            ProductUseCase productUseCase) {
         this.localInventoryRepository = localInventoryRepository;
         this.inventoryMovementRepository = inventoryMovementRepository;
+        this.productUseCase = productUseCase;
     }
 
     @Override
@@ -63,14 +69,19 @@ public class InventoryService implements InventoryUseCase {
 
     @Override
     @Transactional
-    public void addStock(Long branchId, Long productId, BigDecimal quantity, MovementReason reason, Long userId, Long referenceId, String referenceType) {
+    public void addStock(Long branchId, Long productId, BigDecimal quantity, MovementReason reason, Long userId, Long referenceId, String referenceType, BigDecimal unitCost) {
         LocalInventory inventory = localInventoryRepository.findByBranchAndProduct(branchId, productId)
                 .orElseGet(() -> LocalInventory.builder()
                         .branchId(branchId)
                         .productId(productId)
                         .currentQuantity(BigDecimal.ZERO)
-                        .minimumStock(BigDecimal.ZERO) // configurable luego
+                        .minimumStock(BigDecimal.ZERO)
                         .build());
+
+        // Recalcular Costo Promedio si se proporciona un costo unitario
+        if (unitCost != null && unitCost.compareTo(BigDecimal.ZERO) > 0) {
+            updateProductAverageCost(productId, quantity, unitCost);
+        }
 
         inventory.setCurrentQuantity(inventory.getCurrentQuantity().add(quantity));
         inventory.setLastUpdated(LocalDateTime.now());
@@ -88,6 +99,44 @@ public class InventoryService implements InventoryUseCase {
                 .referenceType(referenceType)
                 .build();
         inventoryMovementRepository.save(movement);
+    }
+
+    private void updateProductAverageCost(Long productId, BigDecimal newQuantity, BigDecimal unitCost) {
+        Product product = productUseCase.getProductById(productId);
+        
+        // Obtener stock total actual en todas las sucursales
+        BigDecimal currentTotalStock = localInventoryRepository.sumQuantityByProductId(productId);
+        
+        // Si no hay stock previo o el costo promedio es 0, el nuevo costo es el actual
+        if (currentTotalStock.compareTo(BigDecimal.ZERO) <= 0 || product.getAverageCost() == null || product.getAverageCost().compareTo(BigDecimal.ZERO) == 0) {
+            product.setAverageCost(unitCost);
+        } else {
+            // Fórmula: (CP_anterior * Stock_anterior + Costo_nuevo * Cant_nueva) / (Stock_anterior + Cant_nueva)
+            BigDecimal currentTotalValue = product.getAverageCost().multiply(currentTotalStock);
+            BigDecimal newInflowValue = unitCost.multiply(newQuantity);
+            BigDecimal newTotalQuantity = currentTotalStock.add(newQuantity);
+            
+            BigDecimal newAverageCost = currentTotalValue.add(newInflowValue)
+                    .divide(newTotalQuantity, 2, RoundingMode.HALF_UP);
+            
+            product.setAverageCost(newAverageCost);
+        }
+        
+        productUseCase.updateProduct(productId, product);
+    }
+
+    @Override
+    public List<LocalInventory> getInventoryByBranch(Long branchId) {
+        return localInventoryRepository.findByBranchId(branchId);
+    }
+
+    @Override
+    @Transactional
+    public LocalInventory updateMinimumStock(Long branchId, Long productId, BigDecimal minimumStock) {
+        LocalInventory inventory = getInventory(branchId, productId);
+        inventory.setMinimumStock(minimumStock);
+        inventory.setLastUpdated(LocalDateTime.now());
+        return localInventoryRepository.save(inventory);
     }
 
     @Override

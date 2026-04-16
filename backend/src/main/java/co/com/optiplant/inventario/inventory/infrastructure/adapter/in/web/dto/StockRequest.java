@@ -21,4 +21,8 @@ public class StockRequest {
 
     private Long referenceId;
     private String referenceType;
+
+    /** Costo unitario de adquisición (opcional, para ingresos) */
+    @DecimalMin(value = "0.0", message = "El costo no puede ser negativo")
+    private BigDecimal unitCost;
 }

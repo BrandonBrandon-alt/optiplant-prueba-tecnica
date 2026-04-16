@@ -372,6 +372,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/inventory/branches/{branchId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getInventoryByBranch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/branches/{branchId}/products/{productId}/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/analytics/valuations": {
         parameters: {
             query?: never;
@@ -390,12 +422,47 @@ export interface paths {
     };
     "/api/v1/analytics/top-products": {
         parameters: {
-            query?: never;
+            query?: {
+                /** Format: int32 */
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         get: operations["getTopSellingProducts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/performance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getBranchPerformance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/global-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGlobalSummary"];
         put?: never;
         post?: never;
         delete?: never;
@@ -771,6 +838,7 @@ export interface components {
             /** Format: int64 */
             referenceId?: number;
             referenceType?: string;
+            unitCost?: number;
         };
         MessageResponse: {
             message?: string;

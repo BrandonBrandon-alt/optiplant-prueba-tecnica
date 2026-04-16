@@ -3,7 +3,8 @@ import { apiClient } from "./client";
 const AUTH_TOKEN_KEY = "optiplant_token";
 const AUTH_EMAIL_KEY = "optiplant_email";
 const AUTH_NAME_KEY  = "optiplant_nombre";
-const AUTH_ROLE_KEY  = "optiplant_rol";
+const AUTH_ROLE_KEY      = "optiplant_rol";
+const AUTH_BRANCH_ID_KEY = "optiplant_sucursal_id";
 
 export interface LoginPayload {
   email: string;
@@ -15,6 +16,7 @@ export interface AuthSession {
   email: string;
   nombre: string;
   rol: string;
+  sucursalId?: number;
 }
 
 /**
@@ -22,9 +24,9 @@ export interface AuthSession {
  * Retorna la sesión (token + email) o lanza un error con mensaje legible.
  */
 export async function login(payload: LoginPayload): Promise<AuthSession> {
-  const { data, error } = await apiClient.POST("/api/auth/login", {
+  const { data, error } = (await apiClient.POST("/api/auth/login", {
     body: payload,
-  });
+  })) as any;
 
   if (error || !data?.token || !data?.email) {
     throw new Error("Credenciales incorrectas. Inténtalo de nuevo.");
@@ -35,12 +37,16 @@ export async function login(payload: LoginPayload): Promise<AuthSession> {
   localStorage.setItem(AUTH_EMAIL_KEY, data.email);
   localStorage.setItem(AUTH_NAME_KEY,  data.nombre || "");
   localStorage.setItem(AUTH_ROLE_KEY,  data.rol || "");
+  if (data.sucursalId) {
+    localStorage.setItem(AUTH_BRANCH_ID_KEY, data.sucursalId.toString());
+  }
 
   return { 
     token:  data.token, 
     email:  data.email, 
     nombre: data.nombre || "", 
-    rol:    data.rol || "" 
+    rol:    data.rol || "",
+    sucursalId: data.sucursalId
   };
 }
 
@@ -50,6 +56,7 @@ export function logout(): void {
   localStorage.removeItem(AUTH_EMAIL_KEY);
   localStorage.removeItem(AUTH_NAME_KEY);
   localStorage.removeItem(AUTH_ROLE_KEY);
+  localStorage.removeItem(AUTH_BRANCH_ID_KEY);
 }
 
 /** Recupera la sesión guardada, o null si no hay ninguna */
@@ -59,11 +66,13 @@ export function getSession(): AuthSession | null {
   const email  = localStorage.getItem(AUTH_EMAIL_KEY);
   const nombre = localStorage.getItem(AUTH_NAME_KEY);
   const rol    = localStorage.getItem(AUTH_ROLE_KEY);
+  const branchId = localStorage.getItem(AUTH_BRANCH_ID_KEY);
   if (!token || !email) return null;
   return { 
     token, 
     email, 
     nombre: nombre || "", 
-    rol:    rol || "" 
+    rol:    rol || "",
+    sucursalId: branchId ? parseInt(branchId, 10) : undefined
   };
 }

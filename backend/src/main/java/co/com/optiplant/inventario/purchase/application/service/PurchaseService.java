@@ -66,7 +66,8 @@ public class PurchaseService implements PurchaseUseCase {
                     MovementReason.COMPRA,
                     userId,
                     savedOrder.getId(),
-                    "ORDEN_COMPRA"
+                    "ORDEN_COMPRA",
+                    detail.getUnitPrice()
             );
         }
 

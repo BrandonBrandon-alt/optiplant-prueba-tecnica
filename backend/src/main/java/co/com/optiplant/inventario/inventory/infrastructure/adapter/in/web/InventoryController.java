@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -26,6 +27,20 @@ public class InventoryController {
             @PathVariable Long productId) {
         LocalInventory inventory = inventoryUseCase.getInventory(branchId, productId);
         return ResponseEntity.ok(inventory);
+    }
+
+    @GetMapping("/branches/{branchId}")
+    public ResponseEntity<List<LocalInventory>> getInventoryByBranch(
+            @PathVariable Long branchId) {
+        return ResponseEntity.ok(inventoryUseCase.getInventoryByBranch(branchId));
+    }
+
+    @PutMapping("/branches/{branchId}/products/{productId}/config")
+    public ResponseEntity<LocalInventory> updateConfig(
+            @PathVariable Long branchId,
+            @PathVariable Long productId,
+            @RequestParam BigDecimal minimumStock) {
+        return ResponseEntity.ok(inventoryUseCase.updateMinimumStock(branchId, productId, minimumStock));
     }
 
     @GetMapping("/branches/{branchId}/products/{productId}/kardex")
@@ -67,7 +82,8 @@ public class InventoryController {
                 request.getReason(), 
                 request.getUserId(), 
                 request.getReferenceId(), 
-                request.getReferenceType());
+                request.getReferenceType(),
+                request.getUnitCost());
                 
         return ResponseEntity.noContent().build();
     }
