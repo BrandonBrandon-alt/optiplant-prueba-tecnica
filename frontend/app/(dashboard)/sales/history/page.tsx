@@ -9,7 +9,9 @@ import Spinner    from "@/components/ui/Spinner";
 import Card       from "@/components/ui/Card";
 import HistoryFilters from "@/components/sales-history/HistoryFilters";
 import HistoryTable   from "@/components/sales-history/HistoryTable";
+import { Search, RefreshCcw, History, ClipboardList, Info } from "lucide-react";
 import SaleDetailModal from "@/components/sales-history/SaleDetailModal";
+import Input from "@/components/ui/Input";
 
 export default function SalesHistoryPage() {
   const router = useRouter();
@@ -20,6 +22,31 @@ export default function SalesHistoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSale, setSelectedSale] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Persistence logic: Load state from localStorage on mount
+  useEffect(() => {
+    const savedState = localStorage.getItem("optiplant_history_state");
+    if (savedState) {
+      try {
+        const { search } = JSON.parse(savedState);
+        if (search) setSearchTerm(search);
+      } catch (e) {
+        console.error("Error parsing saved History state:", e);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Persistence logic: Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (!isLoaded) return;
+    
+    const stateToSave = {
+      search: searchTerm,
+    };
+    localStorage.setItem("optiplant_history_state", JSON.stringify(stateToSave));
+  }, [searchTerm, isLoaded]);
 
   useEffect(() => {
     const sess = getSession();
@@ -89,7 +116,17 @@ export default function SalesHistoryPage() {
                     Gestión y auditoría de transacciones registradas en el sistema POS.
                 </p>
             </div>
-            {/* Action buttons could go here, matching Inventory's branch selector style */}
+            
+            <div className="flex items-center gap-3 pb-1">
+                <button 
+                  onClick={fetchSales}
+                  disabled={loading}
+                  className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2 rounded-xl border border-neutral-700 transition-all font-bold text-xs uppercase tracking-widest disabled:opacity-50 h-10"
+                >
+                  <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                  Sincronizar
+                </button>
+            </div>
         </div>
 
         {/* Transaction Table Card – Matching Inventory Matrix style */}

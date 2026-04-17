@@ -16,6 +16,8 @@ import Input      from "@/components/ui/Input";
 import Select     from "@/components/ui/Select";
 import DataTable  from "@/components/ui/DataTable";
 import { useToast } from "@/context/ToastContext";
+import { Search, LayoutGrid, Table, Info } from "lucide-react";
+import InventoryItemCard from "@/components/inventory/InventoryItemCard";
 
 // ── Types ──────────────────────────────────────────────────
 type ProductResponse  = components["schemas"]["ProductResponse"];
@@ -89,6 +91,8 @@ export default function InventoryPage() {
 
   // Search and Sort
   const [searchTerm, setSearchTerm] = useState("");
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [isLoaded, setIsLoaded] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" | null }>({ key: "stockActual", direction: "desc" });
 
   // Modals state
@@ -106,6 +110,36 @@ export default function InventoryPage() {
 
   const canEdit = isAdmin || (isManager && selectedBranchId === myBranchId);
   const isReadOnly = isSeller || (!isAdmin && selectedBranchId !== myBranchId);
+
+  // Persistence logic: Load state from localStorage on mount
+  useEffect(() => {
+    const savedState = localStorage.getItem("optiplant_inventory_state");
+    if (savedState) {
+      try {
+        const { branchId, tab, search, view } = JSON.parse(savedState);
+        if (branchId) setSelectedBranchId(branchId);
+        if (tab) setActiveTab(tab);
+        if (search) setSearchTerm(search);
+        if (view) setViewMode(view);
+      } catch (e) {
+        console.error("Error parsing saved Inventory state:", e);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Persistence logic: Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (!isLoaded) return;
+    
+    const stateToSave = {
+      branchId: selectedBranchId,
+      tab: activeTab,
+      search: searchTerm,
+      view: viewMode
+    };
+    localStorage.setItem("optiplant_inventory_state", JSON.stringify(stateToSave));
+  }, [selectedBranchId, activeTab, searchTerm, viewMode, isLoaded]);
 
   // Initial load
   useEffect(() => {
@@ -358,11 +392,38 @@ export default function InventoryPage() {
           </div>
         </div>
 
-        {!canEdit && (
-          <div style={{ padding: "8px 16px", borderRadius: "8px", background: "rgba(239, 68, 68, 0.1)", border: "1px solid var(--color-danger)", display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "12px", color: "var(--color-danger)", fontWeight: 600 }}>🔒 Modo Solo Lectura</span>
-          </div>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ display: "flex", background: "var(--bg-card)", padding: "4px", borderRadius: "10px", border: "1px solid var(--border-default)" }}>
+                <button 
+                  onClick={() => setViewMode("table")}
+                  style={{ 
+                    padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer",
+                    background: viewMode === "table" ? "var(--neutral-800)" : "transparent",
+                    color: viewMode === "table" ? "var(--brand-400)" : "var(--neutral-500)",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  <Table size={16} />
+                </button>
+                <button 
+                  onClick={() => setViewMode("grid")}
+                  style={{ 
+                    padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer",
+                    background: viewMode === "grid" ? "var(--neutral-800)" : "transparent",
+                    color: viewMode === "grid" ? "var(--brand-400)" : "var(--neutral-500)",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  <LayoutGrid size={16} />
+                </button>
+            </div>
+
+            {!canEdit && (
+              <div style={{ padding: "8px 16px", borderRadius: "8px", background: "rgba(239, 68, 68, 0.1)", border: "1px solid var(--color-danger)", display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "12px", color: "var(--color-danger)", fontWeight: 600 }}>🔒 Modo Solo Lectura</span>
+              </div>
+            )}
+        </div>
       </div>
 
       {activeTab === "matrix" && (
@@ -371,136 +432,162 @@ export default function InventoryPage() {
             placeholder="Buscar por SKU, nombre, unidad o stock..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>}
+            icon={<Search size={18} />}
           />
         </div>
       )}
 
       {activeTab === "matrix" ? (
-        <Card style={{ padding: 0, overflow: "hidden", border: "1px solid var(--border-default)" }}>
-          <DataTable<any>
-            columns={[
-              {
-                header: "SKU",
-                key: "sku",
-                width: "120px",
-                sortable: true,
-                render: (p: any) => (
-                  <span className="tabular" style={{ fontSize: "12px", color: "var(--brand-400)", fontWeight: 700 }}>{p.sku}</span>
-                )
-              },
-              {
-                header: "Producto",
-                key: "nombre",
-                sortable: true,
-                render: (p: any) => (
-                  <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--neutral-100)", textTransform: "uppercase" }}>{p.nombre}</span>
-                )
-              },
-              {
-                header: "Unit.",
-                key: "unitAbbreviation",
-                align: "center",
-                sortable: true,
-                render: (p: any) => (
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--neutral-500)", textTransform: "uppercase" }}>{p.unitAbbreviation || "UND"}</span>
-                )
-              },
-              {
-                header: "Stock Actual",
-                key: "stockActual",
-                align: "right",
-                sortable: true,
-                render: (p: any) => {
-                  const inv = inventoryMap.get(p.id!);
-                  return <StockStatus current={inv?.stockActual ?? 0} minimum={inv?.stockMinimo ?? 0} unit={p.unitAbbreviation || "UND"} />;
-                }
-              },
-              {
-                header: "Stock Mín.",
-                key: "stockMinimo",
-                align: "right",
-                sortable: true,
-                render: (p: any) => {
-                  const inv = inventoryMap.get(p.id!);
-                  return <span className="tabular" style={{ fontSize: "13px", fontWeight: 600, color: "var(--neutral-400)" }}>{inv?.stockMinimo ?? 0}</span>;
-                }
-              },
-              {
-                header: "Costo Prom.",
-                key: "costoPromedio",
-                align: "right",
-                sortable: true,
-                render: (p: any) => (
-                  <span className="tabular" style={{ fontSize: "14px", fontWeight: 700, color: "var(--neutral-400)" }}>
-                    {formatCurrency(p.costoPromedio || 0)}
-                  </span>
-                )
-              },
-              {
-                header: "Precio Venta",
-                key: "precioVenta",
-                align: "right",
-                sortable: true,
-                render: (p: any) => (
-                  <span className="tabular" style={{ fontSize: "15px", fontWeight: 800, color: "var(--neutral-100)" }}>
-                    {formatCurrency(p.precioVenta || 0)}
-                  </span>
-                )
-              },
-              {
-                header: "Última OP",
-                key: "lastUpdated",
-                render: (p: any) => {
-                  const inv = inventoryMap.get(p.id!);
-                  return (
-                    <span style={{ fontSize: "11px", color: "var(--neutral-500)", fontWeight: 500, lineBreak: "anywhere" }}>
-                      {inv?.lastUpdated ? new Date(inv.lastUpdated).toLocaleString("es-CO", { hour12: true, dateStyle: 'short', timeStyle: 'short' }) : "---"}
+        viewMode === "table" ? (
+          <Card className="p-0 overflow-hidden border-neutral-800 bg-neutral-900 shadow-2xl">
+            <DataTable<any>
+              columns={[
+                {
+                  header: "SKU",
+                  key: "sku",
+                  width: "120px",
+                  sortable: true,
+                  render: (p: any) => (
+                    <span className="tabular" style={{ fontSize: "12px", color: "var(--brand-400)", fontWeight: 700 }}>{p.sku}</span>
+                  )
+                },
+                {
+                  header: "Producto",
+                  key: "nombre",
+                  sortable: true,
+                  render: (p: any) => (
+                    <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--neutral-100)", textTransform: "uppercase" }}>{p.nombre}</span>
+                  )
+                },
+                {
+                  header: "Unit.",
+                  key: "unitAbbreviation",
+                  align: "center",
+                  sortable: true,
+                  render: (p: any) => (
+                    <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--neutral-500)", textTransform: "uppercase" }}>{p.unitAbbreviation || "UND"}</span>
+                  )
+                },
+                {
+                  header: "Stock Actual",
+                  key: "stockActual",
+                  align: "right",
+                  sortable: true,
+                  render: (p: any) => {
+                    const inv = inventoryMap.get(p.id!);
+                    return <StockStatus current={inv?.stockActual ?? 0} minimum={inv?.stockMinimo ?? 0} unit={p.unitAbbreviation || "UND"} />;
+                  }
+                },
+                {
+                  header: "Stock Mín.",
+                  key: "stockMinimo",
+                  align: "right",
+                  sortable: true,
+                  render: (p: any) => {
+                    const inv = inventoryMap.get(p.id!);
+                    return <span className="tabular" style={{ fontSize: "13px", fontWeight: 600, color: "var(--neutral-400)" }}>{inv?.stockMinimo ?? 0}</span>;
+                  }
+                },
+                {
+                  header: "Costo Prom.",
+                  key: "costoPromedio",
+                  align: "right",
+                  sortable: true,
+                  render: (p: any) => (
+                    <span className="tabular" style={{ fontSize: "14px", fontWeight: 700, color: "var(--neutral-400)" }}>
+                      {formatCurrency(p.costoPromedio || 0)}
                     </span>
-                  );
-                }
-              },
-              ...(canEdit ? [{
-                header: "Acciones",
-                key: "actions",
-                align: "right" as const,
-                render: (p: any) => {
-                  const inv = inventoryMap.get(p.id!);
-                  return (
-                    <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                      {!isSeller && (
-                        <>
-                          <Button variant="ghost" size="sm" onClick={() => {
-                            setAdjustingProduct(p);
-                            setAdjustData({ type: "INGRESO", quantity: 0, reason: "", unitCost: p.costoPromedio ?? 0 });
-                          }}>
-                            Mov.
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => {
-                            setConfigProduct({ p, inv: inv || { productId: p.id, minimumStock: 0, currentQuantity: 0 } });
-                            setMinStockValue(inv?.stockMinimo ?? 0);
-                          }}>
-                            Conf.
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  );
-                }
-              }] : [])
-            ]}
-            data={filteredAndSortedProducts}
-            isLoading={loadingInv}
-            minWidth="1200px"
-            sortConfig={sortConfig}
-            onSort={handleSort}
-            emptyState={{
-              title: "No se encontraron resultados",
-              description: "Prueba con otros términos de búsqueda o filtros.",
-              icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            }}
-          />
-        </Card>
+                  )
+                },
+                {
+                  header: "Precio Venta",
+                  key: "precioVenta",
+                  align: "right",
+                  sortable: true,
+                  render: (p: any) => (
+                    <span className="tabular" style={{ fontSize: "15px", fontWeight: 800, color: "var(--neutral-100)" }}>
+                      {formatCurrency(p.precioVenta || 0)}
+                    </span>
+                  )
+                },
+                {
+                  header: "Última OP",
+                  key: "lastUpdated",
+                  render: (p: any) => {
+                    const inv = inventoryMap.get(p.id!);
+                    return (
+                      <span style={{ fontSize: "11px", color: "var(--neutral-500)", fontWeight: 500, lineBreak: "anywhere" }}>
+                        {inv?.lastUpdated ? new Date(inv.lastUpdated).toLocaleString("es-CO", { hour12: true, dateStyle: 'short', timeStyle: 'short' }) : "---"}
+                      </span>
+                    );
+                  }
+                },
+                ...(canEdit ? [{
+                  header: "Acciones",
+                  key: "actions",
+                  align: "right" as const,
+                  render: (p: any) => {
+                    const inv = inventoryMap.get(p.id!);
+                    return (
+                      <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                        {!isSeller && (
+                          <>
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              setAdjustingProduct(p);
+                              setAdjustData({ type: "INGRESO", quantity: 0, reason: "", unitCost: p.costoPromedio ?? 0 });
+                            }}>
+                              Mov.
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              setConfigProduct({ p, inv: inv || { productId: p.id, minimumStock: 0, currentQuantity: 0 } });
+                              setMinStockValue(inv?.stockMinimo ?? 0);
+                            }}>
+                              Conf.
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    );
+                  }
+                }] : [])
+              ]}
+              data={filteredAndSortedProducts}
+              isLoading={loadingInv}
+              minWidth="1200px"
+              sortConfig={sortConfig}
+              onSort={handleSort}
+              emptyState={{
+                title: "No se encontraron resultados",
+                description: "Prueba con otros términos de búsqueda o filtros.",
+                icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              }}
+            />
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {filteredAndSortedProducts.map(p => {
+               const inv = inventoryMap.get(p.id!);
+               return (
+                  <InventoryItemCard 
+                    key={p.id}
+                    item={{
+                      id: p.id || 0,
+                      productId: p.id || 0,
+                      productoNombre: p.nombre || "---",
+                      sku: p.sku || "---",
+                      stockActual: inv?.stockActual ?? 0,
+                      precioVenta: p.precioVenta || 0
+                    }}
+                    onClick={() => {
+                      setAdjustingProduct(p);
+                      setAdjustData({ type: "INGRESO", quantity: 0, reason: "", unitCost: p.costoPromedio ?? 0 });
+                    }}
+                    mode="view"
+                  />
+               )
+            })}
+          </div>
+        )
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <div style={{ width: "300px" }}>

@@ -10,8 +10,12 @@ import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Spinner from "@/components/ui/Spinner";
-import { Search, ShoppingCart, Tag, Trash2, Plus, Minus, Package, User, Store, CheckCircle, Printer, XCircle } from "lucide-react";
+import { Search, ShoppingCart, Tag, Trash2, Plus, Minus, Package, User, Store, CheckCircle, Printer, XCircle, Trash } from "lucide-react";
 import SaleReceipt from "@/components/sales-history/SaleReceipt";
+import type { SaleReceiptData } from "@/components/sales-history/SaleReceipt";
+import EmptyState from "@/components/ui/EmptyState";
+import InventoryItemCard from "@/components/inventory/InventoryItemCard";
+import { usePrint } from "@/hooks/usePrint";
 
 interface InventoryItem {
   id: number;
@@ -35,6 +39,7 @@ interface CartItem {
 export default function POSPage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { print, isPrinting } = usePrint();
   const [session, setSession] = useState<AuthSession | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -44,7 +49,37 @@ export default function POSPage() {
   const [customerName, setCustomerName] = useState("");
   const [customerDocument, setCustomerDocument] = useState("");
   const [lastSaleId, setLastSaleId] = useState<number | null>(null);
+  const [lastSaleData, setLastSaleData] = useState<SaleReceiptData | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Persistence logic: Load state from localStorage on mount
+  useEffect(() => {
+    const savedState = localStorage.getItem("optiplant_pos_state");
+    if (savedState) {
+      try {
+        const { cart: savedCart, customerName: savedName, customerDocument: savedDoc } = JSON.parse(savedState);
+        if (savedCart && Array.isArray(savedCart)) setCart(savedCart);
+        if (savedName) setCustomerName(savedName);
+        if (savedDoc) setCustomerDocument(savedDoc);
+      } catch (e) {
+        console.error("Error parsing saved POS state:", e);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Persistence logic: Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (!isLoaded) return;
+    
+    const stateToSave = {
+      cart,
+      customerName,
+      customerDocument
+    };
+    localStorage.setItem("optiplant_pos_state", JSON.stringify(stateToSave));
+  }, [cart, customerName, customerDocument, isLoaded]);
 
   useEffect(() => {
     const sess = getSession();
@@ -57,11 +92,11 @@ export default function POSPage() {
     const fetchData = async () => {
       try {
         if (sess.sucursalId) {
-          const { data } = await apiClient.GET("/api/v1/inventory/branches/{branchId}", {
+          const res = await apiClient.GET("/api/v1/inventory/branches/{branchId}", {
             params: { path: { branchId: sess.sucursalId } }
           });
-          if (data) {
-            setInventory(data as unknown as InventoryItem[]);
+          if (res.data) {
+            setInventory(res.data as any[]);
           }
         }
       } catch (error) {
@@ -191,6 +226,29 @@ export default function POSPage() {
       const { data } = await apiClient.POST("/api/v1/sales", { body: payload as any });
       const saleData = data as any;
       setLastSaleId(saleData.id);
+
+      // Capturar los datos ANTES de limpiar el carrito
+      setLastSaleData({
+        id: saleData.id,
+        date: saleData.date || new Date().toISOString(),
+        subtotal: financials.subtotal,
+        totalDiscount: financials.totalDiscount,
+        totalFinal: financials.totalFinal,
+        branchName: saleData.branchName ?? null,
+        userName: session?.nombre ?? null,
+        customerName: customerName.trim() || null,
+        customerDocument: customerDocument.trim() || null,
+        details: cart.map((item, idx) => ({
+          id: idx,
+          productId: item.productId,
+          productName: item.nombre,
+          quantity: item.quantity,
+          unitPriceApplied: item.unitPrice,
+          discountPercentage: item.discountPercentage,
+          subtotalLine: item.unitPrice * item.quantity * (1 - item.discountPercentage / 100),
+        }))
+      });
+
       showToast("Venta procesada exitosamente.", "success");
       setCart([]);
       setCustomerName("");
@@ -214,34 +272,16 @@ export default function POSPage() {
   };
 
   const handlePrint = () => {
-    window.print();
+    if (!lastSaleData) return;
+    print(<SaleReceipt sale={lastSaleData} />);
   };
 
   const handleCloseModal = () => {
     setShowSuccessModal(false);
     setLastSaleId(null);
+    setLastSaleData(null);
   };
 
-  const currentSaleData = useMemo(() => {
-    if (!lastSaleId) return null;
-    return {
-      id: lastSaleId,
-      date: new Date().toISOString(),
-      subtotal: financials.subtotal,
-      totalDiscount: financials.totalDiscount,
-      totalFinal: financials.totalFinal,
-      customerName: "", // We don't have the full object here but we can pass what we had
-      customerDocument: "",
-      details: cart.map((item, idx) => ({
-        id: idx,
-        productId: item.productId,
-        quantity: item.quantity,
-        unitPriceApplied: item.unitPrice,
-        discountPercentage: item.discountPercentage,
-        subtotalLine: (item.unitPrice * item.quantity) * (1 - item.discountPercentage / 100)
-      }))
-    };
-  }, [lastSaleId]);
 
 
   const formatCurrency = (amount: number) => 
@@ -249,91 +289,181 @@ export default function POSPage() {
 
   if (loading) return <div className="flex h-screen items-center justify-center bg-neutral-950"><Spinner size={48} /></div>;
 
-  return (
-    <div className="flex h-screen flex-col bg-neutral-950 text-neutral-50 overflow-hidden">
-      {/* Header POS */}
-      <header className="flex h-16 items-center justify-between border-b border-neutral-800 bg-neutral-900 px-6">
-        <div className="flex items-center gap-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-600 shadow-lg shadow-brand-600/20">
-            <ShoppingCart className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold leading-none">Terminal POS</h1>
-            <p className="mt-1 text-xs text-neutral-400">Terminal de Punto de Venta Profesional</p>
-          </div>
+  // ── Sub-componentes Locales ───────────────────────────────────
+
+  const QuantitySelector = ({ value, onIncrease, onDecrease, onChange, max }: any) => (
+    <div style={{ 
+      display: "flex", 
+      alignItems: "center", 
+      background: "var(--bg-surface)", 
+      border: "1px solid var(--border-default)",
+      borderRadius: "12px",
+      overflow: "hidden",
+      height: "36px"
+    }}>
+      <button 
+        onClick={onDecrease}
+        style={{ width: "32px", height: "100%", border: "none", background: "none", cursor: "pointer", color: "var(--neutral-400)", display: "flex", alignItems: "center", justifyContent: "center" }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-hover)")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+      >
+        <Minus size={14} />
+      </button>
+      <input 
+        type="number" 
+        value={value}
+        onChange={(e) => onChange(parseInt(e.target.value) || 1)}
+        style={{ 
+          width: "36px", 
+          textAlign: "center", 
+          border: "none", 
+          background: "none", 
+          color: "var(--neutral-50)", 
+          fontSize: "13px", 
+          fontWeight: 700,
+          outline: "none",
+          appearance: "none",
+          margin: 0
+        }}
+      />
+      <button 
+        onClick={onIncrease}
+        style={{ width: "32px", height: "100%", border: "none", background: "none", cursor: "pointer", color: "var(--neutral-400)", display: "flex", alignItems: "center", justifyContent: "center" }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-hover)")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+      >
+        <Plus size={14} />
+      </button>
+    </div>
+  );
+
+  const CartItemCard = ({ item }: { item: CartItem }) => (
+    <div style={{ 
+      padding: "16px",
+      background: "var(--bg-card)",
+      border: "1px solid var(--border-default)",
+      borderRadius: "16px",
+      display: "flex",
+      flexDirection: "column",
+      gap: "12px",
+      position: "relative",
+      animation: "fadeIn 0.3s ease-out"
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: "10px" }}>
+        <div style={{ flex: 1 }}>
+          <h4 style={{ fontSize: "14px", fontWeight: 700, color: "var(--neutral-50)", margin: 0, lineHeight: 1.2 }}>{item.nombre}</h4>
+          <span style={{ fontSize: "10px", fontWeight: 800, color: "var(--brand-400)", fontFamily: "var(--font-mono)" }}>{item.sku}</span>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <p style={{ fontSize: "14px", fontWeight: 800, color: "var(--neutral-50)", margin: 0 }}>{formatCurrency(item.unitPrice * item.quantity)}</p>
+          {item.discountPercentage > 0 && (
+            <Badge variant="success" dot>{item.discountPercentage}% Dto</Badge>
+          )}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <QuantitySelector 
+          value={item.quantity}
+          onIncrease={() => updateQuantity(item.productId, 1)}
+          onDecrease={() => updateQuantity(item.productId, -1)}
+          onChange={(val: number) => setQuantity(item.productId, val)}
+          max={item.stockAvailable}
+        />
+        
+        <div style={{ 
+          flex: 1, 
+          display: "flex", 
+          alignItems: "center", 
+          background: "var(--bg-surface)", 
+          border: "1px solid var(--border-default)",
+          borderRadius: "12px",
+          padding: "0 10px",
+          height: "36px",
+          gap: "8px"
+        }}>
+          <Tag size={12} color="var(--color-success)" />
+          <span style={{ fontSize: "10px", fontWeight: 700, color: "var(--neutral-500)", textTransform: "uppercase" }}>Dto</span>
+          <input 
+            type="number"
+            value={item.discountPercentage}
+            onChange={(e) => updateDiscount(item.productId, parseInt(e.target.value) || 0)}
+            style={{ 
+              flex: 1, 
+              background: "none", 
+              border: "none", 
+              color: "var(--color-success)", 
+              fontSize: "13px", 
+              fontWeight: 800, 
+              textAlign: "right", 
+              outline: "none" 
+            }}
+          />
+          <span style={{ fontSize: "11px", fontWeight: 800, color: "var(--neutral-600)" }}>%</span>
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="hidden md:flex items-center gap-3">
-            <div className="flex flex-col items-end">
-              <span className="text-xs font-semibold text-neutral-200">{session?.nombre}</span>
-              <span className="text-[10px] text-neutral-500 uppercase tracking-wider">{session?.rol}</span>
-            </div>
-            <div className="h-8 w-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
-              <User className="h-4 w-4 text-neutral-400" />
-            </div>
-          </div>
-          <div className="h-8 w-px bg-neutral-800" />
-          <div className="flex items-center gap-2 text-brand-400">
-            <Store className="h-4 w-4" />
-            <span className="text-sm font-medium">Sucursal Local</span>
-          </div>
-        </div>
-      </header>
+        <button 
+          onClick={() => removeFromCart(item.productId)}
+          style={{ 
+            width: "36px", 
+            height: "36px", 
+            borderRadius: "10px", 
+            border: "1px solid rgba(224,112,112,0.2)", 
+            background: "rgba(224,112,112,0.05)", 
+            color: "var(--color-danger)",
+            cursor: "pointer",
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "center",
+            transition: "all 0.2s"
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-danger)", e.currentTarget.style.color = "white")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(224,112,112,0.05)", e.currentTarget.style.color = "var(--color-danger)")}
+        >
+          <Trash2 size={16} />
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex h-screen flex-col bg-neutral-950 text-neutral-50 overflow-hidden">
 
       <main className="flex flex-1 overflow-hidden p-4 md:p-6 gap-4 md:gap-6 flex-col lg:flex-row">
         {/* Panel Izquierdo: Catálogo */}
-        <div className="flex flex-[2] flex-col gap-4 overflow-hidden min-w-0">
-            <Input
-              label="Búsqueda de Productos"
-              icon={<Search className="h-4 w-4 text-neutral-500" />}
-              placeholder="Buscar por nombre o SKU..."
-              className="h-11 bg-neutral-900 border-neutral-800 focus:border-brand-500 transition-all"
-              value={searchTerm}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-            />
+        <div className="flex flex-[2] flex-col gap-6 overflow-hidden min-w-0">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-neutral-900/50 p-5 rounded-2xl border border-neutral-800 shadow-sm">
+            <div>
+              <h1 className="text-xl font-black text-white uppercase tracking-tight">Catálogo de Productos</h1>
+              <p className="text-xs text-neutral-500 font-bold uppercase tracking-wider">Inventario Local Disponible</p>
+            </div>
+            <div className="w-full md:w-80">
+              <Input
+                icon={<Search className="h-4 w-4 text-brand-500" />}
+                placeholder="Buscar por nombre o SKU..."
+                value={searchTerm}
+                onChange={(e: any) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
 
           <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredProducts.map((item) => (
-                <Card 
-                  key={item.id} 
-                  className={`p-5 cursor-pointer transition-all border-neutral-800 bg-neutral-900 hover:border-brand-500 hover:shadow-[0_0_20px_rgba(235,108,31,0.15)] group relative overflow-hidden ${item.stockActual <= 0 ? 'opacity-50 grayscale pointer-events-none' : ''}`}
-                  onClick={() => addToCart(item)}
-                >
-                  <div className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="bg-brand-500 text-white p-1 rounded-bl-lg shadow-lg">
-                      <Plus className="h-4 w-4" />
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-start mb-4">
-                    <Badge variant={item.stockActual > 10 ? "success" : "warning"}>
-                      {item.stockActual} en stock
-                    </Badge>
-                    <span className="text-[11px] font-mono text-neutral-500 bg-neutral-950 px-2 py-0.5 rounded border border-neutral-800">{item.sku}</span>
-                  </div>
-                  
-                  <h3 className="font-bold text-neutral-100 group-hover:text-brand-400 transition-colors line-clamp-2 min-h-[3rem] text-lg">
-                    {item.productoNombre}
-                  </h3>
-                  
-                  <div className="mt-6 flex items-baseline justify-between">
-                    <div>
-                        <p className="text-[10px] text-neutral-500 uppercase font-bold tracking-tighter">Precio Unitario</p>
-                        <span className="text-xl font-black text-white">
-                          {formatCurrency(item.precioVenta)}
-                        </span>
-                    </div>
-                  </div>
-                </Card>
+                <InventoryItemCard 
+                  key={item.id}
+                  item={item}
+                  onClick={addToCart}
+                  mode="add"
+                />
               ))}
             </div>
             {filteredProducts.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 text-neutral-500">
-                <Package className="h-12 w-12 mb-4 opacity-20" />
-                <p>No se encontraron productos disponibles</p>
-              </div>
+              <EmptyState 
+                icon={<Package size={48} />}
+                title="Búsqueda sin resultados"
+                description="No hay productos que coincidan con los términos de búsqueda o no hay stock disponible."
+              />
             )}
           </div>
         </div>
@@ -358,101 +488,39 @@ export default function POSPage() {
             <Badge variant="neutral">{cart.length} productos</Badge>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scrollbar">
             {cart.map((item) => (
-              <div key={item.productId} className="group relative flex flex-col gap-3 rounded-lg bg-neutral-950 p-4 border border-neutral-800/80 hover:border-brand-500/30 transition-all">
-                <button 
-                  onClick={() => removeFromCart(item.productId)}
-                  className="absolute -right-2 -top-2 h-7 w-7 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-110 transition-all z-10 shadow-lg"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-                
-                <div className="flex justify-between gap-4">
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-neutral-50 leading-tight">{item.nombre}</p>
-                    <p className="text-[10px] text-brand-500 font-mono mt-1">{item.sku}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-black text-white">
-                      {formatCurrency(item.unitPrice * item.quantity)}
-                    </p>
-                    {item.discountPercentage > 0 && (
-                      <p className="text-[10px] text-emerald-500 font-bold">-{item.discountPercentage}% OFF</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between mt-1 gap-4">
-                  <div className="flex items-center border-2 border-neutral-800 rounded-lg overflow-hidden bg-neutral-900 group-within:border-brand-500/50 transition-colors">
-                    <button 
-                      className="h-9 w-9 flex items-center justify-center hover:bg-neutral-800 text-neutral-100 transition-colors"
-                      onClick={() => updateQuantity(item.productId, -1)}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
-                    <input
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) => setQuantity(item.productId, parseInt(e.target.value) || 1)}
-                      className="w-12 bg-transparent text-sm font-black text-center focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
-                    <button 
-                      className="h-9 w-9 flex items-center justify-center hover:bg-neutral-800 text-neutral-100 transition-colors"
-                      onClick={() => updateQuantity(item.productId, 1)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
-
-                  <div className="flex-1 flex items-center gap-2 bg-neutral-900 border-2 border-neutral-800 rounded-lg px-3 h-9 group-within:border-emerald-500/50 transition-colors">
-                    <Tag className="h-4 w-4 text-emerald-500" />
-                    <span className="text-[10px] font-bold text-neutral-500 uppercase">Dto</span>
-                    <input
-                      type="number"
-                      value={item.discountPercentage}
-                      onChange={(e) => updateDiscount(item.productId, parseInt(e.target.value) || 0)}
-                      className="flex-1 bg-transparent text-sm font-black focus:outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      min="0"
-                      max="100"
-                    />
-                    <span className="text-xs font-bold text-neutral-500">%</span>
-                  </div>
-                </div>
-              </div>
+              <CartItemCard key={item.productId} item={item} />
             ))}
 
             {cart.length === 0 && (
-              <div className="flex flex-col items-center justify-center flex-1 text-neutral-500 opacity-40 py-20">
-                <ShoppingCart className="h-12 w-12 mb-4" />
-                <p className="text-sm">El carrito está vacío</p>
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <EmptyState 
+                  icon={<ShoppingCart size={40} />}
+                  title="Carrito vacío"
+                  description="Añade productos del catálogo para comenzar la venta."
+                />
               </div>
             )}
           </div>
 
           <div className="border-t border-neutral-800 bg-neutral-900/90 p-6 space-y-4">
             {/* Información del Cliente */}
-            <div className="grid grid-cols-2 gap-3 pb-2">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-neutral-500 uppercase">Cliente (Opcional)</label>
-                <input 
-                  type="text" 
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Nombre Cliente"
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded px-2 py-1.5 text-xs focus:border-brand-500 outline-none transition-all"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-neutral-500 uppercase">Documento</label>
-                <input 
-                  type="text" 
-                  value={customerDocument}
-                  onChange={(e) => setCustomerDocument(e.target.value)}
-                  placeholder="NIT / CC"
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded px-2 py-1.5 text-xs focus:border-brand-500 outline-none transition-all"
-                />
-              </div>
+            <div className="grid grid-cols-2 gap-4 pb-2">
+              <Input 
+                label="Cliente (Opcional)"
+                placeholder="Nombre"
+                value={customerName}
+                onChange={(e: any) => setCustomerName(e.target.value)}
+                icon={<User size={14} />}
+              />
+              <Input 
+                label="Documento"
+                placeholder="NIT / CC"
+                value={customerDocument}
+                onChange={(e: any) => setCustomerDocument(e.target.value)}
+                icon={<Tag size={14} />}
+              />
             </div>
 
             <div className="flex justify-between text-sm font-bold text-neutral-400">
@@ -463,9 +531,17 @@ export default function POSPage() {
               <span className="flex items-center gap-2"><Tag className="h-4 w-4" /> Descuento Total</span>
               <span>- {formatCurrency(financials.totalDiscount)}</span>
             </div>
-            <div className="flex justify-between text-2xl font-black text-neutral-50 pt-4 border-t-2 border-neutral-800 border-dashed">
+            <div 
+              className="flex justify-between text-2xl font-black text-neutral-50 pt-5 border-t border-neutral-800"
+              style={{ borderTopStyle: "dashed" }}
+            >
               <span>TOTAL</span>
-              <span className="text-brand-500 drop-shadow-[0_0_10px_rgba(235,108,31,0.3)]">{formatCurrency(financials.totalFinal)}</span>
+              <span style={{ 
+                color: "var(--brand-400)", 
+                textShadow: "0 0 20px var(--brand-glow)" 
+              }}>
+                {formatCurrency(financials.totalFinal)}
+              </span>
             </div>
             
             <Button 
@@ -480,13 +556,16 @@ export default function POSPage() {
       </main>
 
       {/* Modal de Éxito con Recibo */}
-      {showSuccessModal && lastSaleId && (
+      {showSuccessModal && lastSaleData && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] shadow-2xl scale-in-center">
             <div className="p-6 border-b border-neutral-800 flex items-center justify-between bg-neutral-950/50">
                 <div className="flex items-center gap-3">
                     <CheckCircle className="h-6 w-6 text-emerald-500" />
-                    <h2 className="text-xl font-bold">¡Venta Exitosa!</h2>
+                    <div>
+                        <h2 className="text-xl font-bold">¡Venta Exitosa!</h2>
+                        <p className="text-xs text-neutral-500 font-mono mt-0.5">REF #{String(lastSaleData.id).padStart(6, "0")}</p>
+                    </div>
                 </div>
                 <button onClick={handleCloseModal} className="text-neutral-500 hover:text-white transition-colors">
                     <XCircle className="h-6 w-6" />
@@ -494,37 +573,31 @@ export default function POSPage() {
             </div>
             
             <div className="flex-1 overflow-y-auto p-6 bg-neutral-900 custom-scrollbar">
-                <div className="flex flex-col items-center mb-6">
-                    <p className="text-neutral-400 text-center mb-4">La transacción se ha registrado correctamente. ¿Deseas imprimir el comprobante?</p>
-                    <div className="scale-90 origin-top bg-white rounded-sm shadow-xl overflow-hidden">
-                        {/* Mocking the data for preview since we just finished the sale */}
-                        <SaleReceipt sale={{
-                             id: lastSaleId,
-                             date: new Date().toISOString(),
-                             subtotal: financials.subtotal,
-                             totalDiscount: financials.totalDiscount,
-                             totalFinal: financials.totalFinal,
-                             customerName: "", 
-                             customerDocument: "",
-                             details: [] // Simplified for preview or we need to pass the real ones before clearing
-                        }} />
-                    </div>
+                <p className="text-neutral-400 text-center text-sm mb-6">
+                  Transacción registrada correctamente. ¿Deseas imprimir el comprobante fiscal?
+                </p>
+                {/* Receipt preview — now with real data from lastSaleData */}
+                <div className="bg-white rounded-xl shadow-2xl overflow-hidden p-4 mx-auto max-w-[320px]">
+                    <SaleReceipt sale={lastSaleData} />
                 </div>
             </div>
 
             <div className="p-6 border-t border-neutral-800 flex gap-4 bg-neutral-950/50">
                 <Button 
-                    className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-white flex items-center justify-center gap-2"
+                    variant="ghost"
+                    className="flex-1"
                     onClick={handleCloseModal}
                 >
                     Cerrar
                 </Button>
                 <Button 
-                    className="flex-1 bg-brand-600 hover:bg-brand-500 text-white flex items-center justify-center gap-2"
+                    variant="primary"
+                    className="flex-1"
                     onClick={handlePrint}
+                    loading={isPrinting}
+                    leftIcon={<Printer className="h-4 w-4" />}
                 >
-                    <Printer className="h-5 w-5" />
-                    Imprimir Ticket
+                    {isPrinting ? "Preparando..." : "Imprimir Ticket"}
                 </Button>
             </div>
           </div>

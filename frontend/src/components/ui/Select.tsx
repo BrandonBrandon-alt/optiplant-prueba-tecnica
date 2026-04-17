@@ -8,7 +8,7 @@ interface Option {
 }
 
 interface SelectProps {
-  label: string;
+  label?: string;
   value: string | number | null;
   onChange: (value: any) => void;
   options: Option[];
@@ -16,6 +16,7 @@ interface SelectProps {
   error?: string;
   icon?: React.ReactNode;
   disabled?: boolean;
+  className?: string;
 }
 
 export default function Select({
@@ -27,6 +28,7 @@ export default function Select({
   error,
   icon,
   disabled = false,
+  className = "",
 }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -53,6 +55,7 @@ export default function Select({
   return (
     <div 
       ref={containerRef}
+      className={className}
       style={{ 
         display: "flex", 
         flexDirection: "column", 

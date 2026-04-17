@@ -4,6 +4,11 @@ import React, { useState } from "react";
 import Drawer from "@/components/ui/Drawer";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
+import SaleReceipt from "./SaleReceipt";
+import type { SaleReceiptData } from "./SaleReceipt";
+import DataTable, { Column } from "@/components/ui/DataTable";
+import Card from "@/components/ui/Card";
+import { usePrint } from "@/hooks/usePrint";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/api/client";
 import { 
@@ -16,8 +21,6 @@ import {
   Package,
   CreditCard
 } from "lucide-react";
-import SaleReceipt from "./SaleReceipt";
-import DataTable, { Column } from "@/components/ui/DataTable";
 
 interface SaleDetailModalProps {
   isOpen: boolean;
@@ -35,6 +38,7 @@ export default function SaleDetailModal({
   onSaleCanceled,
 }: SaleDetailModalProps) {
   const { showToast } = useToast();
+  const { print, isPrinting } = usePrint();
   const [isCanceling, setIsCanceling] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -67,7 +71,27 @@ export default function SaleDetailModal({
   };
 
   const handlePrint = () => {
-    window.print();
+    const receiptData: SaleReceiptData = {
+      id: sale.id,
+      date: sale.date,
+      subtotal: sale.subtotal ?? sale.totalFinal,
+      totalDiscount: sale.totalDiscount ?? 0,
+      totalFinal: sale.totalFinal,
+      branchName: sale.branchName,
+      userName: sale.userName,
+      customerName: sale.customerName,
+      customerDocument: sale.customerDocument,
+      details: (sale.details ?? []).map((d: any) => ({
+        id: d.id,
+        productId: d.productId,
+        productName: d.productName,
+        quantity: d.quantity,
+        unitPriceApplied: d.unitPriceApplied,
+        discountPercentage: d.discountPercentage ?? 0,
+        subtotalLine: d.subtotalLine,
+      }))
+    };
+    print(<SaleReceipt sale={receiptData} />);
   };
 
   const formatCurrency = (amount: number) =>
@@ -79,12 +103,12 @@ export default function SaleDetailModal({
 
   const columns: Column<any>[] = [
     {
-      header: "Item",
+      header: "Descripción del Item",
       key: "productName",
       render: (d) => (
-        <div>
-          <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--neutral-100)", textTransform: "uppercase" }}>{d.productName || "Producto"}</p>
-          <p style={{ fontSize: "11px", color: "var(--neutral-500)" }}>{formatCurrency(d.unitPriceApplied)} c/u</p>
+        <div className="flex flex-col">
+          <span className="text-[13px] font-black text-white uppercase tracking-tight">{d.productName || "Producto"}</span>
+          <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest">{formatCurrency(d.unitPriceApplied)} c/u</span>
         </div>
       )
     },
@@ -92,16 +116,22 @@ export default function SaleDetailModal({
       header: "Cant.",
       key: "quantity",
       align: "center",
-      width: "60px",
-      render: (d) => <span className="tabular" style={{ fontSize: "13px", fontWeight: 600, color: "var(--neutral-400)" }}>{d.quantity}</span>
+      width: "80px",
+      render: (d) => (
+        <div className="flex items-center justify-center">
+            <span className="tabular text-[13px] font-black text-neutral-400 bg-neutral-900/50 px-3 py-1 rounded-lg border border-neutral-800">
+                {d.quantity}
+            </span>
+        </div>
+      )
     },
     {
-      header: "Total",
+      header: "Subtotal",
       key: "subtotalLine",
       align: "right",
-      width: "100px",
+      width: "120px",
       render: (d) => (
-        <span className="tabular" style={{ fontSize: "13px", fontWeight: 700, color: "var(--neutral-100)" }}>
+        <span className="tabular text-[14px] font-black text-brand-400">
           {formatCurrency(d.subtotalLine)}
         </span>
       )
@@ -116,105 +146,113 @@ export default function SaleDetailModal({
       description={`Referencia ERP: #${sale.id}`}
       width="550px"
     >
-      <div className="space-y-6 animate-fade-in">
-        {/* Status Indicator - Minimalist */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", background: "var(--bg-surface)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: sale.status === 'COMPLETED' ? "var(--color-success)" : "var(--color-danger)" }} />
-                <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--neutral-400)", textTransform: "uppercase", letterSpacing: "1px" }}>
-                    {sale.status === 'COMPLETED' ? "Transacción Exitosa" : "Operación Anulada"}
-                </span>
+      <div className="space-y-6 animate-fade-in pb-20">
+        {/* Status Indicator - Standardized Card usage */}
+        <Card className="!p-4 bg-neutral-900 shadow-sm border-neutral-800">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full animate-pulse ${sale.status === 'COMPLETED' ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"}`} />
+                    <span className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">
+                        {sale.status === 'COMPLETED' ? "Transacción Aprobada" : "Transacción Anulada"}
+                    </span>
+                </div>
+                {sale.status === 'CANCELLED' && (
+                    <Badge variant="danger" dot>REF-{sale.id}</Badge>
+                )}
             </div>
-            {sale.status === 'CANCELLED' && (
-                <span style={{ fontSize: "11px", color: "var(--color-danger)", fontWeight: 600 }}>ID: 00{sale.id}</span>
-            )}
+        </Card>
+
+        {/* Core Metrics Grid - Standardized Cards */}
+        <div className="grid grid-cols-2 gap-3">
+            {[
+                { icon: <Calendar size={14} />, label: "Fecha", value: new Date(sale.date).toLocaleDateString("es-CO", { day: '2-digit', month: 'short', year: 'numeric' }) },
+                { icon: <Store size={14} />, label: "Sucursal", value: sale.branchName || "Sede Central" },
+                { icon: <User size={14} />, label: "Vendedor", value: sale.userName || "Admin" },
+                { icon: <Hash size={14} />, label: "Registro", value: `POS-${sale.id}` }
+            ].map((metric, idx) => (
+                <Card key={idx} className="!p-4 flex flex-col gap-2 group hover:border-neutral-700 transition-colors">
+                    <div className="flex items-center gap-2 opacity-60">
+                        <span className="text-brand-400">{metric.icon}</span>
+                        <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest">{metric.label}</span>
+                    </div>
+                    <p className="text-[13px] font-black text-white uppercase truncate">{metric.value}</p>
+                </Card>
+            ))}
         </div>
 
-        {/* Core Metrics Grid - Solid style */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <MetricBox icon={<Calendar size={14} />} label="Fecha" value={new Date(sale.date).toLocaleDateString("es-CO", { day: '2-digit', month: 'short', year: 'numeric' })} />
-            <MetricBox icon={<Store size={14} />} label="Sucursal" value={sale.branchName || "Sede Central"} />
-            <MetricBox icon={<User size={14} />} label="Vendedor" value={sale.userName || "Admin"} />
-            <MetricBox icon={<Hash size={14} />} label="Registro" value={`POS-${sale.id}`} />
-        </div>
-
-        {/* Customer Info */}
-        <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", padding: "16px" }}>
-            <p style={{ fontSize: "10px", fontWeight: 700, color: "var(--neutral-500)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Responsable / Cliente</p>
-            <p style={{ fontSize: "15px", fontWeight: 700, color: "var(--neutral-100)", textTransform: "uppercase" }}>{sale.customerName || "Venta General"}</p>
-            <p className="tabular" style={{ fontSize: "12px", color: "var(--neutral-500)", marginTop: "2px" }}>DNI: {sale.customerDocument || "No registrado"}</p>
-        </div>
+        {/* Responsible Section - Standardized Card */}
+        <Card title="Responsable / Cliente" className="shadow-sm">
+            <div className="flex flex-col">
+                <p className="text-lg font-black text-white uppercase tracking-tight">{sale.customerName || "Venta General"}</p>
+                <div className="flex items-center gap-2 mt-1">
+                    <CreditCard size={12} className="text-brand-400" />
+                    <p className="tabular text-xs text-neutral-500 font-bold uppercase tracking-widest">DNI: {sale.customerDocument || "PÚBLICO GENERAL"}</p>
+                </div>
+            </div>
+        </Card>
 
         {/* Itemized Table - Unified DataTable */}
-        <div style={{ border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
+        <div className="border border-neutral-800 rounded-3xl overflow-hidden bg-neutral-900/30 shadow-2xl">
             <DataTable<any>
                 columns={columns}
                 data={sale.details ?? []}
                 density="compact"
                 minWidth="100%"
+                emptyState={{
+                    title: "Sin registros",
+                    description: "No hay items registrados en esta transacción.",
+                    icon: <Package size={24} className="text-neutral-700" />
+                }}
             />
         </div>
 
-        {/* Financial Recap - Minimalist */}
-        <div style={{ padding: "20px", background: "var(--bg-surface)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                <div>
-                    <p style={{ fontSize: "11px", fontWeight: 700, color: "var(--neutral-500)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>Total de Operación</p>
-                    <p className="tabular" style={{ fontSize: "32px", fontWeight: 800, color: "var(--brand-400)", letterSpacing: "-0.04em" }}>{formatCurrency(sale.totalFinal)}</p>
-                </div>
-                <div style={{ textAlign: "right", opacity: 0.4 }}>
-                    <CreditCard size={24} style={{ color: "var(--neutral-600)" }} />
+        {/* Financial Recap - Standardized Card with Brand accents */}
+        <Card className="relative overflow-hidden group border-brand-500/20 bg-neutral-900">
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <CreditCard size={64} className="text-brand-400" />
+            </div>
+            <div className="relative z-10">
+                <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-1">Total Confirmado de Operación</p>
+                <div className="flex items-baseline gap-2">
+                    <span className="text-sm font-black text-brand-400 uppercase tracking-widest">COP</span>
+                    <p className="tabular text-4xl font-black text-white tracking-tighter">
+                        {formatCurrency(sale.totalFinal).replace(/COP|\$/g, "").trim()}
+                    </p>
                 </div>
             </div>
-        </div>
+        </Card>
 
-        {/* Actions Selection */}
-        {!showCancelConfirm ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", paddingTop: "16px", borderTop: "1px solid var(--border-default)" }}>
-                <Button variant="ghost" fullWidth onClick={handlePrint} leftIcon={<Printer size={16} />}>
-                    Imprimir Comprobante
-                </Button>
-                {isAdmin && sale.status === 'COMPLETED' && (
-                    <Button variant="danger" fullWidth onClick={() => setShowCancelConfirm(true)} leftIcon={<AlertTriangle size={16} />}>
-                        Anular Transacción
+        {/* Actions - Footer Pattern */}
+        <div className="space-y-3 pt-6 border-t border-neutral-800">
+            {!showCancelConfirm ? (
+                <>
+                    <Button variant="ghost" fullWidth onClick={handlePrint} leftIcon={<Printer size={16} />} loading={isPrinting}>
+                        {isPrinting ? "Preparando..." : "Imprimir Comprobante Fiscal"}
                     </Button>
-                )}
-            </div>
-        ) : (
-            <div style={{ padding: "20px", background: "rgba(224, 112, 112, 0.05)", border: "1px solid rgba(224, 112, 112, 0.1)", borderRadius: "var(--radius-md)", marginTop: "16px" }}>
-                <p style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-danger)", marginBottom: "12px" }}>Motivo de la anulación</p>
-                <textarea 
-                    style={{ width: "100%", background: "var(--bg-base)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", padding: "12px", color: "white", fontSize: "13px", outline: "none", minHeight: "80px", marginBottom: "12px" }}
-                    placeholder="Escriba el motivo aquí..."
-                    value={cancelReason}
-                    onChange={(e) => setCancelReason(e.target.value)}
-                />
-                <div style={{ display: "flex", gap: "12px" }}>
-                    <Button fullWidth variant="danger" loading={isCanceling} onClick={handleCancelSale}>Confirmar</Button>
-                    <Button fullWidth variant="ghost" onClick={() => setShowCancelConfirm(false)}>Cerrar</Button>
-                </div>
-            </div>
-        )}
-
-        {/* Hidden area for Receipt Printing */}
-        <div className="hidden">
-           <div id="print-area">
-              <SaleReceipt sale={sale} />
-           </div>
+                    {isAdmin && sale.status === 'COMPLETED' && (
+                        <Button variant="danger" fullWidth onClick={() => setShowCancelConfirm(true)} leftIcon={<AlertTriangle size={16} />}>
+                            Anular esta Transacción
+                        </Button>
+                    )}
+                </>
+            ) : (
+                <Card className="border-red-500/30 bg-red-500/5 !p-5">
+                    <p className="text-xs font-black text-red-400 uppercase tracking-widest mb-3">Justificación de la anulación</p>
+                    <textarea 
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-white text-sm outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 transition-all min-h-[100px] mb-4 font-sans"
+                        placeholder="Describa el motivo detallado..."
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                    />
+                    <div className="flex gap-3">
+                        <Button fullWidth variant="danger" loading={isCanceling} onClick={handleCancelSale}>Confirmar Anulación</Button>
+                        <Button fullWidth variant="ghost" onClick={() => setShowCancelConfirm(false)}>Desistir</Button>
+                    </div>
+                </Card>
+            )}
         </div>
+
       </div>
     </Drawer>
   );
-}
-
-function MetricBox({ icon, label, value }: { icon: React.ReactNode, label: string, value: string }) {
-    return (
-        <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-default)", padding: "12px 16px", borderRadius: "var(--radius-md)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", opacity: 0.6 }}>
-                <span style={{ color: "var(--neutral-500)" }}>{icon}</span>
-                <span style={{ fontSize: "9px", fontWeight: 700, color: "var(--neutral-500)", textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</span>
-            </div>
-            <p style={{ fontSize: "13px", fontWeight: 700, color: "var(--neutral-100)", textTransform: "uppercase" }}>{value}</p>
-        </div>
-    );
 }
