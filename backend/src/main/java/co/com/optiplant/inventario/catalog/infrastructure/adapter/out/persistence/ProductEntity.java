@@ -1,6 +1,5 @@
 package co.com.optiplant.inventario.catalog.infrastructure.adapter.out.persistence;
 
-import co.com.optiplant.inventario.catalog.domain.model.MeasurementUnit;
 import co.com.optiplant.inventario.catalog.domain.model.Product;
 import jakarta.persistence.*;
 import lombok.*;
@@ -48,9 +47,9 @@ public class ProductEntity {
     @Column(name = "proveedor_id")
     private Long supplierId;
 
-    @Column(name = "unidad", length = 30)
-    @Enumerated(EnumType.STRING)
-    private MeasurementUnit unit;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "unidad_id", nullable = false)
+    private UnitOfMeasureEntity unit;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -66,7 +65,8 @@ public class ProductEntity {
                 .averageCost(this.averageCost)
                 .salePrice(this.salePrice)
                 .supplierId(this.supplierId)
-                .unit(this.unit)
+                .unitId(this.unit != null ? this.unit.getId() : null)
+                .unitAbbreviation(this.unit != null ? this.unit.getAbbreviation() : "UND")
                 .createdAt(this.createdAt)
                 .build();
     }
@@ -80,7 +80,7 @@ public class ProductEntity {
                 .averageCost(product.getAverageCost())
                 .salePrice(product.getSalePrice())
                 .supplierId(product.getSupplierId())
-                .unit(product.getUnit())
+                .unit(product.getUnitId() != null ? UnitOfMeasureEntity.builder().id(product.getUnitId()).build() : null)
                 .createdAt(product.getCreatedAt())
                 .build();
     }

@@ -21,6 +21,7 @@ import { useToast } from "@/context/ToastContext";
 type ProductResponse  = components["schemas"]["ProductResponse"];
 type LocalInventory   = components["schemas"]["LocalInventory"];
 type BranchResponse   = components["schemas"]["BranchResponse"];
+type InventoryProductResponse = components["schemas"]["InventoryProductResponse"];
 
 interface InventoryMovementExtended {
   id: number;
@@ -75,7 +76,7 @@ export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState<"matrix" | "kardex">("matrix");
   const [branches, setBranches] = useState<BranchResponse[]>([]);
   const [products, setProducts] = useState<ProductResponse[]>([]);
-  const [inventoryMap, setInventoryMap] = useState<Map<number, LocalInventory>>(new Map());
+  const [inventoryMap, setInventoryMap] = useState<Map<number, InventoryProductResponse>>(new Map());
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
   
   // Kardex specific
@@ -85,6 +86,10 @@ export default function InventoryPage() {
 
   const [loadingInit, setLoadingInit] = useState(true);
   const [loadingInv, setLoadingInv] = useState(false);
+
+  // Search and Sort
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" | null }>({ key: "stockActual", direction: "desc" });
 
   // Modals state
   const [adjustingProduct, setAdjustingProduct] = useState<ProductResponse | null>(null);
@@ -239,7 +244,7 @@ export default function InventoryPage() {
   };
 
   const getProductName = (id: number) => products.find(p => p.id === id)?.nombre || `Producto #${id}`;
-  const getProductUnit = (id: number) => (products.find(p => p.id === id) as any)?.unit || "UND";
+  const getProductUnit = (id: number) => products.find(p => p.id === id)?.unitAbbreviation || "UND";
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("es-CO", {
@@ -247,6 +252,55 @@ export default function InventoryPage() {
       currency: "COP",
       maximumFractionDigits: 0,
     }).format(amount);
+
+  const filteredAndSortedProducts = useMemo(() => {
+    let result = [...products];
+
+    // 1. Filter
+    if (searchTerm) {
+      const lowerSearch = searchTerm.toLowerCase();
+      result = result.filter(p => {
+        const inv = inventoryMap.get(p.id!);
+        return (
+          p.sku?.toLowerCase().includes(lowerSearch) ||
+          p.nombre?.toLowerCase().includes(lowerSearch) ||
+          p.unitAbbreviation?.toLowerCase().includes(lowerSearch) ||
+          inv?.stockActual?.toString().includes(lowerSearch) ||
+          p.precioVenta?.toString().includes(lowerSearch)
+        );
+      });
+    }
+
+    // 2. Sort
+    if (sortConfig.key && sortConfig.direction) {
+      result.sort((a, b) => {
+        let valA: any = (a as any)[sortConfig.key];
+        let valB: any = (b as any)[sortConfig.key];
+
+        // Special handling for inventory-mapped values
+        if (sortConfig.key === "stockActual") {
+          valA = inventoryMap.get(a.id!)?.stockActual ?? 0;
+          valB = inventoryMap.get(b.id!)?.stockActual ?? 0;
+        } else if (sortConfig.key === "stockMinimo") {
+          valA = inventoryMap.get(a.id!)?.stockMinimo ?? 0;
+          valB = inventoryMap.get(b.id!)?.stockMinimo ?? 0;
+        }
+
+        if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [products, inventoryMap, searchTerm, sortConfig]);
+
+  const handleSort = (key: string) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc"
+    }));
+  };
 
   if (loadingInit) return <Spinner fullPage />;
 
@@ -311,6 +365,17 @@ export default function InventoryPage() {
         )}
       </div>
 
+      {activeTab === "matrix" && (
+        <div style={{ marginBottom: "20px", maxWidth: "500px" }}>
+          <Input 
+            placeholder="Buscar por SKU, nombre, unidad o stock..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>}
+          />
+        </div>
+      )}
+
       {activeTab === "matrix" ? (
         <Card style={{ padding: 0, overflow: "hidden", border: "1px solid var(--border-default)" }}>
           <DataTable<any>
@@ -319,6 +384,7 @@ export default function InventoryPage() {
                 header: "SKU",
                 key: "sku",
                 width: "120px",
+                sortable: true,
                 render: (p: any) => (
                   <span className="tabular" style={{ fontSize: "12px", color: "var(--brand-400)", fontWeight: 700 }}>{p.sku}</span>
                 )
@@ -326,33 +392,37 @@ export default function InventoryPage() {
               {
                 header: "Producto",
                 key: "nombre",
+                sortable: true,
                 render: (p: any) => (
                   <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--neutral-100)", textTransform: "uppercase" }}>{p.nombre}</span>
                 )
               },
               {
                 header: "Unit.",
-                key: "unit",
+                key: "unitAbbreviation",
                 align: "center",
+                sortable: true,
                 render: (p: any) => (
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--neutral-500)", textTransform: "uppercase" }}>{p.unit || "UND"}</span>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--neutral-500)", textTransform: "uppercase" }}>{p.unitAbbreviation || "UND"}</span>
                 )
               },
               {
                 header: "Stock Actual",
                 key: "stockActual",
                 align: "right",
+                sortable: true,
                 render: (p: any) => {
-                  const inv = inventoryMap.get(p.id!) as any;
-                  return <StockStatus current={inv?.stockActual ?? 0} minimum={inv?.stockMinimo ?? 0} unit={p.unit || "UND"} />;
+                  const inv = inventoryMap.get(p.id!);
+                  return <StockStatus current={inv?.stockActual ?? 0} minimum={inv?.stockMinimo ?? 0} unit={p.unitAbbreviation || "UND"} />;
                 }
               },
               {
                 header: "Stock Mín.",
                 key: "stockMinimo",
                 align: "right",
+                sortable: true,
                 render: (p: any) => {
-                  const inv = inventoryMap.get(p.id!) as any;
+                  const inv = inventoryMap.get(p.id!);
                   return <span className="tabular" style={{ fontSize: "13px", fontWeight: 600, color: "var(--neutral-400)" }}>{inv?.stockMinimo ?? 0}</span>;
                 }
               },
@@ -360,6 +430,7 @@ export default function InventoryPage() {
                 header: "Costo Prom.",
                 key: "costoPromedio",
                 align: "right",
+                sortable: true,
                 render: (p: any) => (
                   <span className="tabular" style={{ fontSize: "14px", fontWeight: 700, color: "var(--neutral-400)" }}>
                     {formatCurrency(p.costoPromedio || 0)}
@@ -370,6 +441,7 @@ export default function InventoryPage() {
                 header: "Precio Venta",
                 key: "precioVenta",
                 align: "right",
+                sortable: true,
                 render: (p: any) => (
                   <span className="tabular" style={{ fontSize: "15px", fontWeight: 800, color: "var(--neutral-100)" }}>
                     {formatCurrency(p.precioVenta || 0)}
@@ -380,7 +452,7 @@ export default function InventoryPage() {
                 header: "Última OP",
                 key: "lastUpdated",
                 render: (p: any) => {
-                  const inv = inventoryMap.get(p.id!) as any;
+                  const inv = inventoryMap.get(p.id!);
                   return (
                     <span style={{ fontSize: "11px", color: "var(--neutral-500)", fontWeight: 500, lineBreak: "anywhere" }}>
                       {inv?.lastUpdated ? new Date(inv.lastUpdated).toLocaleString("es-CO", { hour12: true, dateStyle: 'short', timeStyle: 'short' }) : "---"}
@@ -393,7 +465,7 @@ export default function InventoryPage() {
                 key: "actions",
                 align: "right" as const,
                 render: (p: any) => {
-                  const inv = inventoryMap.get(p.id!) as any;
+                  const inv = inventoryMap.get(p.id!);
                   return (
                     <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
                       {!isSeller && (
@@ -417,9 +489,16 @@ export default function InventoryPage() {
                 }
               }] : [])
             ]}
-            data={products}
+            data={filteredAndSortedProducts}
             isLoading={loadingInv}
             minWidth="1200px"
+            sortConfig={sortConfig}
+            onSort={handleSort}
+            emptyState={{
+              title: "No se encontraron resultados",
+              description: "Prueba con otros términos de búsqueda o filtros.",
+              icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            }}
           />
         </Card>
       ) : (

@@ -19,6 +19,7 @@ public record ProductResponse(
         BigDecimal costoPromedio,
         BigDecimal precioVenta,
         Long proveedorId,
-        String unit,
+        Long unitId,
+        String unitAbbreviation,
         LocalDateTime creadoEn
 ) {}

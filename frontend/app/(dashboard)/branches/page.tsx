@@ -417,6 +417,7 @@ export default function BranchesPage() {
           columns={columns}
           data={branches}
           isLoading={loading}
+          minWidth="100%"
           emptyState={{
             title: "No hay sucursales registradas",
             description: "Crea la primera sede para comenzar a gestionar el inventario.",

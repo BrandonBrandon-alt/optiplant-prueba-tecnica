@@ -1,6 +1,5 @@
 package co.com.optiplant.inventario.inventory.domain.model;
 
-import co.com.optiplant.inventario.catalog.domain.model.MeasurementUnit;
 import lombok.Builder;
 import lombok.Getter;
 import java.math.BigDecimal;
@@ -20,6 +19,6 @@ public class LocalInventoryEnriched {
     private BigDecimal minimumStock;
     private BigDecimal salePrice;
     private BigDecimal averageCost;
-    private MeasurementUnit unit;
+    private String unit;
     private java.time.LocalDateTime lastUpdated;
 }

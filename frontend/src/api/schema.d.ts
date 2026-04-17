@@ -798,7 +798,8 @@ export interface components {
             precioVenta: number;
             /** Format: int64 */
             proveedorId?: number;
-            unit?: string;
+            /** Format: int64 */
+            unitId?: number;
         };
         ProductResponse: {
             /** Format: int64 */
@@ -809,7 +810,9 @@ export interface components {
             precioVenta?: number;
             /** Format: int64 */
             proveedorId?: number;
-            unit?: string;
+            /** Format: int64 */
+            unitId?: number;
+            unitAbbreviation?: string;
             /** Format: date-time */
             creadoEn?: string;
         };
@@ -929,6 +932,7 @@ export interface components {
             id?: number;
             /** Format: int64 */
             productId?: number;
+            productName?: string;
             /** Format: int32 */
             quantity?: number;
             unitPriceApplied?: number;
@@ -945,8 +949,10 @@ export interface components {
             totalFinal?: number;
             /** Format: int64 */
             branchId?: number;
+            branchName?: string;
             /** Format: int64 */
             userId?: number;
+            userName?: string;
             status?: string;
             cancellationReason?: string;
             customerName?: string;
@@ -1093,6 +1099,10 @@ export interface components {
             stockActual?: number;
             stockMinimo?: number;
             precioVenta?: number;
+            costoPromedio?: number;
+            unit?: string;
+            /** Format: date-time */
+            lastUpdated?: string;
         };
         BranchValuation: {
             /** Format: int64 */

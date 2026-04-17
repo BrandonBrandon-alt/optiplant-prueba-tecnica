@@ -73,7 +73,7 @@ public class AlertService implements AlertUseCase {
                 // Obtener nombres para el mensaje descriptivo
                 Product product = productUseCase.getProductById(inv.getProductId());
                 Branch branch = branchUseCase.getBranchById(inv.getBranchId());
-                String unidad = product.getUnit() != null ? product.getUnit().name() : "UND";
+                String unidad = product.getUnitAbbreviation() != null ? product.getUnitAbbreviation() : "UND";
 
                 String msg = String.format("⚠ Stock crítico en %s: %s tiene solo %s %s (Mínimo: %s)",
                         branch.getName(), product.getName(), actual, unidad, minimo);

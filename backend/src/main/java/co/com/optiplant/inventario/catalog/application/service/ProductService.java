@@ -67,6 +67,7 @@ public class ProductService implements ProductUseCase {
         existing.setAverageCost(product.getAverageCost());
         existing.setSalePrice(product.getSalePrice());
         existing.setSupplierId(product.getSupplierId());
+        existing.setUnitId(product.getUnitId());
 
         return productRepositoryPort.save(existing);
     }

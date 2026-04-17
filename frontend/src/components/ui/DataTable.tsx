@@ -18,6 +18,8 @@ export interface Column<T> {
   align?: "left" | "center" | "right";
   /** Ancho manual (ej: "120px"). */
   width?: string;
+  /** Indica si la columna es ordenable. */
+  sortable?: boolean;
 }
 
 interface DataTableProps<T> {
@@ -29,6 +31,10 @@ interface DataTableProps<T> {
   isLoading?: boolean;
   /** Acción al hacer clic en una fila. */
   onRowClick?: (item: T) => void;
+  /** Configuración actual del ordenamiento. */
+  sortConfig?: { key: string; direction: "asc" | "desc" | null };
+  /** Callback cuando cambia el ordenamiento. */
+  onSort?: (key: string) => void;
   /** Configuración para el estado vacío. */
   emptyState?: {
     title: string;
@@ -53,9 +59,11 @@ export default function DataTable<T>({
   data,
   isLoading,
   onRowClick,
+  sortConfig,
+  onSort,
   emptyState,
   renderMobileCard,
-  minWidth = "1000px",
+  minWidth = "100%",
   density = "normal",
 }: DataTableProps<T>) {
   
@@ -95,6 +103,9 @@ export default function DataTable<T>({
     letterSpacing: "1px",
     textAlign: column.align || "left",
     width: column.width,
+    cursor: column.sortable ? "pointer" : "default",
+    position: "relative",
+    userSelect: "none",
   });
 
   const tdStyle = (column: Column<T>): React.CSSProperties => ({
@@ -111,11 +122,40 @@ export default function DataTable<T>({
         <table style={{ width: "100%", borderCollapse: "collapse", minWidth }}>
           <thead>
             <tr style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border-default)" }}>
-              {columns.map((col) => (
-                <th key={col.key} style={thStyle(col)}>
-                  {col.header}
-                </th>
-              ))}
+              {columns.map((col) => {
+                const isSorted = sortConfig?.key === col.key;
+                const direction = isSorted ? sortConfig?.direction : null;
+
+                return (
+                  <th 
+                    key={col.key} 
+                    style={thStyle(col)}
+                    onClick={() => col.sortable && onSort?.(col.key)}
+                    onMouseEnter={(e) => col.sortable && (e.currentTarget.style.color = "var(--neutral-200)")}
+                    onMouseLeave={(e) => col.sortable && (e.currentTarget.style.color = "var(--neutral-500)")}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", justifyContent: col.align === "right" ? "flex-end" : "flex-start" }}>
+                      {col.header}
+                      {col.sortable && (
+                        <div style={{ display: "flex", flexDirection: "column", lineHeight: "1", fontSize: "8px", color: isSorted ? "var(--brand-500)" : "var(--neutral-700)" }}>
+                          <svg 
+                            width="8" height="6" viewBox="0 0 10 6" fill="currentColor" 
+                            style={{ opacity: direction === "asc" ? 1 : 0.3, marginBottom: "1px" }}
+                          >
+                            <path d="M5 0L10 6H0L5 0Z" />
+                          </svg>
+                          <svg 
+                            width="8" height="6" viewBox="0 0 10 6" fill="currentColor" 
+                            style={{ opacity: direction === "desc" ? 1 : 0.3 }}
+                          >
+                            <path d="M5 6L0 0H10L5 6Z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>

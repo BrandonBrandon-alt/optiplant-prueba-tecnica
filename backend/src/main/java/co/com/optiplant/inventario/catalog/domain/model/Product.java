@@ -42,8 +42,11 @@ public class Product {
      */
     private Long supplierId;
 
-    /** Unidad de medida del producto (KG, Litros, etc). */
-    private MeasurementUnit unit;
+    /** ID de la unidad de medida asociada del catálogo maestro. */
+    private Long unitId;
+
+    /** Abreviatura de la unidad de medida (para visualización). */
+    private String unitAbbreviation;
 
     /** Fecha en que el producto fue registrado en el sistema. */
     private LocalDateTime createdAt;

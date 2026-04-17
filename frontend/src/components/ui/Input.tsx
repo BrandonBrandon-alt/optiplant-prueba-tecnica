@@ -3,7 +3,7 @@
 import { forwardRef, InputHTMLAttributes, useState } from "react";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  label: string;
+  label?: string;
   error?: string;
   icon?: React.ReactNode;
   rightElement?: React.ReactNode;
@@ -11,21 +11,23 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, icon, rightElement, id, ...props }, ref) => {
-    const inputId = id ?? label.toLowerCase().replace(/\s+/g, "-");
+    const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-") ?? "input-" + Math.random().toString(36).substr(2, 9);
     const hasError = Boolean(error);
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        <label
-          htmlFor={inputId}
-          style={{
-            fontSize: "13px",
-            fontWeight: 500,
-            color: hasError ? "var(--color-danger)" : "var(--neutral-300)",
-          }}
-        >
-          {label}
-        </label>
+        {label && (
+          <label
+            htmlFor={inputId}
+            style={{
+              fontSize: "13px",
+              fontWeight: 500,
+              color: hasError ? "var(--color-danger)" : "var(--neutral-300)",
+            }}
+          >
+            {label}
+          </label>
+        )}
 
         <div style={{ position: "relative" }}>
           {icon && (

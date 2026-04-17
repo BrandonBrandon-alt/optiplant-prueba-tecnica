@@ -32,7 +32,6 @@ public record ProductRequest(
         BigDecimal precioVenta,
 
         Long proveedorId,
-        
-        String unit
+        Long unitId
 
 ) {}

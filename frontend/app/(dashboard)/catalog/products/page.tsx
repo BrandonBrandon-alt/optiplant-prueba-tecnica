@@ -21,11 +21,13 @@ import Spinner from "@/components/ui/Spinner";
 // Types from schema
 type ProductResponse = components["schemas"]["ProductResponse"];
 type SupplierResponse = components["schemas"]["SupplierResponse"];
+type UnitOfMeasureResponse = components["schemas"]["UnitOfMeasureResponse"];
 
 export default function MasterProductsPage() {
   const router = useRouter();
   const [products, setProducts] = useState<ProductResponse[]>([]);
   const [suppliers, setSuppliers] = useState<SupplierResponse[]>([]);
+  const [units, setUnits] = useState<UnitOfMeasureResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductResponse | null>(null);
@@ -38,7 +40,7 @@ export default function MasterProductsPage() {
     costoPromedio: 0,
     precioVenta: 0,
     proveedorId: 0,
-    unit: "UNIDADES",
+    unitId: 0,
   });
   const { showToast } = useToast();
 
@@ -54,12 +56,14 @@ export default function MasterProductsPage() {
   async function fetchData() {
     setLoading(true);
     try {
-      const [prodRes, suppRes] = await Promise.all([
+      const [prodRes, suppRes, unitRes] = await Promise.all([
         apiClient.GET("/api/catalog/products"),
         apiClient.GET("/api/catalog/suppliers"),
+        apiClient.GET("/api/catalog/units"),
       ]);
       setProducts(prodRes.data ?? []);
       setSuppliers(suppRes.data ?? []);
+      setUnits(unitRes.data ?? []);
     } catch (error) {
       console.error("Error fetching master data:", error);
       showToast("Error al cargar los datos del catálogo.", "error");
@@ -77,7 +81,7 @@ export default function MasterProductsPage() {
         costoPromedio: product.costoPromedio ?? 0,
         precioVenta: product.precioVenta ?? 0,
         proveedorId: product.proveedorId ?? 0,
-        unit: (product as any).unit || "UNIDADES",
+        unitId: product.unitId ?? 0,
       });
     } else {
       setEditingProduct(null);
@@ -87,7 +91,7 @@ export default function MasterProductsPage() {
         costoPromedio: 0,
         precioVenta: 0,
         proveedorId: suppliers[0]?.id ?? 0,
-        unit: "UNIDADES",
+        unitId: units[0]?.id ?? 0,
       });
     }
     setShowModal(true);
@@ -144,9 +148,9 @@ export default function MasterProductsPage() {
     },
     {
       header: "Unidad",
-      key: "unit",
+      key: "unitAbbreviation",
       width: "100px",
-      render: (p: ProductResponse) => <Badge variant="neutral">{(p as any).unit || "UNIDADES"}</Badge>
+      render: (p: ProductResponse) => <Badge variant="neutral">{p.unitAbbreviation || "N/A"}</Badge>
     },
     {
       header: "Proveedor",
@@ -263,14 +267,12 @@ export default function MasterProductsPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
             <Select
               label="Unidad de Medida"
-              value={formData.unit}
-              onChange={(val: string) => setFormData({ ...formData, unit: val })}
+              value={formData.unitId.toString()}
+              onChange={(val: string) => setFormData({ ...formData, unitId: Number(val) })}
               icon={<Search size={15} />}
               options={[
-                { value: "KILOS", label: "Kilogramos (Kg)" },
-                { value: "LITROS", label: "Litros (L)" },
-                { value: "UNIDADES", label: "Unidades (Und)" },
-                { value: "METROS_CUADRADOS", label: "Metros Cuadrados (M2)" },
+                { value: "0", label: "Selecciona unidad" },
+                ...units.map(u => ({ value: u.id!.toString(), label: `${u.nombre} (${u.abreviatura})` }))
               ]}
             />
             <Select

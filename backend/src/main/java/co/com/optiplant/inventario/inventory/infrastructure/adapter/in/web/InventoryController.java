@@ -44,7 +44,7 @@ public class InventoryController {
                         .stockMinimo(inv.getMinimumStock())
                         .precioVenta(inv.getSalePrice())
                         .costoPromedio(inv.getAverageCost())
-                        .unit(inv.getUnit() != null ? inv.getUnit().name() : null)
+                        .unit(inv.getUnit())
                         .lastUpdated(inv.getLastUpdated())
                         .build())
                 .toList());

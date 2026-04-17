@@ -1,7 +1,6 @@
 package co.com.optiplant.inventario.catalog.infrastructure.adapter.in.web;
 
 import co.com.optiplant.inventario.catalog.application.port.in.ProductUseCase;
-import co.com.optiplant.inventario.catalog.domain.model.MeasurementUnit;
 import co.com.optiplant.inventario.catalog.domain.model.Product;
 import co.com.optiplant.inventario.catalog.infrastructure.adapter.in.web.dto.ProductRequest;
 import co.com.optiplant.inventario.catalog.infrastructure.adapter.in.web.dto.ProductResponse;
@@ -104,7 +103,7 @@ public class ProductController {
                 .averageCost(req.costoPromedio())
                 .salePrice(req.precioVenta())
                 .supplierId(req.proveedorId())
-                .unit(req.unit() != null ? MeasurementUnit.valueOf(req.unit()) : MeasurementUnit.UNIDADES)
+                .unitId(req.unitId())
                 .build();
     }
 
@@ -116,7 +115,8 @@ public class ProductController {
                 .costoPromedio(product.getAverageCost())
                 .precioVenta(product.getSalePrice())
                 .proveedorId(product.getSupplierId())
-                .unit(product.getUnit() != null ? product.getUnit().name() : "UNIDADES")
+                .unitId(product.getUnitId())
+                .unitAbbreviation(product.getUnitAbbreviation())
                 .creadoEn(product.getCreatedAt())
                 .build();
     }
