@@ -9,11 +9,13 @@ public record CreatePurchaseCommand(
         Long userId,
         Long branchId,
         LocalDateTime estimatedArrivalDate,
+        Integer paymentDueDays,
         List<Detail> items
 ) {
     public record Detail(
             Long productId,
             BigDecimal quantity,
-            BigDecimal unitPrice
+            BigDecimal unitPrice,
+            BigDecimal discountPct
     ) {}
 }

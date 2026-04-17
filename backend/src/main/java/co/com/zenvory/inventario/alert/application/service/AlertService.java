@@ -152,10 +152,12 @@ public class AlertService implements AlertUseCase {
                 1L, // Por ahora default ADMIN ID = 1
                 alert.getBranchId(),
                 estimatedArrival,
+                30,
                 List.of(new CreatePurchaseCommand.Detail(
                         alert.getProductId(), 
                         quantity,
-                        product.getAverageCost()
+                        product.getAverageCost(),
+                        BigDecimal.ZERO
                 ))
         );
         

@@ -28,6 +28,9 @@ public class PurchaseDetailEntity {
     @Column(name = "subtotal", nullable = false, precision = 12, scale = 2)
     private BigDecimal subtotal;
 
+    @Column(name = "descuento_pct", nullable = false, precision = 5, scale = 2)
+    private BigDecimal discountPct;
+
     public PurchaseDetailEntity() {}
 
     public Long getId() { return id; }
@@ -47,4 +50,7 @@ public class PurchaseDetailEntity {
 
     public BigDecimal getSubtotal() { return subtotal; }
     public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
+
+    public BigDecimal getDiscountPct() { return discountPct; }
+    public void setDiscountPct(BigDecimal discountPct) { this.discountPct = discountPct; }
 }

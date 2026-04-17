@@ -27,14 +27,15 @@ public class PurchaseService implements PurchaseUseCase {
     @Transactional
     public PurchaseOrder createOrder(CreatePurchaseCommand command) {
         List<PurchaseOrderDetail> details = command.items().stream()
-                .map(item -> PurchaseOrderDetail.create(item.productId(), item.quantity(), item.unitPrice()))
+                .map(item -> PurchaseOrderDetail.create(item.productId(), item.quantity(), item.unitPrice(), item.discountPct()))
                 .toList();
 
         PurchaseOrder order = PurchaseOrder.create(
                 command.supplierId(),
                 command.userId(),
-                command.branchId(), // Sucursal donde debe llegar
+                command.branchId(), 
                 command.estimatedArrivalDate(),
+                command.paymentDueDays(),
                 details
         );
 
@@ -74,6 +75,14 @@ public class PurchaseService implements PurchaseUseCase {
         }
 
         return savedOrder;
+    }
+
+    @Override
+    @Transactional
+    public PurchaseOrder registerPayment(Long orderId) {
+        PurchaseOrder order = getOrderById(orderId);
+        order.registerPayment();
+        return repository.save(order);
     }
 
     @Override

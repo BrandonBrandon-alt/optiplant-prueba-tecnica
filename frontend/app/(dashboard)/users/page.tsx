@@ -412,13 +412,25 @@ export default function UsersPage() {
     ];
 
     return (
-        <div style={{ padding: "36px 40px", maxWidth: "1200px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "32px", gap: "16px", flexWrap: "wrap" }}>
-                <PageHeader 
-                    title={<>Usuarios y <em>Permisos</em></>}
-                    description="Administra los accesos de tus colaboradores y sus roles en las sucursales."
-                />
-                <Button onClick={() => setShowCreate(true)} style={{ marginTop: "4px" }}>Nuevo Usuario</Button>
+        <div style={{ padding: "var(--page-padding)", maxWidth: "1400px", margin: "0 auto" }}>
+             <PageHeader
+                   title="Usuarios y Permisos"
+                   description="Administra los accesos de tus colaboradores y sus roles en las sucursales."
+                 />
+            
+            <div style={{ 
+              display: "flex", 
+              flexDirection: "row", 
+              flexWrap: "wrap",
+              justifyContent: "space-between", 
+              alignItems: "flex-end", 
+              marginBottom: "32px", 
+              gap: "24px" 
+            }}>
+                <div style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}></div>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                    <Button onClick={() => setShowCreate(true)} style={{ marginTop: "4px" }}>Nuevo Usuario</Button>
+                </div>
             </div>
 
             <Card style={{ padding: 0, overflow: "hidden" }}>

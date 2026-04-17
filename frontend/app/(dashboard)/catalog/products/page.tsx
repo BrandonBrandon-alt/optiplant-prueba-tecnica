@@ -254,15 +254,27 @@ export default function MasterProductsPage() {
   ];
 
   return (
-    <div style={{ padding: "36px 40px", maxWidth: "1200px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px", gap: "16px", flexWrap: "wrap" }}>
-        <PageHeader
-          title="Catálogo Maestro"
-          description="Gestiona los productos base que se replican en todas las sucursales del sistema."
-        />
-        <Button leftIcon={<Plus size={15} />} onClick={() => handleOpenModal()} style={{ marginTop: "4px" }}>
-          Nuevo Producto
-        </Button>
+    <div style={{ padding: "var(--page-padding)", maxWidth: "1400px", margin: "0 auto" }}>
+      <PageHeader
+        title="Catálogo Maestro"
+        description="Gestiona los productos base que se replican en todas las sucursales del sistema."
+      />
+
+      <div style={{ 
+        display: "flex", 
+        flexDirection: "row", 
+        flexWrap: "wrap",
+        justifyContent: "space-between", 
+        alignItems: "flex-end", 
+        marginBottom: "32px", 
+        gap: "24px" 
+      }}>
+        <div style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}></div>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <Button leftIcon={<Plus size={15} />} onClick={() => handleOpenModal()} style={{ marginTop: "4px" }}>
+            Nuevo Producto
+          </Button>
+        </div>
       </div>
 
       <Card style={{ padding: 0, overflow: "hidden" }}>

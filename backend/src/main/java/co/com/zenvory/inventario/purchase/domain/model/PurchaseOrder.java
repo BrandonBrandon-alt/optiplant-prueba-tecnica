@@ -24,14 +24,16 @@ public class PurchaseOrder {
     
     private ReceptionStatus receptionStatus;
     private PaymentStatus paymentStatus;
+    private Integer paymentDueDays;
+    private LocalDateTime paymentDueDate;
     private BigDecimal total;
     
     private List<PurchaseOrderDetail> details;
 
     public PurchaseOrder(Long id, Long supplierId, Long branchId, Long userId, Long receivingUserId,
                          LocalDateTime requestDate, LocalDateTime estimatedArrivalDate, LocalDateTime actualArrivalDate,
-                         ReceptionStatus receptionStatus, PaymentStatus paymentStatus, BigDecimal total,
-                         List<PurchaseOrderDetail> details) {
+                         ReceptionStatus receptionStatus, PaymentStatus paymentStatus, Integer paymentDueDays, 
+                         LocalDateTime paymentDueDate, BigDecimal total, List<PurchaseOrderDetail> details) {
         if (supplierId == null || branchId == null || userId == null) {
             throw new IllegalArgumentException("Proveedor, Sucursal y Usuario Autorizador son obligatorios.");
         }
@@ -49,15 +51,17 @@ public class PurchaseOrder {
         this.actualArrivalDate = actualArrivalDate;
         this.receptionStatus = (receptionStatus != null) ? receptionStatus : ReceptionStatus.PENDING;
         this.paymentStatus = (paymentStatus != null) ? paymentStatus : PaymentStatus.POR_PAGAR;
+        this.paymentDueDays = (paymentDueDays != null) ? paymentDueDays : 30;
+        this.paymentDueDate = (paymentDueDate != null) ? paymentDueDate : this.requestDate.plusDays(this.paymentDueDays);
         this.details = details;
         this.total = (total != null) ? total : calculateTotal();
     }
 
     public static PurchaseOrder create(Long supplierId, Long userId, Long branchId, 
-                                     LocalDateTime estimatedArrivalDate, List<PurchaseOrderDetail> details) {
+                                     LocalDateTime estimatedArrivalDate, Integer paymentDueDays, List<PurchaseOrderDetail> details) {
         return new PurchaseOrder(null, supplierId, branchId, userId, null, 
                                LocalDateTime.now(), estimatedArrivalDate, null,
-                               ReceptionStatus.PENDING, PaymentStatus.POR_PAGAR, null, details);
+                               ReceptionStatus.PENDING, PaymentStatus.POR_PAGAR, paymentDueDays, null, null, details);
     }
 
     private BigDecimal calculateTotal() {
@@ -87,6 +91,12 @@ public class PurchaseOrder {
     }
 
     public void registerPayment() {
+        if (this.receptionStatus != ReceptionStatus.RECEIVED_TOTAL) {
+            throw new InvalidPurchaseStateException("Solo se pueden pagar órdenes que ya han sido recibidas totalmente.");
+        }
+        if (this.paymentStatus == PaymentStatus.PAGADO) {
+            throw new InvalidPurchaseStateException("La orden ya se encuentra pagada.");
+        }
         this.paymentStatus = PaymentStatus.PAGADO;
     }
 
@@ -101,6 +111,8 @@ public class PurchaseOrder {
     public LocalDateTime getActualArrivalDate() { return actualArrivalDate; }
     public ReceptionStatus getReceptionStatus() { return receptionStatus; }
     public PaymentStatus getPaymentStatus() { return paymentStatus; }
+    public Integer getPaymentDueDays() { return paymentDueDays; }
+    public LocalDateTime getPaymentDueDate() { return paymentDueDate; }
     public BigDecimal getTotal() { return total; }
     public List<PurchaseOrderDetail> getDetails() { return Collections.unmodifiableList(details); }
 }

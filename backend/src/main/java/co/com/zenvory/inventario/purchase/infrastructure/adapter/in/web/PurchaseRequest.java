@@ -22,6 +22,9 @@ public record PurchaseRequest(
 
         @FutureOrPresent(message = "La fecha estimada de llegada debe ser futura.")
         LocalDateTime estimatedArrivalDate,
+        
+        @NotNull(message = "El plazo de pago es obligatorio.")
+        Integer paymentDueDays,
 
         @NotEmpty(message = "La orden de compra no puede estar vacía.")
         @Valid
@@ -37,6 +40,8 @@ public record PurchaseRequest(
 
             @NotNull(message = "El precio de compra unitario es obligatorio.")
             @Positive(message = "El precio de compra debe ser mayor a cero.")
-            BigDecimal unitPrice
+            BigDecimal unitPrice,
+
+            BigDecimal discountPct
     ) {}
 }

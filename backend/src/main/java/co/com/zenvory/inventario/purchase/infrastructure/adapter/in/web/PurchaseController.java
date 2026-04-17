@@ -28,8 +28,9 @@ public class PurchaseController {
                 request.userId(),
                 request.branchId(),
                 request.estimatedArrivalDate(),
+                request.paymentDueDays(),
                 request.items().stream()
-                        .map(item -> new CreatePurchaseCommand.Detail(item.productId(), item.quantity(), item.unitPrice()))
+                        .map(item -> new CreatePurchaseCommand.Detail(item.productId(), item.quantity(), item.unitPrice(), item.discountPct()))
                         .toList()
         );
 
@@ -52,6 +53,12 @@ public class PurchaseController {
         return ResponseEntity.ok(PurchaseResponse.fromDomain(order));
     }
 
+    @PostMapping("/{id}/pay")
+    public ResponseEntity<PurchaseResponse> registerPayment(@PathVariable Long id) {
+        PurchaseOrder order = purchaseUseCase.registerPayment(id);
+        return ResponseEntity.ok(PurchaseResponse.fromDomain(order));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<PurchaseResponse> getOrder(@PathVariable Long id) {
         PurchaseOrder order = purchaseUseCase.getOrderById(id);
@@ -59,10 +66,19 @@ public class PurchaseController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PurchaseResponse>> getAllOrders() {
-        List<PurchaseResponse> orders = purchaseUseCase.getAllOrders().stream()
+    public ResponseEntity<List<PurchaseResponse>> getAllOrders(
+            @RequestParam(required = false) Long supplierId,
+            @RequestParam(required = false) Long productId) {
+        
+        List<PurchaseOrder> allOrders = purchaseUseCase.getAllOrders();
+        
+        // Filtrado básico (por ahora en memoria, se puede optimizar en repository)
+        List<PurchaseResponse> filtered = allOrders.stream()
+                .filter(o -> supplierId == null || o.getSupplierId().equals(supplierId))
+                .filter(o -> productId == null || o.getDetails().stream().anyMatch(d -> d.getProductId().equals(productId)))
                 .map(PurchaseResponse::fromDomain)
                 .toList();
-        return ResponseEntity.ok(orders);
+                
+        return ResponseEntity.ok(filtered);
     }
 }

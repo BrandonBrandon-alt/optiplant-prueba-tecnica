@@ -43,6 +43,12 @@ public class PurchaseOrderEntity {
     @Column(name = "total", nullable = false)
     private java.math.BigDecimal total;
 
+    @Column(name = "fecha_vencimiento_pago")
+    private LocalDateTime paymentDueDate;
+
+    @Column(name = "plazo_pago_dias", nullable = false)
+    private Integer paymentDueDays;
+
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PurchaseDetailEntity> details = new ArrayList<>();
 
@@ -85,6 +91,12 @@ public class PurchaseOrderEntity {
 
     public java.math.BigDecimal getTotal() { return total; }
     public void setTotal(java.math.BigDecimal total) { this.total = total; }
+
+    public LocalDateTime getPaymentDueDate() { return paymentDueDate; }
+    public void setPaymentDueDate(LocalDateTime paymentDueDate) { this.paymentDueDate = paymentDueDate; }
+
+    public Integer getPaymentDueDays() { return paymentDueDays; }
+    public void setPaymentDueDays(Integer paymentDueDays) { this.paymentDueDays = paymentDueDays; }
 
     public List<PurchaseDetailEntity> getDetails() { return details; }
     public void setDetails(List<PurchaseDetailEntity> details) { this.details = details; }

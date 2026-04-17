@@ -5,6 +5,9 @@ import { apiClient } from "@/api/client";
 import type { components } from "@/api/schema";
 import { getSession } from "@/api/auth";
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import Button from "@/components/ui/Button";
 
 type SupplierResponse = components["schemas"]["SupplierResponse"];
 
@@ -103,31 +106,28 @@ export default function MasterSuppliersPage() {
   if (loading) return <div style={{ padding: "40px", color: "var(--neutral-400)" }}>Cargando directorio de proveedores...</div>;
 
   return (
-    <div style={{ padding: "32px", maxWidth: "1200px", margin: "0 auto" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-        <div>
-          <h1 style={{ fontSize: "28px", fontWeight: 700, color: "var(--neutral-50)", marginBottom: "8px" }}>
-            Directorio de Proveedores
-          </h1>
-          <p style={{ color: "var(--neutral-400)", fontSize: "14px" }}>
-            Gestiona los proveedores centralizados que surten a toda la red de sucursales.
-          </p>
+    <div style={{ padding: "var(--page-padding)", maxWidth: "1400px", margin: "0 auto" }}>
+      <PageHeader
+        title="Directorio de Proveedores"
+        description="Gestiona los proveedores centralizados que surten a toda la red de sucursales."
+      />
+
+      <div style={{ 
+        display: "flex", 
+        flexDirection: "row", 
+        flexWrap: "wrap",
+        justifyContent: "space-between", 
+        alignItems: "flex-end", 
+        marginBottom: "32px", 
+        gap: "24px" 
+      }}>
+        <div style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}></div>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <Button leftIcon={<Plus size={15} />} onClick={() => handleOpenModal()} style={{ marginTop: "4px" }}>
+            Nuevo Proveedor
+          </Button>
         </div>
-        <button
-          onClick={() => handleOpenModal()}
-          style={{
-            background: "var(--brand-500)",
-            color: "white",
-            border: "none",
-            padding: "10px 20px",
-            borderRadius: "8px",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
-          + Nuevo Proveedor
-        </button>
-      </header>
+      </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px" }}>
         {suppliers.map((s) => (

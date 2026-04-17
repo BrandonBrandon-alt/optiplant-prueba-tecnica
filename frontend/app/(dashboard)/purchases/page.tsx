@@ -4,7 +4,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { 
   Package, TrendingUp, Search, Plus, Trash2, 
   ShoppingCart, Building2, Calendar, DollarSign,
-  CheckCircle, ArrowRight, Truck, Minus, Tag
+  CheckCircle, ArrowRight, Truck, Minus, Tag, X, 
+  Eye, Filter, Percent, CreditCard, Clock
 } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
@@ -38,6 +39,16 @@ interface PurchaseDetail {
   sku: string;
   quantity: number;
   unitPrice: number;
+  discountPct: number;  // Gap 1
+}
+
+interface OrderDetailItem {
+  id: number;
+  productId: number;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+  discountPct?: number;
 }
 
 interface PurchaseOrder {
@@ -48,8 +59,9 @@ interface PurchaseOrder {
   estimatedArrivalDate: string;
   actualArrivalDate: string | null;
   receptionStatus: "PENDING" | "IN_TRANSIT" | "RECEIVED_TOTAL";
-  paymentStatus: "POR_PAGAR" | "PAGADO";
+  paymentStatus: "POR_PAGAR" | "PAGADO";  // Gap 2
   total: number;
+  details?: OrderDetailItem[];  // Gap 4
 }
 
 export default function PurchasesPage() {
@@ -66,10 +78,19 @@ export default function PurchasesPage() {
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(true);
 
+  // Gap 3 — Filtros histórico
+  const [filterSupplierId, setFilterSupplierId] = useState("");
+  const [filterProductId, setFilterProductId] = useState("");
+
+  // Gap 4 — Detalle de orden
+  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+
   // Formulario Nueva Orden
   const [supplierId, setSupplierId] = useState<string>("");
   const [branchId, setBranchId] = useState<string>("");
   const [estimatedArrival, setEstimatedArrival] = useState<string>("");
+  const [paymentDueDays, setPaymentDueDays] = useState<string>("30");  // Gap 2
   
   // Carrito de Orden
   const [cart, setCart] = useState<PurchaseDetail[]>([]);
@@ -124,6 +145,17 @@ export default function PurchasesPage() {
     return result;
   }, [products, searchTerm, supplierId]);
 
+  // Gap 3 — Filtrado local del histórico
+  const filteredOrders = useMemo(() => {
+    let result = orders;
+    if (filterSupplierId) result = result.filter(o => o.supplierId === parseInt(filterSupplierId));
+    if (filterProductId) result = result.filter(o => 
+      o.details?.some(d => d.productId === parseInt(filterProductId))
+    );
+    return result;
+  }, [orders, filterSupplierId, filterProductId]);
+
+
   // ----- MÉTODOS DEL CARRITO DE COMPRAS ----- //
   const addToCart = (prod: Product) => {
     setCart(prev => {
@@ -136,7 +168,8 @@ export default function PurchasesPage() {
         nombre: prod.nombre,
         sku: prod.sku,
         quantity: 1,
-        unitPrice: prod.costoPromedio || 0 // Iniciamos la negociación con el costo actual
+        unitPrice: prod.costoPromedio || 0,
+        discountPct: 0  // Gap 1
       }];
     });
   };
@@ -164,6 +197,43 @@ export default function PurchasesPage() {
     setCart(prev => prev.map(item => item.productId === productId ? { ...item, unitPrice: newPrice } : item));
   };
 
+  // Gap 1 — descuento por línea
+  const setDiscount = (productId: number, pct: number) => {
+    const clamped = Math.min(100, Math.max(0, pct));
+    setCart(prev => prev.map(item => item.productId === productId ? { ...item, discountPct: clamped } : item));
+  };
+
+  // Gap 4 — cargar detalle de orden
+  const openOrderDetail = async (order: PurchaseOrder) => {
+    setSelectedOrder(order);
+    if (!order.details) {
+      setIsLoadingDetail(true);
+      try {
+        const res = await (apiClient.GET as any)(`/api/v1/purchases/${order.id}`, {});
+        if (res.data) {
+          setSelectedOrder(res.data);
+          setOrders(prev => prev.map(o => o.id === order.id ? res.data : o));
+        }
+      } catch (e) {
+        console.error("Error al cargar detalle de orden", e);
+      } finally {
+        setIsLoadingDetail(false);
+      }
+    }
+  };
+
+  // Gap 2 — registrar pago
+  const registerPayment = async (orderId: number) => {
+    try {
+      await (apiClient.POST as any)(`/api/v1/purchases/${orderId}/pay`, {});
+      showToast("Pago registrado correctamente", "success");
+      fetchOrders();
+      setSelectedOrder(null);
+    } catch (e) {
+      showToast("Error al registrar el pago", "error");
+    }
+  };
+
   const clearCart = () => {
     if (confirm("¿Estás seguro de descartar el borrador entero?")) {
       setCart([]);
@@ -171,8 +241,12 @@ export default function PurchasesPage() {
   };
 
   const financialSummary = useMemo(() => {
-    return cart.reduce((acc, curr) => acc + (curr.quantity * curr.unitPrice), 0);
+    return cart.reduce((acc, curr) => {
+      const net = curr.quantity * curr.unitPrice * (1 - (curr.discountPct || 0) / 100);  // Gap 1
+      return acc + net;
+    }, 0);
   }, [cart]);
+
 
   const handleSubmitOrder = async () => {
     if (!supplierId || !branchId || !estimatedArrival) {
@@ -186,14 +260,16 @@ export default function PurchasesPage() {
     setIsSubmitting(true);
     try {
       const payload = {
-        userId: 1, // Simulado (En producción sale de session)
+        userId: 1,
         supplierId: parseInt(supplierId),
         branchId: parseInt(branchId),
         estimatedArrivalDate: new Date(estimatedArrival).toISOString(),
+        paymentDueDays: parseInt(paymentDueDays),  // Gap 2
         items: cart.map(l => ({
           productId: l.productId,
           quantity: l.quantity,
-          unitPrice: l.unitPrice
+          unitPrice: l.unitPrice,
+          discountPct: l.discountPct || 0  // Gap 1
         }))
       };
 
@@ -206,6 +282,7 @@ export default function PurchasesPage() {
       setSupplierId("");
       setBranchId("");
       setEstimatedArrival("");
+      setPaymentDueDays("30");  // Gap 2
       setCart([]);
       setActiveTab("history");
       fetchOrders();
@@ -393,6 +470,41 @@ export default function PurchasesPage() {
           />
         </div>
 
+        {/* Gap 1 — Campo de descuento por línea */}
+        <div style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          background: "var(--bg-surface)", 
+          border: "1px solid var(--border-default)",
+          borderRadius: "8px",
+          padding: "0 8px",
+          height: "32px",
+          gap: "4px",
+          width: "80px",
+          flexShrink: 0
+        }}
+        className="focus-within:border-brand-500/50"
+        >
+          <Percent size={12} className="text-neutral-500" />
+          <input 
+            type="number"
+            min="0"
+            max="100"
+            step="0.5"
+            value={item.discountPct}
+            onChange={(e) => setDiscount(item.productId, parseFloat(e.target.value) || 0)}
+            style={{ 
+              width: "100%",
+              background: "none", 
+              border: "none", 
+              color: item.discountPct > 0 ? "var(--brand-400)" : "var(--neutral-50)", 
+              fontSize: "12px", 
+              fontWeight: 800,
+              outline: "none" 
+            }}
+          />
+        </div>
+
         <button 
           onClick={() => removeFromCart(item.productId)}
           style={{ 
@@ -406,6 +518,7 @@ export default function PurchasesPage() {
             display: "flex", 
             alignItems: "center", 
             justifyContent: "center",
+            flexShrink: 0,
             transition: "all 0.2s"
           }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-danger)", e.currentTarget.style.color = "white")}
@@ -414,59 +527,119 @@ export default function PurchasesPage() {
           <Trash2 size={16} />
         </button>
       </div>
+
+      {/* Gap 1 — Mostrar ahorro si hay descuento */}
+      {item.discountPct > 0 && (
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px", paddingTop: "4px", borderTop: "1px dashed var(--neutral-800)" }}>
+          <span style={{ fontSize: "10px", color: "var(--neutral-500)", fontWeight: 600 }}>Ahorro ({item.discountPct}%)</span>
+          <span style={{ fontSize: "10px", color: "var(--brand-400)", fontWeight: 800 }}>
+            -{formatCurrency(item.quantity * item.unitPrice * (item.discountPct / 100))}
+          </span>
+        </div>
+      )}
+
     </div>
   );
 
   // ----- RENDERIZADO DEL HISTÓRICO ----- //
   const renderHistory = () => (
-    <Card title="Diario de Transacciones Logísticas (Adquisiciones)">
-      {isLoadingOrders ? (
-        <div className="flex justify-center p-10"><Spinner size={40} /></div>
-      ) : (
-        <DataTable
-            columns={[
-              { header: "No. Doc.", key: "id" },
-              { header: "Comercializadora / Proveedor", key: "supplier" },
-              { header: "Operaciones Destino", key: "branch" },
-              { header: "Esperado para", key: "date" },
-              { header: "Ruta / Estado", key: "estado" },
-              { header: "Inversión", key: "total", align: "right" },
-              { header: "Tracking Actions", key: "acciones", align: "right" }
-            ]}
-            data={orders.map(o => ({
-              id: <span className="font-mono font-bold text-neutral-400">#{String(o.id).padStart(5, '0')}</span>,
-              supplier: suppliers.find(s => s.id === o.supplierId)?.nombre || "N/A",
-              branch: branches.find(b => b.id === o.branchId)?.nombre || "N/A",
-              date: new Date(o.estimatedArrivalDate).toLocaleDateString(),
-              estado: (
-                <Badge variant={o.receptionStatus === "PENDING" ? "warning" : o.receptionStatus === "IN_TRANSIT" ? "info" : "success"} dot>
-                  {o.receptionStatus}
-                </Badge>
-              ),
-              total: <span className="font-bold text-neutral-50 tracking-tight">{formatCurrency(o.total)}</span>,
-              acciones: (
-                 <div className="flex gap-2 justify-end">
-                    {o.receptionStatus === "PENDING" && (
-                         <Button size="sm" variant="ghost" className="border-neutral-700 hover:bg-brand-500/10 hover:text-brand-400" onClick={() => {
-                             (apiClient.POST as any)(`/api/v1/purchases/${o.id}/dispatch`).then(() => fetchOrders());
-                         }}>
-                             <Truck className="h-4 w-4 mr-2" /> Enviar Logística
-                         </Button>
-                    )}
-                    {o.receptionStatus === "IN_TRANSIT" && (
-                         <Button size="sm" variant="primary" onClick={() => receiveOrder(o.id)}>
-                             <CheckCircle className="h-4 w-4 mr-2" /> Ingestar Stock (Inventario)
-                         </Button>
-                    )}
-                    {o.receptionStatus === "RECEIVED_TOTAL" && (
-                         <div className="text-[10px] uppercase font-bold text-emerald-500 flex items-center pr-2"><CheckCircle className="h-3 w-3 mr-1"/> Completada</div>
-                    )}
-                 </div>
-              )
-            }))}
-        />
-      )}
-    </Card>
+    <>
+      {/* Gap 3 — Filtros */}
+      <div style={{ display: "flex", gap: "16px", marginBottom: "20px", flexWrap: "wrap" }}>
+        <div style={{ minWidth: "200px", flex: 1 }}>
+          <Select
+            label="Proveedor"
+            value={filterSupplierId}
+            onChange={setFilterSupplierId}
+            options={[{ value: "", label: "Todos los proveedores" }, ...suppliers.map(s => ({ value: String(s.id), label: s.nombre }))]}
+            icon={<Building2 size={14} />}
+          />
+        </div>
+        <div style={{ minWidth: "200px", flex: 1 }}>
+          <Select
+            label="Producto"
+            value={filterProductId}
+            onChange={setFilterProductId}
+            options={[{ value: "", label: "Todos los productos" }, ...products.map(p => ({ value: String(p.id), label: p.nombre }))]}
+            icon={<Package size={14} />}
+          />
+        </div>
+        {(filterSupplierId || filterProductId) && (
+          <button
+            onClick={() => { setFilterSupplierId(""); setFilterProductId(""); }}
+            style={{ alignSelf: "flex-end", marginBottom: "2px", padding: "8px 14px", borderRadius: "8px", border: "1px solid var(--border-default)", background: "transparent", color: "var(--neutral-400)", cursor: "pointer", fontSize: "12px", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}
+          >
+            <X size={12} /> Limpiar filtros
+          </button>
+        )}
+      </div>
+
+      <Card title={`Diario de Transacciones Logísticas ${filteredOrders.length !== orders.length ? `(${filteredOrders.length} de ${orders.length})` : `(${orders.length})`}`}>
+        {isLoadingOrders ? (
+          <div className="flex justify-center p-10"><Spinner size={40} /></div>
+        ) : (
+          <DataTable
+              columns={[
+                { header: "No. Doc.", key: "id" },
+                { header: "Proveedor", key: "supplier" },
+                { header: "Destino", key: "branch" },
+                { header: "Estimado", key: "date" },
+                { header: "Recepción", key: "estado" },
+                { header: "Pago", key: "pago" },  
+                { header: "Inversión", key: "total", align: "right" },
+                { header: "Acciones", key: "acciones", align: "right" }
+              ]}
+              data={filteredOrders.map(o => ({
+                id: <span className="font-mono font-bold text-neutral-400">#{String(o.id).padStart(5, '0')}</span>,
+                supplier: suppliers.find(s => s.id === o.supplierId)?.nombre || "N/A",
+                branch: branches.find(b => b.id === o.branchId)?.nombre || "N/A",
+                date: new Date(o.estimatedArrivalDate).toLocaleDateString(),
+                estado: (
+                  <Badge variant={o.receptionStatus === "PENDING" ? "warning" : o.receptionStatus === "IN_TRANSIT" ? "info" : "success"} dot>
+                    {o.receptionStatus === "PENDING" ? "Pendiente" : o.receptionStatus === "IN_TRANSIT" ? "En tránsito" : "Recibido"}
+                  </Badge>
+                ),
+                // Gap 2 — columna estado de pago
+                pago: (
+                  <Badge variant={o.paymentStatus === "PAGADO" ? "success" : "warning"} dot>
+                    {o.paymentStatus === "PAGADO" ? "Pagado" : "Por pagar"}
+                  </Badge>
+                ),
+                total: <span className="font-bold text-neutral-50 tracking-tight">{formatCurrency(o.total)}</span>,
+                acciones: (
+                   <div className="flex gap-2 justify-end">
+                      {/* Gap 4 — botón Ver Detalle */}
+                      <Button size="sm" variant="ghost" onClick={() => openOrderDetail(o)}>
+                          <Eye className="h-3.5 w-3.5 mr-1" /> Detalle
+                      </Button>
+                      {o.receptionStatus === "PENDING" && (
+                           <Button size="sm" variant="ghost" className="border-neutral-700 hover:bg-brand-500/10 hover:text-brand-400" onClick={() => {
+                               (apiClient.POST as any)(`/api/v1/purchases/${o.id}/dispatch`).then(() => fetchOrders());
+                           }}>
+                               <Truck className="h-4 w-4 mr-2" /> Despachar
+                           </Button>
+                      )}
+                      {o.receptionStatus === "IN_TRANSIT" && (
+                           <Button size="sm" variant="primary" onClick={() => receiveOrder(o.id)}>
+                               <CheckCircle className="h-4 w-4 mr-2" /> Ingestar Stock
+                           </Button>
+                      )}
+                      {/* Gap 2 — botón Registrar Pago */}
+                      {o.receptionStatus === "RECEIVED_TOTAL" && o.paymentStatus === "POR_PAGAR" && (
+                           <Button size="sm" variant="ghost" className="border-emerald-700/50 hover:bg-emerald-500/10 hover:text-emerald-400" onClick={() => registerPayment(o.id)}>
+                               <CreditCard className="h-3.5 w-3.5 mr-1" /> Pagar
+                           </Button>
+                      )}
+                      {o.receptionStatus === "RECEIVED_TOTAL" && o.paymentStatus === "PAGADO" && (
+                           <div className="text-[10px] uppercase font-bold text-emerald-500 flex items-center pr-2"><CheckCircle className="h-3 w-3 mr-1"/>Completada</div>
+                      )}
+                   </div>
+                )
+              }))}
+          />
+        )}
+      </Card>
+    </>
   );
 
   // ----- RENDERIZADO DUAL-PANE POS-STYLE (Nueva Orden) ----- //
@@ -538,12 +711,27 @@ export default function PurchasesPage() {
                         options={[{ value: "", label: "DESTINO" }, ...branches.map(b => ({ value: String(b.id), label: b.nombre }))]}
                     />
                 </div>
-                <div>
+                {/* Gap 2 — plazo de pago + fecha estimada */}
+                <div className="grid grid-cols-2 gap-3">
                    <Input
                         type="date"
                         value={estimatedArrival}
                         onChange={(e: any) => setEstimatedArrival(e.target.value)}
                         icon={<Calendar size={14} className="text-brand-500" />}
+                    />
+                    <Select
+                        label="Plazo de pago"
+                        value={paymentDueDays}
+                        onChange={setPaymentDueDays}
+                        options={[
+                          { value: "0", label: "Pago inmediato" },
+                          { value: "15", label: "15 días" },
+                          { value: "30", label: "30 días" },
+                          { value: "45", label: "45 días" },
+                          { value: "60", label: "60 días" },
+                          { value: "90", label: "90 días" },
+                        ]}
+                        icon={<Clock size={14} className="text-neutral-400" />}
                     />
                 </div>
             </div>
@@ -591,13 +779,9 @@ export default function PurchasesPage() {
   );
 
   return (
-    <div className="p-10 lg:px-16 space-y-12 animate-fade-in w-full">
+    <div style={{ padding: "var(--page-padding)", maxWidth: "1400px", margin: "0 auto" }}>
         <PageHeader 
-            title={
-                <>
-                  Gestor de <em>Abastecimiento</em>
-                </>
-            }
+            title="Gestor de Abastecimiento"
             description="Control total B2B. Cada lote recibido reconstruye fiscalmente tu Costo Promedio Ponderado de inventario."
             actions={
                 <div style={{ 
@@ -657,6 +841,107 @@ export default function PurchasesPage() {
         />
 
         {activeTab === "history" ? renderHistory() : renderDualPaneOrder()}
+
+        {/* Gap 4 — Modal de Detalle de Orden */}
+        {selectedOrder && (
+          <div 
+            style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)", padding: "24px" }}
+            onClick={(e) => { if (e.target === e.currentTarget) setSelectedOrder(null); }}
+          >
+            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "20px", width: "100%", maxWidth: "700px", maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 30px 60px rgba(0,0,0,0.5)" }}>
+              {/* Modal header */}
+              <div style={{ padding: "24px 28px", borderBottom: "1px solid var(--border-default)", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 900, color: "var(--neutral-50)" }}>
+                    Orden #{String(selectedOrder.id).padStart(5, '0')}
+                  </h2>
+                  <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--neutral-500)", fontWeight: 600 }}>
+                    {suppliers.find(s => s.id === selectedOrder.supplierId)?.nombre || "Proveedor N/A"}
+                    {" "}→{" "}
+                    {branches.find(b => b.id === selectedOrder.branchId)?.nombre || "Destino N/A"}
+                  </p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <Badge variant={selectedOrder.receptionStatus === "RECEIVED_TOTAL" ? "success" : selectedOrder.receptionStatus === "IN_TRANSIT" ? "info" : "warning"} dot>
+                    {selectedOrder.receptionStatus === "PENDING" ? "Pendiente" : selectedOrder.receptionStatus === "IN_TRANSIT" ? "En tránsito" : "Recibido"}
+                  </Badge>
+                  <Badge variant={selectedOrder.paymentStatus === "PAGADO" ? "success" : "warning"} dot>
+                    {selectedOrder.paymentStatus === "PAGADO" ? "Pagado" : "Por pagar"}
+                  </Badge>
+                  <button onClick={() => setSelectedOrder(null)} style={{ marginLeft: "8px", background: "none", border: "none", color: "var(--neutral-400)", cursor: "pointer", display: "flex", padding: "4px" }}>
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Info dates */}
+              <div style={{ padding: "16px 28px", borderBottom: "1px solid var(--border-default)", display: "flex", gap: "24px", flexWrap: "wrap" }}>
+                <div><span style={{ fontSize: "10px", color: "var(--neutral-500)", fontWeight: 700, textTransform: "uppercase" }}>Solicitado</span><br/><span style={{ fontSize: "13px", fontWeight: 600 }}>{new Date(selectedOrder.requestDate).toLocaleDateString()}</span></div>
+                <div><span style={{ fontSize: "10px", color: "var(--neutral-500)", fontWeight: 700, textTransform: "uppercase" }}>Estimado llegada</span><br/><span style={{ fontSize: "13px", fontWeight: 600 }}>{new Date(selectedOrder.estimatedArrivalDate).toLocaleDateString()}</span></div>
+                {selectedOrder.actualArrivalDate && (<div><span style={{ fontSize: "10px", color: "var(--neutral-500)", fontWeight: 700, textTransform: "uppercase" }}>Llegada real</span><br/><span style={{ fontSize: "13px", fontWeight: 600, color: "var(--brand-400)" }}>{new Date(selectedOrder.actualArrivalDate).toLocaleDateString()}</span></div>)}
+              </div>
+
+              {/* Items table */}
+              <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px" }}>
+                {isLoadingDetail ? (
+                  <div style={{ display: "flex", justifyContent: "center", padding: "40px" }}><Spinner size={32} /></div>
+                ) : selectedOrder.details && selectedOrder.details.length > 0 ? (
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
+                        {["Producto", "Cantidad", "P. Unitario", "Descuento", "Subtotal"].map(h => (
+                          <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: "10px", fontWeight: 700, color: "var(--neutral-500)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedOrder.details.map((item, idx) => {
+                        const prod = products.find(p => p.id === item.productId);
+                        const discPct = item.discountPct || 0;
+                        return (
+                          <tr key={idx} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                            <td style={{ padding: "12px", fontSize: "13px", fontWeight: 700 }}>{prod?.nombre || `Producto #${item.productId}`}<br/><span style={{ fontSize: "10px", color: "var(--neutral-500)" }}>{prod?.sku}</span></td>
+                            <td style={{ padding: "12px", fontSize: "13px", color: "var(--neutral-300)" }}>{item.quantity}</td>
+                            <td style={{ padding: "12px", fontSize: "13px" }}>{formatCurrency(item.unitPrice)}</td>
+                            <td style={{ padding: "12px", fontSize: "13px", color: discPct > 0 ? "var(--brand-400)" : "var(--neutral-600)" }}>{discPct > 0 ? `-${discPct}%` : "—"}</td>
+                            <td style={{ padding: "12px", fontSize: "14px", fontWeight: 800, color: "var(--neutral-50)" }}>{formatCurrency(item.subtotal)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p style={{ color: "var(--neutral-500)", textAlign: "center", padding: "32px", fontSize: "13px" }}>Sin detalles disponibles</p>
+                )}
+              </div>
+
+              {/* Footer con total y acciones */}
+              <div style={{ padding: "20px 28px", borderTop: "1px solid var(--border-default)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: "10px", color: "var(--neutral-500)", fontWeight: 700, textTransform: "uppercase" }}>Total Orden</p>
+                  <p style={{ margin: 0, fontSize: "26px", fontWeight: 900, color: "var(--brand-400)" }}>{formatCurrency(selectedOrder.total)}</p>
+                </div>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  {selectedOrder.receptionStatus === "PENDING" && (
+                    <Button size="sm" variant="ghost" onClick={() => { (apiClient.POST as any)(`/api/v1/purchases/${selectedOrder.id}/dispatch`).then(() => { fetchOrders(); setSelectedOrder(null); }); }}>
+                      <Truck className="h-4 w-4 mr-1" /> Despachar
+                    </Button>
+                  )}
+                  {selectedOrder.receptionStatus === "IN_TRANSIT" && (
+                    <Button size="sm" variant="primary" onClick={() => { receiveOrder(selectedOrder.id); setSelectedOrder(null); }}>
+                      <CheckCircle className="h-4 w-4 mr-1" /> Recibir Stock
+                    </Button>
+                  )}
+                  {selectedOrder.receptionStatus === "RECEIVED_TOTAL" && selectedOrder.paymentStatus === "POR_PAGAR" && (
+                    <Button size="sm" variant="primary" onClick={() => registerPayment(selectedOrder.id)}>
+                      <CreditCard className="h-4 w-4 mr-1" /> Registrar Pago
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <style jsx global>{`
           .custom-scrollbar::-webkit-scrollbar { width: 5px; }

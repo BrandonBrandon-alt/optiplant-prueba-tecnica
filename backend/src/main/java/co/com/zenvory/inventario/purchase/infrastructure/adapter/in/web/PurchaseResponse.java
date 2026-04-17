@@ -13,6 +13,8 @@ public record PurchaseResponse(
         LocalDateTime requestDate,
         LocalDateTime estimatedArrivalDate,
         LocalDateTime actualArrivalDate,
+        Integer paymentDueDays,
+        LocalDateTime paymentDueDate,
         Long supplierId,
         Long userId,
         Long receivingUserId,
@@ -25,6 +27,7 @@ public record PurchaseResponse(
             Long productId,
             BigDecimal quantity,
             BigDecimal unitPrice,
+            BigDecimal discountPct,
             BigDecimal subtotal
     ) {}
 
@@ -36,6 +39,8 @@ public record PurchaseResponse(
                 order.getRequestDate(),
                 order.getEstimatedArrivalDate(),
                 order.getActualArrivalDate(),
+                order.getPaymentDueDays(),
+                order.getPaymentDueDate(),
                 order.getSupplierId(),
                 order.getUserId(),
                 order.getReceivingUserId(),
@@ -46,6 +51,7 @@ public record PurchaseResponse(
                         d.getProductId(),
                         d.getQuantity(),
                         d.getUnitPrice(),
+                        d.getDiscountPct(),
                         d.computeSubtotal()
                 )).toList()
         );

@@ -383,7 +383,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             flexShrink: 0,
           }}
         >
-          <Logo size={36} />
+          <Logo size={40} />
         </div>
         <span
           style={{

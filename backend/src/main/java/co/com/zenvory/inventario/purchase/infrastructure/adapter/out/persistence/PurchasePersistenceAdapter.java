@@ -50,6 +50,8 @@ public class PurchasePersistenceAdapter implements PurchaseRepositoryPort {
         entity.setActualArrivalDate(domain.getActualArrivalDate());
         entity.setReceptionStatus(domain.getReceptionStatus().name());
         entity.setPaymentStatus(domain.getPaymentStatus().name());
+        entity.setPaymentDueDate(domain.getPaymentDueDate());
+        entity.setPaymentDueDays(domain.getPaymentDueDays());
         entity.setTotal(domain.getTotal());
 
         domain.getDetails().forEach(d -> {
@@ -58,6 +60,7 @@ public class PurchasePersistenceAdapter implements PurchaseRepositoryPort {
             dEntity.setProductId(d.getProductId());
             dEntity.setQuantity(d.getQuantity());
             dEntity.setUnitPrice(d.getUnitPrice());
+            dEntity.setDiscountPct(d.getDiscountPct());
             dEntity.setSubtotal(d.computeSubtotal());
             entity.addDetail(dEntity);
         });
@@ -67,7 +70,7 @@ public class PurchasePersistenceAdapter implements PurchaseRepositoryPort {
 
     public PurchaseOrder toDomain(PurchaseOrderEntity entity) {
         List<PurchaseOrderDetail> details = entity.getDetails().stream()
-                .map(d -> new PurchaseOrderDetail(d.getId(), d.getProductId(), d.getQuantity(), d.getUnitPrice()))
+                .map(d -> new PurchaseOrderDetail(d.getId(), d.getProductId(), d.getQuantity(), d.getUnitPrice(), d.getDiscountPct()))
                 .toList();
 
         return new PurchaseOrder(
@@ -81,6 +84,8 @@ public class PurchasePersistenceAdapter implements PurchaseRepositoryPort {
                 entity.getActualArrivalDate(),
                 ReceptionStatus.valueOf(entity.getReceptionStatus()),
                 PaymentStatus.valueOf(entity.getPaymentStatus()),
+                entity.getPaymentDueDays(),
+                entity.getPaymentDueDate(),
                 entity.getTotal(),
                 details
         );
