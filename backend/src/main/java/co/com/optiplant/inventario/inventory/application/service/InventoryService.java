@@ -109,6 +109,11 @@ public class InventoryService implements InventoryUseCase {
                 .finalBalance(inventory.getCurrentQuantity())
                 .build();
         inventoryMovementRepository.save(movement);
+
+        // Si el stock se ha incrementado, avisamos al sistema por si debe retirar alertas críticas
+        if (inventory.getCurrentQuantity().compareTo(inventory.getMinimumStock()) > 0) {
+            eventPublisher.publishEvent(new co.com.optiplant.inventario.inventory.domain.event.StockLevelRestoredEvent(this, branchId, productId));
+        }
     }
 
     private void updateProductAverageCost(Long productId, BigDecimal newQuantity, BigDecimal unitCost) {

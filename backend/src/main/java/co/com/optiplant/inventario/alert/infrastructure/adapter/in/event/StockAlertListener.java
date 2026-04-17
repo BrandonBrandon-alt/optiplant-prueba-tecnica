@@ -32,4 +32,16 @@ public class StockAlertListener {
             log.error("Error al procesar alerta inmediatada: {}", e.getMessage());
         }
     }
+
+    @EventListener
+    public void onStockLevelRestored(co.com.optiplant.inventario.inventory.domain.event.StockLevelRestoredEvent event) {
+        log.info("Recibido evento StockLevelRestored para producto {} en sucursal {}", 
+                event.getProductId(), event.getBranchId());
+        
+        try {
+            alertUseCase.handleRestoredStockCheck(event.getBranchId(), event.getProductId());
+        } catch (Exception e) {
+            log.error("Error al auto-resolver alerta: {}", e.getMessage());
+        }
+    }
 }

@@ -81,4 +81,9 @@ public class PurchaseService implements PurchaseUseCase {
         return repository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Orden de compra no encontrada: " + orderId));
     }
+
+    @Override
+    public List<PurchaseOrder> getAllOrders() {
+        return repository.findAll();
+    }
 }

@@ -31,6 +31,13 @@ public class PurchasePersistenceAdapter implements PurchaseRepositoryPort {
         return repository.findById(id).map(this::toDomain);
     }
 
+    @Override
+    public List<PurchaseOrder> findAll() {
+        return repository.findAll().stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
     public PurchaseOrderEntity toEntity(PurchaseOrder domain) {
         PurchaseOrderEntity entity = new PurchaseOrderEntity();
         entity.setId(domain.getId());

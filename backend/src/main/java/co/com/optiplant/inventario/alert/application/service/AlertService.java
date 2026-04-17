@@ -86,6 +86,16 @@ public class AlertService implements AlertUseCase {
 
     @Override
     @Transactional
+    public void handleRestoredStockCheck(Long branchId, Long productId) {
+        List<StockAlert> activeAlerts = alertRepository.findUnresolvedByBranchAndProduct(branchId, productId);
+        for (StockAlert alert : activeAlerts) {
+            alert.resolve(ResolutionType.DISMISSED, null, "Stock restaurado a niveles seguros automáticamente");
+            alertRepository.save(alert);
+        }
+    }
+
+    @Override
+    @Transactional
     public void createAlert(Long branchId, Long productId, String message) {
         StockAlert alert = StockAlert.create(branchId, productId, message);
         alertRepository.save(alert);

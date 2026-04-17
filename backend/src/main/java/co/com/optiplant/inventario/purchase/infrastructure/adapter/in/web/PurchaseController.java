@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/purchases")
 @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
@@ -54,5 +56,13 @@ public class PurchaseController {
     public ResponseEntity<PurchaseResponse> getOrder(@PathVariable Long id) {
         PurchaseOrder order = purchaseUseCase.getOrderById(id);
         return ResponseEntity.ok(PurchaseResponse.fromDomain(order));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<PurchaseResponse>> getAllOrders() {
+        List<PurchaseResponse> orders = purchaseUseCase.getAllOrders().stream()
+                .map(PurchaseResponse::fromDomain)
+                .toList();
+        return ResponseEntity.ok(orders);
     }
 }

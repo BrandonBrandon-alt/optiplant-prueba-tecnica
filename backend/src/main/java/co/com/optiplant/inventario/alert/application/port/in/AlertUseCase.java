@@ -18,4 +18,5 @@ public interface AlertUseCase {
     
     void createAlert(Long branchId, Long productId, String message);
     void handleLowStockCheck(LocalInventory inv);
+    void handleRestoredStockCheck(Long branchId, Long productId);
 }
