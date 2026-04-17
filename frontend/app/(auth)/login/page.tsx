@@ -75,7 +75,7 @@ export default function LoginPage() {
             <em
               style={{
                 color: "var(--brand-500)",
-                fontStyle: "italic",
+                fontStyle: "normal",
                 fontFamily: "var(--font-serif)",
               }}
             >

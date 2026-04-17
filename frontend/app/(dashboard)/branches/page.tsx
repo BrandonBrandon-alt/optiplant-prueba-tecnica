@@ -14,6 +14,7 @@ import Modal      from "@/components/ui/Modal";
 import Button     from "@/components/ui/Button";
 import Input      from "@/components/ui/Input";
 import DataTable, { Column } from "@/components/ui/DataTable";
+import SearchFilter from "@/components/ui/SearchFilter";
 
 // ── Types ──────────────────────────────────────────────────
 type BranchResponse = components["schemas"]["BranchResponse"];
@@ -287,6 +288,8 @@ export default function BranchesPage() {
   const [loading, setLoading]     = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingBranch, setEditingBranch]     = useState<BranchResponse | null>(null);
+  const [searchTerm, setSearchTerm]           = useState("");
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" | null }>({ key: "nombre", direction: "asc" });
   const [, startTransition] = useTransition();
   const { showToast } = useToast();
 
@@ -322,11 +325,33 @@ export default function BranchesPage() {
     });
   };
 
+  const handleSort = (key: string) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc"
+    }));
+  };
+
+  const filteredAndSortedBranches = (branches || []).filter(b => 
+    b.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    b.direccion?.toLowerCase().includes(searchTerm.toLowerCase())
+  ).sort((a, b) => {
+    if (!sortConfig.key || !sortConfig.direction) return 0;
+    
+    let valA: any = (a as any)[sortConfig.key];
+    let valB: any = (b as any)[sortConfig.key];
+
+    if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+    if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+    return 0;
+  });
+
   const columns: Column<BranchResponse>[] = [
     {
       header: "#",
       key: "id",
       width: "60px",
+      sortable: true,
       render: (branch: BranchResponse) => (
         <span style={{ fontFamily: "monospace", fontSize: "12px", color: "var(--neutral-500)" }}>#{branch.id}</span>
       )
@@ -334,6 +359,7 @@ export default function BranchesPage() {
     {
       header: "Nombre / Teléfono",
       key: "nombre",
+      sortable: true,
       render: (branch: BranchResponse) => (
         <div>
           <p style={{ fontSize: "14px", fontWeight: 500, color: "var(--neutral-100)", marginBottom: "2px" }}>{branch.nombre}</p>
@@ -344,11 +370,13 @@ export default function BranchesPage() {
     {
       header: "Dirección",
       key: "direccion",
+      sortable: true,
       render: (branch: BranchResponse) => <span style={{ fontSize: "13px", color: "var(--neutral-300)" }}>{branch.direccion}</span>
     },
     {
       header: "Estado",
       key: "activa",
+      sortable: true,
       render: (branch: BranchResponse) => (
         <Badge variant={branch.activa ? "success" : "neutral"} dot>
           {branch.activa ? "Activa" : "Inactiva"}
@@ -394,7 +422,14 @@ export default function BranchesPage() {
         marginBottom: "32px", 
         gap: "24px" 
       }}>
-        <div style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}></div>
+        <div className="flex-1 max-w-md">
+           <SearchFilter 
+             placeholder="Buscar sucursal por nombre o dirección..."
+             value={searchTerm}
+             onChange={setSearchTerm}
+             containerClassName="w-full"
+           />
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <Button
             leftIcon={<Plus size={15} />}
@@ -420,7 +455,9 @@ export default function BranchesPage() {
       <Card delay="0.1s" style={{ padding: 0, overflow: "hidden" }}>
         <DataTable<BranchResponse>
           columns={columns}
-          data={branches}
+          data={filteredAndSortedBranches}
+          sortConfig={sortConfig}
+          onSort={handleSort}
           isLoading={loading}
           minWidth="100%"
           emptyState={{

@@ -12,7 +12,7 @@ import HistoryTable   from "@/components/sales-history/HistoryTable";
 import { Search, RefreshCcw, History, ClipboardList, Info } from "lucide-react";
 import SaleDetailModal from "@/components/sales-history/SaleDetailModal";
 import PageHeader from "@/components/ui/PageHeader";
-import Input from "@/components/ui/Input";
+
 
 export default function SalesHistoryPage() {
   const router = useRouter();
@@ -112,34 +112,11 @@ export default function SalesHistoryPage() {
           description="Gestión y auditoría de transacciones registradas en el sistema POS."
         />
 
-        <div style={{ 
-          display: "flex", 
-          flexDirection: "row", 
-          flexWrap: "wrap",
-          justifyContent: "space-between", 
-          alignItems: "flex-end", 
-          marginBottom: "32px", 
-          gap: "24px" 
-        }}>
-            <div style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}></div>
-            <div className="flex items-center gap-3 pb-1">
-                <button 
-                  onClick={fetchSales}
-                  disabled={loading}
-                  className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2 rounded-xl border border-neutral-700 transition-all font-bold text-xs uppercase tracking-widest disabled:opacity-50 h-10"
-                >
-                  <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                  Sincronizar
-                </button>
-            </div>
-        </div>
-
         {/* Transaction Table Card – Matching Inventory Matrix style */}
         <Card style={{ padding: 0, overflow: "hidden", border: "1px solid var(--border-default)" }}>
           <HistoryFilters 
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
-            onRefresh={fetchSales}
           />
 
           <HistoryTable 

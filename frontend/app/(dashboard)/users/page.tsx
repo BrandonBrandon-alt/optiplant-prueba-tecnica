@@ -15,6 +15,7 @@ import Button     from "@/components/ui/Button";
 import Input      from "@/components/ui/Input";
 import Select     from "@/components/ui/Select";
 import DataTable, { Column } from "@/components/ui/DataTable";
+import SearchFilter from "@/components/ui/SearchFilter";
 
 // ── Types ──────────────────────────────────────────────────
 type UserResponse   = components["schemas"]["UserResponse"];
@@ -308,9 +309,41 @@ export default function UsersPage() {
     const [loading, setLoading] = useState(true);
     const [showCreate, setShowCreate] = useState(false);
     const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" | null }>({ key: "nombre", direction: "asc" });
 
     const [, startTransition] = useTransition();
     const { showToast } = useToast();
+
+    const handleSort = (key: string) => {
+        setSortConfig(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc"
+        }));
+    };
+
+    const filteredAndSortedUsers = (users || []).filter(u => 
+        u.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        u.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    ).sort((a, b) => {
+        if (!sortConfig.key || !sortConfig.direction) return 0;
+        
+        // Handle nested or derived values
+        let valA: any = (a as any)[sortConfig.key];
+        let valB: any = (b as any)[sortConfig.key];
+
+        if (sortConfig.key === "rolId") {
+            valA = a.role?.nombre || "";
+            valB = b.role?.nombre || "";
+        } else if (sortConfig.key === "sucursalId") {
+            valA = a.sucursalId ? (branches.find(b_ => b_.id === a.sucursalId)?.nombre || "") : "Acceso Global";
+            valB = b.sucursalId ? (branches.find(b_ => b_.id === b.sucursalId)?.nombre || "") : "Acceso Global";
+        }
+
+        if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+    });
 
     useEffect(() => {
         Promise.all([
@@ -351,6 +384,7 @@ export default function UsersPage() {
             header: "ID",
             key: "id",
             width: "60px",
+            sortable: true,
             render: (user) => (
                 <span style={{ fontFamily: "monospace", fontSize: "12px", color: "var(--neutral-500)" }}>#{user.id}</span>
             )
@@ -358,6 +392,7 @@ export default function UsersPage() {
         {
             header: "Nombre / Email",
             key: "nombre",
+            sortable: true,
             render: (user) => (
                 <div>
                     <p style={{ fontSize: "14px", fontWeight: 500, color: "var(--neutral-100)", marginBottom: "2px" }}>{user.nombre}</p>
@@ -368,13 +403,18 @@ export default function UsersPage() {
         {
             header: "Rol",
             key: "role",
+            sortable: true,
             render: (user) => (
-                <Badge variant="neutral">{user.role?.nombre}</Badge>
+                <Badge variant="info">
+                    <Shield size={12} className="mr-1 text-[var(--brand-400)]" />
+                    {user.role?.nombre || "Sin rol"}
+                </Badge>
             )
         },
         {
             header: "Sede",
             key: "sucursalId",
+            sortable: true,
             render: (user) => {
                 const branchName = user.sucursalId 
                     ? branches.find(b => b.id === user.sucursalId)?.nombre || `Sucursal #${user.sucursalId}`
@@ -385,6 +425,7 @@ export default function UsersPage() {
         {
             header: "Estado",
             key: "activo",
+            sortable: true,
             render: (user) => (
                 <Badge variant={user.activo ? "success" : "neutral"} dot>
                     {user.activo ? "Activo" : "Inactivo"}
@@ -428,6 +469,14 @@ export default function UsersPage() {
               gap: "24px" 
             }}>
                 <div style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}></div>
+                <div className="flex-1 max-w-md">
+                    <SearchFilter 
+                        placeholder="Buscar por nombre o email..."
+                        value={searchTerm}
+                        onChange={setSearchTerm}
+                        containerClassName="w-full"
+                    />
+                </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                     <Button onClick={() => setShowCreate(true)} style={{ marginTop: "4px" }}>Nuevo Usuario</Button>
                 </div>
@@ -436,7 +485,9 @@ export default function UsersPage() {
             <Card style={{ padding: 0, overflow: "hidden" }}>
                 <DataTable<UserResponse>
                     columns={columns}
-                    data={users}
+                    data={filteredAndSortedUsers}
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
                     isLoading={loading}
                     emptyState={{
                         title: "Sin usuarios",

@@ -47,10 +47,12 @@ public class SaleService implements CreateSaleUseCase, SaleManagementUseCase {
                 .map(item -> {
                     Product product = productUseCase.getProductById(item.productId());
 
-                    // Precio con fallback: lista seleccionada → precio base del producto
-                    BigDecimal price = priceListUseCase
-                            .getPriceForProduct(command.priceListId(), item.productId())
-                            .orElse(product.getSalePrice());
+                    // Jerarquía de Precios: Detalle -> Global -> Base
+                    Long effectiveListId = (item.priceListId() != null) ? item.priceListId() : command.priceListId();
+
+                    BigDecimal price = (effectiveListId != null) 
+                            ? priceListUseCase.getPriceForProduct(effectiveListId, item.productId()).orElse(product.getSalePrice())
+                            : product.getSalePrice();
 
                     return SaleDetail.create(
                             item.productId(),
@@ -60,6 +62,20 @@ public class SaleService implements CreateSaleUseCase, SaleManagementUseCase {
                             item.discountPercentage()
                     );
                 }).toList();
+
+        // 1.1 Pre-validar stock para todos los productos antes de persistir
+        for (SaleDetail detail : details) {
+            co.com.zenvory.inventario.inventory.domain.model.LocalInventory inventory = 
+                    inventoryUseCase.getInventory(command.branchId(), detail.getProductId());
+            
+            if (!inventory.hasSufficientStock(BigDecimal.valueOf(detail.getQuantity()))) {
+                throw new co.com.zenvory.inventario.inventory.domain.exception.InsufficientStockException(
+                        detail.getProductName(), 
+                        BigDecimal.valueOf(detail.getQuantity()), 
+                        inventory.getCurrentQuantity()
+                );
+            }
+        }
 
         // 2. Obtener nombres de sucursal y vendedor para el snapshot
         String branchName = branchUseCase.getBranchById(command.branchId()).getName();
