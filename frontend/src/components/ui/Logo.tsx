@@ -4,49 +4,62 @@ interface LogoProps {
   size?: number;
   className?: string;
   color?: string;
-  accentColor?: string;
+  showText?: boolean;
 }
 
 export default function Logo({ 
   size = 32, 
   className = "", 
-  color = "currentColor", 
-  accentColor = "var(--brand-500)" 
+  color = "var(--brand-500)",
+  showText = false
 }: LogoProps) {
   return (
-    <svg 
-      width={size} 
-      height={size} 
-      viewBox="0 0 100 115" 
-      fill="none" 
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      style={{ filter: "drop-shadow(0 0 8px rgba(217, 99, 79, 0.15))" }}
-    >
-      {/* Hexagon Outer Frame stylized */}
-      <path 
-        d="M50 0L95 25V90L50 115L5 90V25L50 0Z" 
-        stroke={color} 
-        strokeWidth="2" 
-        strokeLinejoin="round"
-      />
+    <div className={`flex flex-col items-center gap-1 ${className}`}>
+      <svg 
+        width={size} 
+        height={size} 
+        viewBox="0 0 100 100" 
+        fill="none" 
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* Outer Frame (Hexagon with cuts) */}
+        <path 
+           d="M50 0 L95 25 L95 40 L85 35 L50 15 L15 35 L5 40 L5 25 L50 0Z"
+           fill={color}
+        />
+        <path 
+           d="M50 100 L5 75 L5 60 L15 65 L50 85 L85 65 L95 60 L95 75 L50 100Z"
+           fill={color}
+        />
+
+        {/* Central diagonal of the Z */}
+        <path 
+           d="M18 40 L82 40 L82 60 L18 60 Z"
+           fill={color}
+           transform="rotate(-32 50 50)"
+        />
+
+        {/* Technical connection bars to complete the Z shape inside the hexagon */}
+        <path d="M15 35 V45 L25 40 V30Z" fill={color} />
+        <path d="M85 65 V55 L75 60 V70Z" fill={color} />
+
+        {/* Subtle sharp edges/details */}
+        <path d="M50 0 L55 5 L50 10 L45 5 Z" fill={color} opacity="0.3" />
+      </svg>
       
-      {/* Central "Z" geometric structure inspired by the modern reference */}
-      <path 
-        d="M25 35H75L30 85H80" 
-        stroke={color} 
-        strokeWidth="14" 
-        strokeLinecap="square" 
-        strokeLinejoin="miter"
-      />
-      
-      {/* Modern Accent - Dots or small marks following the image style */}
-      <rect x="70" y="20" width="10" height="10" fill={accentColor} />
-      <rect x="20" y="85" width="10" height="10" fill={accentColor} />
-      
-      {/* Sharp cut details */}
-      <path d="M5 40L15 45V70L5 75V40Z" fill={color} opacity="0.5" />
-      <path d="M95 40L85 45V70L95 75V40Z" fill={color} opacity="0.5" />
-    </svg>
+      {showText && (
+        <span style={{ 
+          color: color, 
+          fontSize: "clamp(10px, 1.2vw, 14px)", 
+          fontWeight: 700, 
+          fontFamily: "var(--font-sans)",
+          letterSpacing: "0.2em",
+          textTransform: "lowercase",
+          marginTop: "1px"
+        }}>
+          zenvory
+        </span>
+      )}
+    </div>
   );
 }

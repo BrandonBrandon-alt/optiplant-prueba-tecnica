@@ -280,23 +280,49 @@ export default function PurchasesPage() {
   const ProductCatalogCard = ({ p }: { p: Product }) => (
     <div 
       onClick={() => addToCart(p)}
-      className="cursor-pointer group flex flex-col justify-between p-4 bg-neutral-900 border border-neutral-800 rounded-xl hover:border-brand-500/50 hover:bg-neutral-800/60 transition-all shadow-sm"
+      style={{
+        background: "var(--bg-card)",
+        border: "1px solid var(--neutral-700)",
+        borderRadius: "16px",
+        padding: "20px",
+        cursor: "pointer",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+        height: "100%",
+        position: "relative",
+        overflow: "hidden"
+      }}
+      className="group hover:border-brand-500/50 hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] active:scale-[0.98]"
     >
       <div>
-        <div className="flex justify-between items-start mb-2">
-            <h3 className="text-sm font-bold text-white leading-tight group-hover:text-brand-400 transition-colors">{p.nombre}</h3>
-        </div>
-        <p className="text-[10px] font-mono text-neutral-500 tracking-wider mb-4 border border-neutral-800 p-1 rounded bg-neutral-950 inline-block">
+        <h3 style={{ fontSize: "15px", fontWeight: 800, color: "white", marginBottom: "4px", lineHeight: "1.2" }}>{p.nombre}</h3>
+        <span style={{ fontSize: "9px", fontFamily: "var(--font-mono)", color: "var(--neutral-400)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           REF: {p.sku}
-        </p>
+        </span>
       </div>
-      <div className="flex justify-between items-end border-t border-neutral-800/80 pt-3">
-        <div className="flex flex-col">
-            <span className="text-[10px] uppercase font-bold text-neutral-500">Costo Ref.</span>
-            <span className="text-sm font-black text-white">{formatCurrency(p.costoPromedio || 0)}</span>
+
+      <div style={{ marginTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+        <div>
+          <p style={{ fontSize: "9px", fontWeight: 900, color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "2px" }}>Costo Ref.</p>
+          <p style={{ fontSize: "20px", fontWeight: 900, color: "white", letterSpacing: "-0.03em" }}>{formatCurrency(p.costoPromedio || 0)}</p>
         </div>
-        <div className="h-8 w-8 bg-brand-500/10 text-brand-500 group-hover:bg-brand-500 group-hover:text-white rounded-lg flex items-center justify-center transition-colors">
-            <Plus size={16} />
+        <div style={{ 
+          width: "36px", 
+          height: "36px", 
+          borderRadius: "10px", 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "center",
+          background: "var(--bg-base)",
+          border: "1px solid var(--neutral-700)",
+          color: "var(--neutral-300)",
+          transition: "all 0.2s"
+        }}
+        className="group-hover:bg-brand-500 group-hover:text-white group-hover:border-brand-500"
+        >
+          <Plus size={18} strokeWidth={3} />
         </div>
       </div>
     </div>
@@ -445,15 +471,17 @@ export default function PurchasesPage() {
 
   // ----- RENDERIZADO DUAL-PANE POS-STYLE (Nueva Orden) ----- //
   const renderDualPaneOrder = () => (
-    <main className="flex gap-6 flex-col lg:flex-row h-[75vh] animate-in fade-in zoom-in-95 duration-300">
+    <main className="flex gap-8 flex-col lg:flex-row h-[82vh] animate-in fade-in zoom-in-95 duration-300">
         {/* PANEL IZQUIERDO: Búsqueda y Catálogo */}
-        <div className="flex flex-[2] flex-col gap-5 min-w-0 bg-neutral-900 border border-neutral-800 rounded-2xl p-5 shadow-2xl">
+        <div className="flex flex-[3] flex-col gap-5 min-w-0 bg-neutral-900 border border-neutral-800 rounded-3xl p-8 shadow-2xl">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-                    <Package className="text-brand-500" /> Mercado B2B
+                  <h1 style={{ fontSize: "22px", fontWeight: 900, color: "white", textTransform: "uppercase", letterSpacing: "-0.02em", margin: 0 }}>
+                    MERCADO B2B
                   </h1>
-                  <p className="text-xs text-neutral-500 font-bold uppercase tracking-wider">Añade stock pactado a la orden</p>
+                  <p style={{ fontSize: "10px", color: "var(--neutral-500)", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", marginTop: "2px" }}>
+                    Añade stock pactado a la orden
+                  </p>
                 </div>
                 <div className="w-full md:w-72">
                     <Input
@@ -536,22 +564,26 @@ export default function PurchasesPage() {
             </div>
 
             {/* Subtotal y Checkout Footer */}
-            <div className="p-6 border-t border-neutral-800 bg-neutral-900 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-10 flex flex-col gap-4">
-                <div className="flex justify-between items-end border-b border-neutral-700/50 pb-4 border-dashed">
-                    <span className="text-xs uppercase font-black text-neutral-500 tracking-widest">Inversión Final</span>
-                    <span className="text-3xl font-black text-brand-400" style={{ textShadow: "0 0 25px var(--brand-glow)" }}>
-                        {formatCurrency(financialSummary)}
-                    </span>
+            <div className="p-8 border-t border-neutral-800 bg-neutral-900 shadow-[0_-20px_50px_rgba(0,0,0,0.6)] z-10 flex flex-col gap-6">
+                <div>
+                   <h3 style={{ fontSize: "11px", fontWeight: 900, color: "var(--neutral-400)", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "8px" }}>
+                      Resumen de <em>Inversión</em>
+                   </h3>
+                   <div className="flex justify-between items-baseline">
+                      <span className="text-xs font-bold text-neutral-500">TOTAL ESTIMADO</span>
+                      <span className="text-4xl font-black text-brand-400 tabular" style={{ textShadow: "0 0 30px var(--brand-glow)" }}>
+                          {formatCurrency(financialSummary)}
+                      </span>
+                   </div>
                 </div>
+
                 <Button 
-                    className="w-full h-14 text-sm tracking-widest bg-brand-600 hover:bg-brand-500 text-white border-0 shadow-[0_10px_30px_rgba(235,108,31,0.2)] hover:shadow-[0_10px_40px_rgba(235,108,31,0.4)]"
+                    className="w-full h-16 text-[12px] font-black uppercase tracking-[0.2em] bg-brand-500 hover:bg-brand-400 text-white border-0 shadow-[0_15px_35px_rgba(217,99,79,0.3)] transition-all hover:-translate-y-1 active:translate-y-0"
                     variant="primary"
                     onClick={handleSubmitOrder}
                     loading={isSubmitting}
                 >
-                    <div className="flex items-center gap-2 font-black uppercase">
-                        Autorizar Solicitud Inmediata <ArrowRight className="h-4 w-4 ml-1" />
-                    </div>
+                    Autorizar Solicitud <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
             </div>
         </div>
@@ -559,7 +591,7 @@ export default function PurchasesPage() {
   );
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-10 lg:px-16 space-y-12 animate-fade-in w-full">
         <PageHeader 
             title={
                 <>
@@ -568,24 +600,55 @@ export default function PurchasesPage() {
             }
             description="Control total B2B. Cada lote recibido reconstruye fiscalmente tu Costo Promedio Ponderado de inventario."
             actions={
-                <div className="flex p-1 bg-neutral-900 border border-neutral-800 rounded-lg w-max shadow-inner">
+                <div style={{ 
+                  display: "flex", 
+                  background: "var(--bg-base)", 
+                  padding: "6px", 
+                  borderRadius: "14px", 
+                  border: "1px solid var(--neutral-700)",
+                  gap: "6px",
+                  boxShadow: "inset 0 2px 4px rgba(0,0,0,0.3)"
+                }}>
                     <button
-                        className={`flex items-center gap-2 px-5 py-2 rounded text-[11px] uppercase tracking-wider font-bold transition-all ${
-                            activeTab === "history" 
-                                ? "bg-neutral-800 text-white shadow-sm" 
-                                : "text-neutral-500 hover:text-neutral-300"
-                        }`}
                         onClick={() => setActiveTab("history")}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          padding: "10px 20px",
+                          borderRadius: "10px",
+                          fontSize: "11px",
+                          fontWeight: 900,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.08em",
+                          cursor: "pointer",
+                          transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                          background: activeTab === "history" ? "var(--neutral-600)" : "transparent",
+                          color: activeTab === "history" ? "white" : "var(--neutral-400)",
+                          border: "none"
+                        }}
                     >
                         <TrendingUp size={14} /> Diario Histórico
                     </button>
                     <button
-                        className={`flex items-center gap-2 px-5 py-2 rounded text-[11px] uppercase tracking-wider font-bold transition-all ${
-                            activeTab === "new" 
-                                ? "bg-brand-500 text-white shadow-[0_0_15px_var(--brand-glow)]" 
-                                : "text-neutral-500 hover:text-neutral-300"
-                        }`}
                         onClick={() => setActiveTab("new")}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          padding: "10px 20px",
+                          borderRadius: "10px",
+                          fontSize: "11px",
+                          fontWeight: 900,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.08em",
+                          cursor: "pointer",
+                          transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                          background: activeTab === "new" ? "var(--brand-500)" : "transparent",
+                          color: activeTab === "new" ? "white" : "var(--neutral-400)",
+                          border: "none",
+                          boxShadow: activeTab === "new" ? "0 4px 15px var(--brand-glow)" : "none"
+                        }}
                     >
                         <ShoppingCart size={14} /> Nueva Negociación
                     </button>

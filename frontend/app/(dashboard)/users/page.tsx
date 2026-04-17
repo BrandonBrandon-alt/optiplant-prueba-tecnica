@@ -122,7 +122,7 @@ function CreateUserModal({ open, onClose, roles, branches, onCreated }: {
                     value={values.email ?? ""}
                     onChange={e => setValues({...values, email: e.target.value})}
                     icon={<Mail size={15} />}
-                    placeholder="juan@optiplant.com"
+                    placeholder="juan@zenvory.com"
                 />
                 <Input
                     label="Contraseña"

@@ -73,7 +73,7 @@ export default function MasterProductsPage() {
         apiClient.GET("/api/catalog/suppliers"),
         apiClient.GET("/api/catalog/units"),
         fetch("http://localhost:8080/api/v1/price-lists", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("optiplant_token")}` }
+          headers: { Authorization: `Bearer ${localStorage.getItem("zenvory_token")}` }
         }).then(r => r.json()),
       ]);
       setProducts(prodRes.data ?? []);
@@ -108,7 +108,7 @@ export default function MasterProductsPage() {
           await Promise.all(priceLists.map(async (lista) => {
             const res = await fetch(
               `http://localhost:8080/api/v1/price-lists/${lista.id}/products/${product.id}/price`,
-              { headers: { Authorization: `Bearer ${localStorage.getItem("optiplant_token")}` } }
+              { headers: { Authorization: `Bearer ${localStorage.getItem("zenvory_token")}` } }
             );
             const data = await res.json();
             if (data.fromList && data.precio != null) {
@@ -162,7 +162,7 @@ export default function MasterProductsPage() {
                 `http://localhost:8080/api/v1/price-lists/${lista.id}/products/${savedProductId}/price`,
                 {
                   method: "PUT",
-                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("optiplant_token")}` },
+                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("zenvory_token")}` },
                   body: JSON.stringify({ precio }),
                 }
               );
@@ -172,7 +172,7 @@ export default function MasterProductsPage() {
                 `http://localhost:8080/api/v1/price-lists/${lista.id}/products/${savedProductId}/price`,
                 {
                   method: "DELETE",
-                  headers: { Authorization: `Bearer ${localStorage.getItem("optiplant_token")}` },
+                  headers: { Authorization: `Bearer ${localStorage.getItem("zenvory_token")}` },
                 }
               ).catch(() => {}); // Ignorar error si no existía
             }

@@ -383,7 +383,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             flexShrink: 0,
           }}
         >
-          <Logo size={36} color="var(--neutral-50)" />
+          <Logo size={36} />
         </div>
         <span
           style={{
@@ -501,25 +501,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           Cerrar sesión
         </button>
       </div>
-      {/* Close button - solo móvil */}
-      <button
-        onClick={onClose}
-        className="show-mobile"
-        style={{
-          position: "absolute",
-          top: "20px",
-          right: "10px",
-          background: "transparent",
-          border: "none",
-          color: "var(--neutral-400)",
-          cursor: "pointer"
-        }}
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
     </aside>
     </>
   );

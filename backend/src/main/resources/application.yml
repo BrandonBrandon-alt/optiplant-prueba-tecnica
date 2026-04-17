@@ -1,6 +1,6 @@
 spring:
   application:
-    name: optiplant-api
+    name: zenvory-api
 
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/inventario_multisucursal}
@@ -40,4 +40,4 @@ logging:
   level:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE # Muestra los valores reales insertados en los '?' del SQL
-    co.com.optiplant.inventario: INFO # Muestra los logs de nuestros Casos de Uso
+    co.com.zenvory.inventario: INFO # Muestra los logs de nuestros Casos de Uso
