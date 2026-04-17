@@ -5,9 +5,12 @@ import co.com.optiplant.inventario.analytics.domain.model.BranchPerformance;
 import co.com.optiplant.inventario.analytics.domain.model.BranchValuation;
 import co.com.optiplant.inventario.analytics.domain.model.GlobalSummary;
 import co.com.optiplant.inventario.analytics.domain.model.TopSellingProduct;
+import co.com.optiplant.inventario.analytics.domain.model.SalesTrend;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -20,21 +23,33 @@ public class AnalyticsPersistenceAdapter implements AnalyticsRepositoryPort {
     }
 
     @Override
-    public List<TopSellingProduct> findTopSellingProducts(int limit) {
-        String query = """
+    public List<TopSellingProduct> findTopSellingProducts(int limit, LocalDateTime startDate, LocalDateTime endDate) {
+        StringBuilder query = new StringBuilder("""
                 SELECT p.id as product_id, p.nombre as product_name, SUM(d.cantidad) as total_sold
                 FROM detalles_venta d
                 JOIN producto p ON d.producto_id = p.id
-                GROUP BY p.id, p.nombre
-                ORDER BY total_sold DESC
-                LIMIT ?
-                """;
+                JOIN ventas v ON d.venta_id = v.id
+                WHERE 1=1
+                """);
+        List<Object> args = new ArrayList<>();
+        
+        if (startDate != null) {
+            query.append(" AND v.fecha >= ? ");
+            args.add(startDate);
+        }
+        if (endDate != null) {
+            query.append(" AND v.fecha <= ? ");
+            args.add(endDate);
+        }
+        
+        query.append(" GROUP BY p.id, p.nombre ORDER BY total_sold DESC LIMIT ? ");
+        args.add(limit);
 
-        return jdbcTemplate.query(query, (rs, rowNum) -> new TopSellingProduct(
+        return jdbcTemplate.query(query.toString(), (rs, rowNum) -> new TopSellingProduct(
                 rs.getLong("product_id"),
                 rs.getString("product_name"),
                 rs.getBigDecimal("total_sold")
-        ), limit);
+        ), args.toArray());
     }
 
     @Override
@@ -56,16 +71,39 @@ public class AnalyticsPersistenceAdapter implements AnalyticsRepositoryPort {
     }
 
     @Override
-    public GlobalSummary findGlobalSummary() {
-        String query = """
+    public GlobalSummary findGlobalSummary(LocalDateTime startDate, LocalDateTime endDate) {
+        StringBuilder datesVentas = new StringBuilder(" WHERE 1=1 ");
+        StringBuilder datesDetalles = new StringBuilder(" WHERE 1=1 ");
+        List<Object> args = new ArrayList<>();
+
+        if (startDate != null) {
+            datesVentas.append(" AND fecha >= ? ");
+            datesDetalles.append(" AND v.fecha >= ? ");
+        }
+        if (endDate != null) {
+            datesVentas.append(" AND fecha <= ? ");
+            datesDetalles.append(" AND v.fecha <= ? ");
+        }
+
+        // We need arguments for 3 subqueries that use the date filter
+        if (startDate != null) { args.add(startDate); }
+        if (endDate != null) { args.add(endDate); }
+        
+        if (startDate != null) { args.add(startDate); }
+        if (endDate != null) { args.add(endDate); }
+        
+        if (startDate != null) { args.add(startDate); }
+        if (endDate != null) { args.add(endDate); }
+
+        String query = String.format("""
                 SELECT 
-                    (SELECT COALESCE(SUM(total_final), 0) FROM ventas) as total_revenue,
-                    (SELECT COALESCE(SUM(cantidad), 0) FROM detalles_venta) as total_units,
+                    (SELECT COALESCE(SUM(total_final), 0) FROM ventas %s) as total_revenue,
+                    (SELECT COALESCE(SUM(dv.cantidad), 0) FROM detalles_venta dv JOIN ventas v ON dv.venta_id = v.id %s) as total_units,
                     (SELECT COALESCE(SUM(i.cantidad_actual * p.costo_promedio), 0) 
                      FROM inventario_local i JOIN producto p ON i.producto_id = p.id) as total_value,
-                    (SELECT COALESCE(AVG(total_final), 0) FROM ventas) as avg_ticket,
+                    (SELECT COALESCE(AVG(total_final), 0) FROM ventas %s) as avg_ticket,
                     (SELECT COUNT(*) FROM sucursal WHERE activa = true) as branch_count
-                """;
+                """, datesVentas, datesDetalles, datesVentas);
 
         return jdbcTemplate.queryForObject(query, (rs, rowNum) -> new GlobalSummary(
                 rs.getBigDecimal("total_revenue"),
@@ -73,12 +111,12 @@ public class AnalyticsPersistenceAdapter implements AnalyticsRepositoryPort {
                 rs.getBigDecimal("total_value"),
                 rs.getBigDecimal("avg_ticket"),
                 rs.getLong("branch_count")
-        ));
+        ), args.toArray());
     }
 
     @Override
-    public List<BranchPerformance> findBranchPerformance() {
-        String query = """
+    public List<BranchPerformance> findBranchPerformance(LocalDateTime startDate, LocalDateTime endDate) {
+        StringBuilder query = new StringBuilder("""
                 SELECT 
                     s.id as branch_id, 
                     s.nombre as branch_name, 
@@ -86,19 +124,62 @@ public class AnalyticsPersistenceAdapter implements AnalyticsRepositoryPort {
                     COALESCE(SUM(dv.cantidad), 0) as units_sold,
                     COUNT(DISTINCT v.id) as sales_count
                 FROM sucursal s
-                LEFT JOIN ventas v ON s.id = v.sucursal_id
+                LEFT JOIN ventas v ON s.id = v.sucursal_id 
+                """);
+                
+        List<Object> args = new ArrayList<>();
+        if (startDate != null || endDate != null) {
+            query.append(" AND (1=1 ");
+            if (startDate != null) {
+                query.append(" AND v.fecha >= ? ");
+                args.add(startDate);
+            }
+            if (endDate != null) {
+                query.append(" AND v.fecha <= ? ");
+                args.add(endDate);
+            }
+            query.append(") ");
+        }
+
+        query.append("""
                 LEFT JOIN detalles_venta dv ON v.id = dv.venta_id
                 WHERE s.activa = true
                 GROUP BY s.id, s.nombre
                 ORDER BY revenue DESC
-                """;
+                """);
 
-        return jdbcTemplate.query(query, (rs, rowNum) -> new BranchPerformance(
+        return jdbcTemplate.query(query.toString(), (rs, rowNum) -> new BranchPerformance(
                 rs.getLong("branch_id"),
                 rs.getString("branch_name"),
                 rs.getBigDecimal("revenue"),
                 rs.getBigDecimal("units_sold"),
                 rs.getLong("sales_count")
-        ));
+        ), args.toArray());
+    }
+
+    @Override
+    public List<SalesTrend> findSalesTrend(LocalDateTime startDate, LocalDateTime endDate) {
+        StringBuilder query = new StringBuilder("""
+                SELECT CAST(v.fecha AS DATE) as sale_date, SUM(v.total_final) as revenue
+                FROM ventas v
+                WHERE 1=1
+                """);
+        List<Object> args = new ArrayList<>();
+        
+        if (startDate != null) {
+            query.append(" AND v.fecha >= ? ");
+            args.add(startDate);
+        }
+        if (endDate != null) {
+            query.append(" AND v.fecha <= ? ");
+            args.add(endDate);
+        }
+        
+        query.append(" GROUP BY CAST(v.fecha AS DATE) ORDER BY sale_date ");
+
+        return jdbcTemplate.query(query.toString(), (rs, rowNum) -> new SalesTrend(
+                rs.getDate("sale_date").toLocalDate(),
+                rs.getBigDecimal("revenue")
+        ), args.toArray());
     }
 }

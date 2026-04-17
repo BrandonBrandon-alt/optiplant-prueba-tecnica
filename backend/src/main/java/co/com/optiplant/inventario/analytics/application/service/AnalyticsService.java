@@ -6,8 +6,10 @@ import co.com.optiplant.inventario.analytics.domain.model.BranchPerformance;
 import co.com.optiplant.inventario.analytics.domain.model.BranchValuation;
 import co.com.optiplant.inventario.analytics.domain.model.GlobalSummary;
 import co.com.optiplant.inventario.analytics.domain.model.TopSellingProduct;
+import co.com.optiplant.inventario.analytics.domain.model.SalesTrend;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -20,11 +22,11 @@ public class AnalyticsService implements AnalyticsUseCase {
     }
 
     @Override
-    public List<TopSellingProduct> getTopSellingProducts(int limit) {
+    public List<TopSellingProduct> getTopSellingProducts(int limit, LocalDateTime startDate, LocalDateTime endDate) {
         if (limit <= 0) {
             limit = 5;
         }
-        return analyticsRepository.findTopSellingProducts(limit);
+        return analyticsRepository.findTopSellingProducts(limit, startDate, endDate);
     }
 
     @Override
@@ -33,12 +35,17 @@ public class AnalyticsService implements AnalyticsUseCase {
     }
 
     @Override
-    public GlobalSummary getGlobalSummary() {
-        return analyticsRepository.findGlobalSummary();
+    public GlobalSummary getGlobalSummary(LocalDateTime startDate, LocalDateTime endDate) {
+        return analyticsRepository.findGlobalSummary(startDate, endDate);
     }
 
     @Override
-    public List<BranchPerformance> getBranchPerformance() {
-        return analyticsRepository.findBranchPerformance();
+    public List<BranchPerformance> getBranchPerformance(LocalDateTime startDate, LocalDateTime endDate) {
+        return analyticsRepository.findBranchPerformance(startDate, endDate);
+    }
+
+    @Override
+    public List<SalesTrend> getSalesTrend(LocalDateTime startDate, LocalDateTime endDate) {
+        return analyticsRepository.findSalesTrend(startDate, endDate);
     }
 }

@@ -444,8 +444,10 @@ export default function POSPage() {
         <div style={{ textAlign: "right" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "6px" }}>
             <p style={{ fontSize: "14px", fontWeight: 800, color: "var(--neutral-50)", margin: 0 }}>{formatCurrency(item.unitPrice * item.quantity)}</p>
-            {selectedPriceList && listPrices[item.productId] && (
-               <Badge variant={getPriceListVariant(selectedPriceList)} dot>{priceLists.find(l => l.id === selectedPriceList)?.nombre || "Lista"}</Badge>
+            {selectedPriceList && listPrices[item.productId] ? (
+               <Badge variant={getPriceListVariant(selectedPriceList)} dot>{priceLists.find(l => l.id === selectedPriceList)?.nombre?.toUpperCase() || "LISTA"}</Badge>
+            ) : (
+               <Badge variant="info" dot>MINORISTA</Badge>
             )}
           </div>
           {item.discountPercentage > 0 && (
@@ -548,8 +550,8 @@ export default function POSPage() {
                   onClick={addToCart}
                   mode="add"
                   priceOverride={selectedPriceList ? listPrices[item.productId] : null}
-                  priceListName={selectedPriceList ? priceLists.find(l => l.id === selectedPriceList)?.nombre : null}
-                  priceListVariant={getPriceListVariant(selectedPriceList)}
+                  priceListName={selectedPriceList ? priceLists.find(l => l.id === selectedPriceList)?.nombre?.toUpperCase() : "MINORISTA"}
+                  priceListVariant={selectedPriceList ? getPriceListVariant(selectedPriceList) : "info"}
                 />
               ))}
             </div>
@@ -565,22 +567,40 @@ export default function POSPage() {
 
         {/* Panel Derecho: Carrito */}
         <div className="flex w-full lg:w-[450px] flex-col rounded-xl border border-neutral-800 bg-neutral-900 shadow-2xl overflow-hidden">
-          <div className="flex items-center justify-between border-b border-neutral-800 px-6 py-5 bg-neutral-900/50">
-            <div className="flex items-center gap-3">
-              <div className="bg-brand-500/10 p-2 rounded-lg">
-                <ShoppingCart className="h-5 w-5 text-brand-500" />
+          <div className="flex flex-col gap-4 border-b border-neutral-800 px-6 py-5 bg-neutral-900/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-brand-500/10 p-2 rounded-lg">
+                  <ShoppingCart className="h-5 w-5 text-brand-500" />
+                </div>
+                <div>
+                  <h2 className="font-black text-neutral-100 uppercase tracking-tight">Carrito de Venta</h2>
+                  <button 
+                    onClick={clearCart}
+                    className="text-[10px] text-neutral-500 hover:text-red-400 font-bold uppercase transition-colors"
+                  >
+                    Vaciar Todo
+                  </button>
+                </div>
               </div>
-              <div>
-                <h2 className="font-black text-neutral-100 uppercase tracking-tight">Carrito de Venta</h2>
-                <button 
-                  onClick={clearCart}
-                  className="text-[10px] text-neutral-500 hover:text-red-400 font-bold uppercase transition-colors"
-                >
-                  Vaciar Todo
-                </button>
-              </div>
+              <Badge variant="neutral">{cart.length} productos</Badge>
             </div>
-            <Badge variant="neutral">{cart.length} productos</Badge>
+            
+            {/* Lista de Precios Movida a la Cabecera */}
+            {priceLists.length > 0 && (
+              <div className="pt-2 text-sm">
+                <Select
+                  label="Lista de Precios a Aplicar"
+                  value={selectedPriceList?.toString() || ""}
+                  onChange={(val: string) => setSelectedPriceList(val ? Number(val) : null)}
+                  options={[
+                    { value: "", label: "Precio Minorista (Reglas Base)" },
+                    ...priceLists.map(l => ({ value: l.id.toString(), label: `Precio ${l.nombre} (Descuentos en cascada)` }))
+                  ]}
+                  icon={<DollarSign size={14} />}
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scrollbar">
@@ -617,21 +637,6 @@ export default function POSPage() {
                 icon={<Tag size={14} />}
               />
             </div>
-            {/* Lista de Precios */}
-            {priceLists.length > 0 && (
-              <div className="pb-2 text-sm text-neutral-300">
-                <Select
-                  label="Lista de Precios Aplicada"
-                  value={selectedPriceList?.toString() || ""}
-                  onChange={(val: string) => setSelectedPriceList(val ? Number(val) : null)}
-                  options={[
-                    { value: "", label: "Precio Minorista (Base)" },
-                    ...priceLists.map(l => ({ value: l.id.toString(), label: l.nombre }))
-                  ]}
-                  icon={<DollarSign size={14} />}
-                />
-              </div>
-            )}
 
             <div className="flex items-center gap-4 py-2 border-y border-neutral-800/50">
                <div className="flex-1">

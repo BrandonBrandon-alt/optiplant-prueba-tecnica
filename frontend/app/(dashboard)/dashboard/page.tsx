@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from 'recharts';
 import { apiClient } from "@/api/client";
 import { getSession } from "@/api/auth";
 import type { components } from "@/api/schema";
@@ -20,6 +21,7 @@ type TopProduct      = components["schemas"]["TopSellingProduct"];
 type StockAlert      = components["schemas"]["StockAlertResponse"];
 type BranchResponse  = components["schemas"]["BranchResponse"];
 type TransferResponse = components["schemas"]["TransferResponse"];
+type SalesTrend      = { saleDate?: string; revenue?: number };
 
 const formatCOP = (v: number) =>
   new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(v);
@@ -68,8 +70,10 @@ export default function DashboardPage() {
   const [alerts, setAlerts]           = useState<StockAlert[]>([]);
   const [branches, setBranches]       = useState<BranchResponse[]>([]);
   const [transfers, setTransfers]     = useState<TransferResponse[]>([]);
-  const [performance, setPerformance]     = useState<components["schemas"]["BranchPerformance"][]>([]);
+  const [performance, setPerformance] = useState<components["schemas"]["BranchPerformance"][]>([]);
+  const [salesTrend, setSalesTrend]   = useState<SalesTrend[]>([]);
   const [global, setGlobal]           = useState<components["schemas"]["GlobalSummary"] | null>(null);
+  const [timeRange, setTimeRange]     = useState<"today"|"7d"|"month"|"all">("all");
   const [loading, setLoading]         = useState(true);
   const router = useRouter();
   const session = typeof window !== "undefined" ? getSession() : null;
@@ -94,13 +98,39 @@ export default function DashboardPage() {
 
     async function fetchAll() {
       try {
-        const [val, top, bra, glo, perf, tra] = await Promise.all([
+        let startDate: string | undefined = undefined;
+        let endDate: string | undefined = undefined;
+        const now = new Date();
+        
+        if (timeRange === "today") {
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          startDate = today.toISOString();
+          endDate = new Date(today.getTime() + 86400000 - 1).toISOString();
+        } else if (timeRange === "7d") {
+          const past = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+          startDate = past.toISOString();
+        } else if (timeRange === "month") {
+          const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          startDate = startMonth.toISOString();
+        }
+
+        const dateQuery = { startDate, endDate };
+
+        // Limpiar undefined parameters
+        const cleanQuery = Object.fromEntries(Object.entries(dateQuery).filter(([_, v]) => v != null));
+
+        const [val, top, bra, glo, perf, tra, trendRes] = await Promise.all([
           apiClient.GET("/api/v1/analytics/valuations"),
-          apiClient.GET("/api/v1/analytics/top-products", { params: { query: { limit: 5 } } }),
+          // @ts-ignore
+          apiClient.GET("/api/v1/analytics/top-products", { params: { query: { limit: 5, ...cleanQuery } } }),
           apiClient.GET("/api/branches"),
-          apiClient.GET("/api/v1/analytics/global-summary"),
-          apiClient.GET("/api/v1/analytics/branch-performance"),
+          // @ts-ignore
+          apiClient.GET("/api/v1/analytics/global-summary", { params: { query: { ...cleanQuery } } }),
+          // @ts-ignore
+          apiClient.GET("/api/v1/analytics/branch-performance", { params: { query: { ...cleanQuery } } }),
           apiClient.GET("/api/v1/transfers"),
+          // @ts-ignore
+          (apiClient as any).GET("/api/v1/analytics/sales-trend", { params: { query: cleanQuery } }),
         ]);
         
         setValuations(val.data ?? []);
@@ -108,6 +138,7 @@ export default function DashboardPage() {
         setGlobal(glo.data ?? null);
         setPerformance(perf.data ?? []);
         setTransfers((tra.data ?? []).filter(t => t.status !== "RECEIVED"));
+        setSalesTrend(trendRes?.data ?? []);
         
         const branchList = bra.data ?? [];
         setBranches(branchList);
@@ -124,7 +155,7 @@ export default function DashboardPage() {
       }
     }
     fetchAll();
-  }, [isAdmin]);
+  }, [isAdmin, timeRange]);
 
   if (loading) return <Spinner fullPage />;
 
@@ -134,21 +165,53 @@ export default function DashboardPage() {
 
   return (
     <div style={{ padding: "36px 40px", maxWidth: "1200px" }}>
-      <PageHeader
-        title="Panel de Control Administrativo"
-        description={
-          <>
-            Bienvenido,{" "}
-            <em style={{ color: "var(--brand-500)", fontStyle: "italic", fontFamily: "var(--font-serif)" }}>
-              {session?.nombre ?? session?.email ?? "Administrador"}
-            </em>
-            . Visualiza el estado global de tu red de sucursales.
-          </>
-        }
-      />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
+        <div style={{ flex: 1 }}>
+          <PageHeader
+            title="Panel de Control Administrativo"
+            description={
+              <>
+                Bienvenido,{" "}
+                <em style={{ color: "var(--brand-500)", fontStyle: "italic", fontFamily: "var(--font-serif)" }}>
+                  {session?.nombre ?? session?.email ?? "Administrador"}
+                </em>
+                . Visualiza el estado global de tu red de sucursales.
+              </>
+            }
+          />
+        </div>
+        <div style={{ marginTop: "12px", marginLeft: "20px" }}>
+          <select 
+            value={timeRange} 
+            onChange={(e) => setTimeRange(e.target.value as any)}
+            style={{ 
+              padding: '10px 16px', 
+              borderRadius: '8px', 
+              border: '1px solid var(--border-subtle)', 
+              background: 'var(--bg-surface)', 
+              color: 'var(--neutral-100)', 
+              outline: 'none',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: '14px',
+              appearance: 'none',
+            }}
+          >
+            <option value="today">Ventas de Hoy</option>
+            <option value="7d">Últimos 7 Días</option>
+            <option value="month">Este Mes</option>
+            <option value="all">Histórico Completo</option>
+          </select>
+        </div>
+      </div>
 
-      {/* KPI Grid */}
-      <div
+      <div style={{ marginBottom: '32px' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--neutral-100)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          Visión Global
+        </h2>
+        {/* KPI Grid */}
+        <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
@@ -193,8 +256,14 @@ export default function DashboardPage() {
           />
         </Link>
       </div>
+      </div>
 
-      <div className="dashboard-grid">
+      <div style={{ marginBottom: '32px' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--neutral-100)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+          Análisis Comparativo
+        </h2>
+        <div className="dashboard-grid">
         <style jsx>{`
           .dashboard-grid {
             display: grid;
@@ -208,30 +277,29 @@ export default function DashboardPage() {
           }
         `}</style>
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-          {/* Rendimiento por Sucursal */}
+          {/* Rendimiento por Sucursal Visual (BarChart) */}
           <Card title="Rendimiento por Sucursal" delay="0.4s">
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {performance.map((p, i) => (
-                <div key={p.branchId} style={{ background: "var(--bg-surface)", padding: "14px", borderRadius: "12px", border: "1px solid var(--border-subtle)", display: "grid", gridTemplateColumns: "1fr auto auto", gap: "16px", alignItems: "center" }}>
-                  <div>
-                    <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--neutral-100)" }}>{p.branchName}</p>
-                    <p style={{ fontSize: "11px", color: "var(--neutral-500)" }}>{p.salesCount} ventas realizadas</p>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <p style={{ fontSize: "13px", fontWeight: 700, color: "var(--neutral-100)" }}>{formatCOP(p.revenue ?? 0)}</p>
-                    <p style={{ fontSize: "11px", color: "var(--color-success)" }}>Ventas</p>
-                  </div>
-                  <div style={{ height: "40px", width: "40px", borderRadius: "10px", background: "var(--bg-hover)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: "11px", fontWeight: 800, color: i === 0 ? "var(--color-warning)" : "var(--neutral-400)" }}>#{i+1}</span>
-                  </div>
-                </div>
-              ))}
-              {performance.length === 0 && (
+            <div style={{ width: '100%', height: 320, padding: "10px 0" }}>
+              {performance.length === 0 ? (
                 <EmptyState 
                   title="Sin datos" 
-                  description="No hay sucursales con ventas registradas." 
+                  description="No hay sucursales con ventas registradas en el periodo." 
                   icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>}
                 />
+              ) : (
+                <ResponsiveContainer>
+                  <BarChart data={performance} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
+                    <XAxis dataKey="branchName" stroke="var(--neutral-400)" fontSize={11} tickLine={false} axisLine={false} />
+                    <YAxis stroke="var(--neutral-400)" fontSize={11} tickLine={false} axisLine={false} width={80} tickFormatter={(val) => `$${(val/1000).toFixed(0)}k`} />
+                    <Tooltip 
+                      cursor={{ fill: 'var(--bg-hover)' }}
+                      contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', color: 'var(--neutral-100)' }}
+                      formatter={(value: any) => [formatCOP(Number(value) || 0), "Ingresos Netos"]}
+                    />
+                    <Bar dataKey="revenue" fill="var(--brand-500)" radius={[4, 4, 0, 0]} maxBarSize={60} />
+                  </BarChart>
+                </ResponsiveContainer>
               )}
             </div>
           </Card>
@@ -305,6 +373,41 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
+      </div>
+
+      {/* Gráfico de Tendencia Full Width */}
+      <div style={{ marginBottom: "40px" }}>
+        <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--neutral-100)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Desempeño Cronológico
+        </h2>
+         <Card title="Tendencia de Ventas en el Tiempo (Facturación por Día)" delay="0.5s">
+           <div style={{ width: '100%', height: 350, paddingTop: '16px' }}>
+              {salesTrend.length === 0 ? (
+                <EmptyState 
+                  title="Sin histórico" 
+                  description="No hay tendencia de ventas disponible en el periodo seleccionado." 
+                  icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3v18h18"/><path d="M18 9l-5 5-3-3-5 5"/></svg>}
+                />
+              ) : (
+                <ResponsiveContainer>
+                  <LineChart data={salesTrend} margin={{ top: 10, right: 20, left: -10, bottom: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
+                    <XAxis dataKey="saleDate" stroke="var(--neutral-400)" fontSize={12} tickLine={false} axisLine={false} dy={10} />
+                    <YAxis stroke="var(--neutral-400)" fontSize={12} tickLine={false} axisLine={false} width={80} tickFormatter={(val) => `$${(val/1000).toFixed(0)}k`} />
+                    <Tooltip 
+                      contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', color: 'var(--neutral-100)' }}
+                      formatter={(value: any) => [formatCOP(Number(value) || 0), "Facturación Diaria"]}
+                      labelFormatter={(label) => `Fecha: ${label}`}
+                    />
+                    <Line type="monotone" dataKey="revenue" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, fill: "#f59e0b", strokeWidth: 0 }} activeDot={{ r: 7, stroke: "#fff", strokeWidth: 2 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+           </div>
+         </Card>
+      </div>
+
     </div>
   );
 }
