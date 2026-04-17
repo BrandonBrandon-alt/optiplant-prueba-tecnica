@@ -20,6 +20,7 @@ public record SaleResponse(
         String cancellationReason,
         String customerName,
         String customerDocument,
+        BigDecimal globalDiscountPercentage,
         List<SaleDetailResponse> details
 ) {
     public record SaleDetailResponse(
@@ -47,6 +48,7 @@ public record SaleResponse(
                 sale.getCancellationReason(),
                 sale.getCustomerName(),
                 sale.getCustomerDocument(),
+                sale.getGlobalDiscountPercentage(),
                 sale.getDetails().stream().map(d -> new SaleDetailResponse(
                         d.getId(),
                         d.getProductId(),

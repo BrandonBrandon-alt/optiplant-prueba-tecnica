@@ -2,6 +2,7 @@ package co.com.optiplant.inventario.inventory.infrastructure.adapter.in.web;
 
 import co.com.optiplant.inventario.inventory.application.port.in.InventoryUseCase;
 import co.com.optiplant.inventario.inventory.domain.model.InventoryMovement;
+import co.com.optiplant.inventario.catalog.application.port.in.ProductUseCase;
 import co.com.optiplant.inventario.inventory.domain.model.LocalInventory;
 import co.com.optiplant.inventario.inventory.infrastructure.adapter.in.web.dto.StockRequest;
 import jakarta.validation.Valid;
@@ -16,9 +17,11 @@ import java.util.List;
 public class InventoryController {
 
     private final InventoryUseCase inventoryUseCase;
+    private final ProductUseCase productUseCase;
 
-    public InventoryController(InventoryUseCase inventoryUseCase) {
+    public InventoryController(InventoryUseCase inventoryUseCase, ProductUseCase productUseCase) {
         this.inventoryUseCase = inventoryUseCase;
+        this.productUseCase = productUseCase;
     }
 
     @GetMapping("/branches/{branchId}/products/{productId}")
@@ -75,9 +78,12 @@ public class InventoryController {
             @PathVariable Long productId,
             @Valid @RequestBody StockRequest request) {
         
+        String productName = productUseCase.getProductById(productId).getName();
+        
         inventoryUseCase.withdrawStock(
                 branchId, 
                 productId, 
+                productName,
                 request.getQuantity(), 
                 request.getReason(), 
                 request.getUserId(), 

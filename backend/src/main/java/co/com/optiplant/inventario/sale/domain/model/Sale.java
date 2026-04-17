@@ -21,10 +21,11 @@ public class Sale {
     private String cancellationReason;
     private String customerName;
     private String customerDocument;
+    private BigDecimal globalDiscountPercentage;
     private List<SaleDetail> details;
 
     public Sale(Long id, LocalDateTime date, Long branchId, String branchName, Long userId, String userName, SaleStatus status, 
-                String cancellationReason, String customerName, String customerDocument, List<SaleDetail> details) {
+                String cancellationReason, String customerName, String customerDocument, BigDecimal globalDiscountPercentage, List<SaleDetail> details) {
         if (details == null || details.isEmpty()) {
             throw new EmptySaleException("Una factura de venta no puede estar vacía.");
         }
@@ -45,14 +46,15 @@ public class Sale {
         this.cancellationReason = cancellationReason;
         this.customerName = customerName;
         this.customerDocument = customerDocument;
+        this.globalDiscountPercentage = globalDiscountPercentage != null ? globalDiscountPercentage : BigDecimal.ZERO;
         this.details = details;
         
         // Calcular matemática financiera en el backend (Source of Truth)
         calculateFinancials();
     }
 
-    public static Sale create(Long branchId, String branchName, Long userId, String userName, String customerName, String customerDocument, List<SaleDetail> details) {
-        return new Sale(null, LocalDateTime.now(), branchId, branchName, userId, userName, SaleStatus.COMPLETED, null, customerName, customerDocument, details);
+    public static Sale create(Long branchId, String branchName, Long userId, String userName, String customerName, String customerDocument, BigDecimal globalDiscountPercentage, List<SaleDetail> details) {
+        return new Sale(null, LocalDateTime.now(), branchId, branchName, userId, userName, SaleStatus.COMPLETED, null, customerName, customerDocument, globalDiscountPercentage, details);
     }
 
     public void cancel(String reason) {
@@ -67,18 +69,33 @@ public class Sale {
     }
 
     private void calculateFinancials() {
-        // Subtotal: Suma de (cantidad * precio_pactado) de cada línea
+        // 1. Subtotal Base: Suma de (cantidad * precio_pactado) de cada línea SIN descuentos de línea
         this.subtotal = this.details.stream()
                 .map(d -> d.getUnitPriceApplied().multiply(BigDecimal.valueOf(d.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, java.math.RoundingMode.HALF_UP);
 
-        // Total Final: Suma de los subtotales de línea (ya con descuento)
-        this.totalFinal = this.details.stream()
+        // 2. Suma de Totales de Línea (Ya incluyen sus descuentos individuales)
+        BigDecimal totalLineasConDescuento = this.details.stream()
                 .map(SaleDetail::getSubtotalLine)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, java.math.RoundingMode.HALF_UP);
 
-        // Descuento Total: Diferencia entre subtotal y total final
-        this.totalDiscount = this.subtotal.subtract(this.totalFinal);
+        // 3. Aplicar Descuento Global sobre el total de líneas
+        BigDecimal valorDescuentoGlobal = BigDecimal.ZERO;
+        if (this.globalDiscountPercentage.compareTo(BigDecimal.ZERO) > 0) {
+            valorDescuentoGlobal = totalLineasConDescuento
+                    .multiply(this.globalDiscountPercentage)
+                    .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+        }
+
+        // 4. Total Final = Total Líneas - Descuento Global
+        this.totalFinal = totalLineasConDescuento.subtract(valorDescuentoGlobal)
+                .setScale(2, java.math.RoundingMode.HALF_UP);
+
+        // 5. Descuento Total Acumulado = (Subtotal Base - Total Final)
+        this.totalDiscount = this.subtotal.subtract(this.totalFinal)
+                .setScale(2, java.math.RoundingMode.HALF_UP);
     }
 
     // Getters
@@ -95,5 +112,6 @@ public class Sale {
     public String getCancellationReason() { return cancellationReason; }
     public String getCustomerName() { return customerName; }
     public String getCustomerDocument() { return customerDocument; }
+    public BigDecimal getGlobalDiscountPercentage() { return globalDiscountPercentage; }
     public List<SaleDetail> getDetails() { return Collections.unmodifiableList(details); }
 }

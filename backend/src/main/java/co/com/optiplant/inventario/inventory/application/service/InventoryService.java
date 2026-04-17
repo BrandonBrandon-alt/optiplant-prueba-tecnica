@@ -47,11 +47,11 @@ public class InventoryService implements InventoryUseCase {
 
     @Override
     @Transactional
-    public void withdrawStock(Long branchId, Long productId, BigDecimal quantity, MovementReason reason, Long userId, Long referenceId, String referenceType) {
+    public void withdrawStock(Long branchId, Long productId, String productName, BigDecimal quantity, MovementReason reason, Long userId, Long referenceId, String referenceType) {
         LocalInventory inventory = getInventory(branchId, productId);
         
         if (!inventory.hasSufficientStock(quantity)) {
-            throw new InsufficientStockException(branchId, productId, quantity, inventory.getCurrentQuantity());
+            throw new InsufficientStockException(productName, quantity, inventory.getCurrentQuantity());
         }
 
         inventory.setCurrentQuantity(inventory.getCurrentQuantity().subtract(quantity));

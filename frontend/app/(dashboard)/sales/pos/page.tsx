@@ -44,10 +44,11 @@ export default function POSPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerDocument, setCustomerDocument] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [globalDiscount, setGlobalDiscount] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSaleId, setLastSaleId] = useState<number | null>(null);
   const [lastSaleData, setLastSaleData] = useState<SaleReceiptData | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -196,15 +197,21 @@ export default function POSPage() {
 
   const financials = useMemo(() => {
     const subtotal = cart.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
-    const totalFinal = cart.reduce((acc, item) => {
+    
+    // Suma de totales de línea (ya con sus descuentos individuales)
+    const lineTotalsSum = cart.reduce((acc, item) => {
       const base = item.unitPrice * item.quantity;
       const discount = base * (item.discountPercentage / 100);
       return acc + (base - discount);
     }, 0);
+
+    // Aplicar descuento global sobre el total de líneas
+    const globalDiscountAmount = lineTotalsSum * (globalDiscount / 100);
+    const totalFinal = lineTotalsSum - globalDiscountAmount;
     const totalDiscount = subtotal - totalFinal;
 
-    return { subtotal, totalDiscount, totalFinal };
-  }, [cart]);
+    return { subtotal, totalDiscount, totalFinal, globalDiscountAmount };
+  }, [cart, globalDiscount]);
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
@@ -216,6 +223,7 @@ export default function POSPage() {
         userId: session?.id,
         customerName: customerName.trim() || null,
         customerDocument: customerDocument.trim() || null,
+        globalDiscountPercentage: globalDiscount,
         items: cart.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -223,7 +231,19 @@ export default function POSPage() {
         }))
       };
 
-      const { data } = await apiClient.POST("/api/v1/sales", { body: payload as any });
+      const { data, error, response } = await apiClient.POST("/api/v1/sales", { body: payload as any });
+      
+      if (error) {
+        if ((response as any)?.status === 422) {
+          const errMsg = (error as any).message || "Stock insuficiente o venta inválida.";
+          showToast(errMsg, "error");
+        } else {
+          showToast("Error al procesar la venta. Intente de nuevo.", "error");
+        }
+        setIsSubmitting(false);
+        return;
+      }
+
       const saleData = data as any;
       setLastSaleId(saleData.id);
 
@@ -238,6 +258,7 @@ export default function POSPage() {
         userName: session?.nombre ?? null,
         customerName: customerName.trim() || null,
         customerDocument: customerDocument.trim() || null,
+        globalDiscountPercentage: globalDiscount,
         details: cart.map((item, idx) => ({
           id: idx,
           productId: item.productId,
@@ -253,6 +274,7 @@ export default function POSPage() {
       setCart([]);
       setCustomerName("");
       setCustomerDocument("");
+      setGlobalDiscount(0);
       setShowSuccessModal(true);
       
       // Refresh inventory
@@ -521,6 +543,24 @@ export default function POSPage() {
                 onChange={(e: any) => setCustomerDocument(e.target.value)}
                 icon={<Tag size={14} />}
               />
+            </div>
+
+            <div className="flex items-center gap-4 py-2 border-y border-neutral-800/50">
+               <div className="flex-1">
+                 <Input 
+                   label="Descuento Global %"
+                   type="number"
+                   min="0"
+                   max="100"
+                   value={globalDiscount}
+                   onChange={(e: any) => setGlobalDiscount(Number(e.target.value))}
+                   icon={<Tag size={14} className="text-brand-400" />}
+                 />
+               </div>
+               <div className="text-right flex flex-col justify-end h-full pt-6">
+                  <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-tight">Ahorro Global</span>
+                  <span className="text-sm font-black text-brand-400">-{formatCurrency(financials.globalDiscountAmount)}</span>
+               </div>
             </div>
 
             <div className="flex justify-between text-sm font-bold text-neutral-400">

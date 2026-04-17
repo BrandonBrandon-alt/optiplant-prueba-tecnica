@@ -2,6 +2,7 @@ package co.com.optiplant.inventario.transfer.application.service;
 
 import co.com.optiplant.inventario.inventory.application.port.in.InventoryUseCase;
 import co.com.optiplant.inventario.inventory.domain.model.MovementReason;
+import co.com.optiplant.inventario.catalog.application.port.in.ProductUseCase;
 import co.com.optiplant.inventario.transfer.application.port.in.DispatchTransferCommand;
 import co.com.optiplant.inventario.transfer.application.port.in.ReceiveTransferCommand;
 import co.com.optiplant.inventario.transfer.application.port.in.RequestTransferCommand;
@@ -17,20 +18,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Service
 public class TransferService implements TransferUseCase {
 
     private final TransferRepositoryPort transferRepositoryPort;
     private final InventoryUseCase inventoryUseCase;
+    private final ProductUseCase productUseCase;
     private final AlertUseCase alertUseCase;
 
     public TransferService(TransferRepositoryPort transferRepositoryPort, 
                            InventoryUseCase inventoryUseCase, 
+                           ProductUseCase productUseCase,
                            @Lazy AlertUseCase alertUseCase) {
         this.transferRepositoryPort = transferRepositoryPort;
         this.inventoryUseCase = inventoryUseCase;
+        this.productUseCase = productUseCase;
         this.alertUseCase = alertUseCase;
     }
 
@@ -68,9 +71,12 @@ public class TransferService implements TransferUseCase {
             
             detail.registerDispatch(dDetail.sentQuantity());
             
+            String productName = productUseCase.getProductById(detail.getProductId()).getName();
+            
             inventoryUseCase.withdrawStock(
                     transfer.getOriginBranchId(),
                     detail.getProductId(),
+                    productName,
                     BigDecimal.valueOf(detail.getSentQuantity()),
                     MovementReason.TRASLADO,
                     command.userId(),

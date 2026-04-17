@@ -58,6 +58,7 @@ public class SalePersistenceAdapter implements SaleRepositoryPort {
         entity.setCancellationReason(domain.getCancellationReason());
         entity.setCustomerName(domain.getCustomerName());
         entity.setCustomerDocument(domain.getCustomerDocument());
+        entity.setGlobalDiscountPercentage(domain.getGlobalDiscountPercentage());
 
         if (domain.getDetails() != null) {
             for (SaleDetail detail : domain.getDetails()) {
@@ -88,6 +89,7 @@ public class SalePersistenceAdapter implements SaleRepositoryPort {
                 entity.getCancellationReason(),
                 entity.getCustomerName(),
                 entity.getCustomerDocument(),
+                entity.getGlobalDiscountPercentage(),
                 entity.getDetails().stream().map(d -> new SaleDetail(
                         d.getId(),
                         d.getProductId(),

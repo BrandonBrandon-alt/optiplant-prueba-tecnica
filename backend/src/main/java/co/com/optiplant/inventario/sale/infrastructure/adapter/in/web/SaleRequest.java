@@ -16,6 +16,8 @@ public record SaleRequest(
         String customerName,
         String customerDocument,
 
+        java.math.BigDecimal globalDiscountPercentage,
+
         @NotEmpty(message = "La venta debe contener al menos un producto.")
         @Valid
         List<SaleDetailRequest> items

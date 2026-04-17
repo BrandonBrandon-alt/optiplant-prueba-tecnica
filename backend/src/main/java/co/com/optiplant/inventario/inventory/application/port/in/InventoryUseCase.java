@@ -14,6 +14,7 @@ public interface InventoryUseCase {
     void withdrawStock(
             Long branchId, 
             Long productId, 
+            String productName,
             BigDecimal quantity, 
             MovementReason reason, 
             Long userId, 

@@ -30,6 +30,7 @@ public class SaleController {
                 request.userId(),
                 request.customerName(),
                 request.customerDocument(),
+                request.globalDiscountPercentage(),
                 request.items().stream()
                         .map(item -> new CreateSaleCommand.Detail(
                                 item.productId(), 

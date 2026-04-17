@@ -7,6 +7,7 @@ public record CreateSaleCommand(
         Long userId,
         String customerName,
         String customerDocument,
+        java.math.BigDecimal globalDiscountPercentage,
         List<Detail> items
 ) {
     public record Detail(

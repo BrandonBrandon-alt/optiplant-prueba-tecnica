@@ -65,6 +65,7 @@ public class SaleService implements CreateSaleUseCase, SaleManagementUseCase {
                 userName,
                 command.customerName(),
                 command.customerDocument(),
+                command.globalDiscountPercentage(),
                 details
         );
 
@@ -76,6 +77,7 @@ public class SaleService implements CreateSaleUseCase, SaleManagementUseCase {
             inventoryUseCase.withdrawStock(
                     command.branchId(), 
                     detail.getProductId(), 
+                    detail.getProductName(),
                     BigDecimal.valueOf(detail.getQuantity()), 
                     MovementReason.VENTA, 
                     command.userId(),

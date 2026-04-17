@@ -40,6 +40,9 @@ public class SaleEntity {
     @Column(name = "cliente_documento", length = 20)
     private String customerDocument;
 
+    @Column(name = "global_discount_percentage", precision = 5, scale = 2)
+    private BigDecimal globalDiscountPercentage;
+
     @Column(name = "sucursal_id", nullable = false)
     private Long branchId;
 
@@ -109,4 +112,7 @@ public class SaleEntity {
 
     public String getCustomerDocument() { return customerDocument; }
     public void setCustomerDocument(String customerDocument) { this.customerDocument = customerDocument; }
+
+    public BigDecimal getGlobalDiscountPercentage() { return globalDiscountPercentage; }
+    public void setGlobalDiscountPercentage(BigDecimal globalDiscountPercentage) { this.globalDiscountPercentage = globalDiscountPercentage; }
 }
