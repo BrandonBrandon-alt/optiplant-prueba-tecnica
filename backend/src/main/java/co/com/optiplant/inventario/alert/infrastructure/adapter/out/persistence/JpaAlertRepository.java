@@ -9,4 +9,5 @@ import java.util.List;
 public interface JpaAlertRepository extends JpaRepository<AlertEntity, Long> {
     List<AlertEntity> findByBranchIdAndProductIdAndResolvedFalse(Long branchId, Long productId);
     List<AlertEntity> findByBranchIdAndResolvedFalse(Long branchId);
+    List<AlertEntity> findByResolvedFalse();
 }

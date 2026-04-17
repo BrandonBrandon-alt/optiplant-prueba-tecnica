@@ -10,7 +10,8 @@ import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Spinner from "@/components/ui/Spinner";
-import { Search, ShoppingCart, Tag, Trash2, Plus, Minus, Package, User, Store, CheckCircle, Printer, XCircle, Trash } from "lucide-react";
+import Select from "@/components/ui/Select";
+import { Search, ShoppingCart, Tag, Trash2, Plus, Minus, Package, User, Store, CheckCircle, Printer, XCircle, Trash, DollarSign } from "lucide-react";
 import SaleReceipt from "@/components/sales-history/SaleReceipt";
 import type { SaleReceiptData } from "@/components/sales-history/SaleReceipt";
 import EmptyState from "@/components/ui/EmptyState";
@@ -48,6 +49,9 @@ export default function POSPage() {
   const [customerDocument, setCustomerDocument] = useState("");
   const [loading, setLoading] = useState(true);
   const [globalDiscount, setGlobalDiscount] = useState(0);
+  const [selectedPriceList, setSelectedPriceList] = useState<number | null>(null);
+  const [priceLists, setPriceLists] = useState<{id: number, nombre: string}[]>([]);
+  const [listPrices, setListPrices] = useState<Record<number, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSaleId, setLastSaleId] = useState<number | null>(null);
   const [lastSaleData, setLastSaleData] = useState<SaleReceiptData | null>(null);
@@ -59,10 +63,11 @@ export default function POSPage() {
     const savedState = localStorage.getItem("optiplant_pos_state");
     if (savedState) {
       try {
-        const { cart: savedCart, customerName: savedName, customerDocument: savedDoc } = JSON.parse(savedState);
+        const { cart: savedCart, customerName: savedName, customerDocument: savedDoc, selectedPriceList: savedPList } = JSON.parse(savedState);
         if (savedCart && Array.isArray(savedCart)) setCart(savedCart);
         if (savedName) setCustomerName(savedName);
         if (savedDoc) setCustomerDocument(savedDoc);
+        if (savedPList) setSelectedPriceList(savedPList);
       } catch (e) {
         console.error("Error parsing saved POS state:", e);
       }
@@ -77,10 +82,11 @@ export default function POSPage() {
     const stateToSave = {
       cart,
       customerName,
-      customerDocument
+      customerDocument,
+      selectedPriceList
     };
     localStorage.setItem("optiplant_pos_state", JSON.stringify(stateToSave));
-  }, [cart, customerName, customerDocument, isLoaded]);
+  }, [cart, customerName, customerDocument, selectedPriceList, isLoaded]);
 
   useEffect(() => {
     const sess = getSession();
@@ -92,17 +98,26 @@ export default function POSPage() {
 
     const fetchData = async () => {
       try {
-        if (sess.sucursalId) {
-          const res = await apiClient.GET("/api/v1/inventory/branches/{branchId}", {
+        const [inventoryRes, priceListsRes] = await Promise.all([
+          sess.sucursalId ? apiClient.GET("/api/v1/inventory/branches/{branchId}", {
             params: { path: { branchId: sess.sucursalId } }
-          });
-          if (res.data) {
-            setInventory(res.data as any[]);
-          }
+          }) : Promise.resolve({ data: null }),
+          fetch("http://localhost:8080/api/v1/price-lists", {
+            headers: { Authorization: `Bearer ${localStorage.getItem("optiplant_token")}` }
+          }).catch(() => ({ ok: false, json: () => [] }))
+        ]);
+
+        if (inventoryRes.data) {
+          setInventory(inventoryRes.data as any[]);
+        }
+        
+        if (priceListsRes instanceof Response && priceListsRes.ok) {
+          const listData = await priceListsRes.json();
+          setPriceLists(listData);
         }
       } catch (error) {
-        console.error("Error fetching inventory:", error);
-        showToast("Error al cargar el inventario local.", "error");
+        console.error("Error fetching data:", error);
+        showToast("Error al cargar datos del POS.", "error");
       } finally {
         setLoading(false);
       }
@@ -110,6 +125,52 @@ export default function POSPage() {
 
     fetchData();
   }, [router, showToast]);
+
+  // Fetch prices when selected list changes, and recalculate cart prices
+  useEffect(() => {
+    const fetchListPrices = async () => {
+      if (!selectedPriceList) {
+        setListPrices({});
+        return;
+      }
+      try {
+        const res = await fetch(`http://localhost:8080/api/v1/price-lists/${selectedPriceList}/prices`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("optiplant_token")}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const pMap: Record<number, number> = {};
+          data.forEach((pp: any) => {
+            pMap[pp.productoId] = pp.precio;
+          });
+          setListPrices(pMap);
+        }
+      } catch (error) {
+        console.error("Error fetching list prices:", error);
+      }
+    };
+
+    fetchListPrices();
+  }, [selectedPriceList]);
+
+  // Recalculate cart unit prices when list prices change or inventory loads
+  useEffect(() => {
+    if (cart.length > 0 && inventory.length > 0) {
+      setCart(prevCart => prevCart.map(item => {
+        const baseProduct = inventory.find(i => i.productId === item.productId);
+        const basePrice = baseProduct ? baseProduct.precioVenta : item.unitPrice;
+        const newPrice = (selectedPriceList && listPrices[item.productId]) ? listPrices[item.productId] : basePrice;
+        
+        return item.unitPrice !== newPrice ? { ...item, unitPrice: newPrice } : item;
+      }));
+    }
+  }, [listPrices, selectedPriceList, inventory]); // Do NOT include cart as dependency to avoid loop
+
+  const getPriceListVariant = (id: number | null): "info" | "success" | "warning" | "neutral" => {
+    if (!id) return "neutral";
+    const variants: ("info" | "success" | "warning")[] = ["info", "success", "warning"];
+    return variants[(id - 1) % variants.length];
+  };
 
   const filteredProducts = useMemo(() => {
     return inventory.filter(item => 
@@ -137,12 +198,15 @@ export default function POSPage() {
             : item
         );
       }
+      const listPrice = selectedPriceList ? listPrices[product.productId] : null;
+      const newPrice = listPrice || product.precioVenta;
+
       return [...prev, {
         productId: product.productId,
         nombre: product.productoNombre,
         sku: product.sku,
         quantity: 1,
-        unitPrice: product.precioVenta,
+        unitPrice: newPrice,
         discountPercentage: 0,
         stockAvailable: product.stockActual
       }];
@@ -224,6 +288,7 @@ export default function POSPage() {
         customerName: customerName.trim() || null,
         customerDocument: customerDocument.trim() || null,
         globalDiscountPercentage: globalDiscount,
+        priceListId: selectedPriceList || null,
         items: cart.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -377,7 +442,12 @@ export default function POSPage() {
           <span style={{ fontSize: "10px", fontWeight: 800, color: "var(--brand-400)", fontFamily: "var(--font-mono)" }}>{item.sku}</span>
         </div>
         <div style={{ textAlign: "right" }}>
-          <p style={{ fontSize: "14px", fontWeight: 800, color: "var(--neutral-50)", margin: 0 }}>{formatCurrency(item.unitPrice * item.quantity)}</p>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "6px" }}>
+            <p style={{ fontSize: "14px", fontWeight: 800, color: "var(--neutral-50)", margin: 0 }}>{formatCurrency(item.unitPrice * item.quantity)}</p>
+            {selectedPriceList && listPrices[item.productId] && (
+               <Badge variant={getPriceListVariant(selectedPriceList)} dot>{priceLists.find(l => l.id === selectedPriceList)?.nombre || "Lista"}</Badge>
+            )}
+          </div>
           {item.discountPercentage > 0 && (
             <Badge variant="success" dot>{item.discountPercentage}% Dto</Badge>
           )}
@@ -477,6 +547,9 @@ export default function POSPage() {
                   item={item}
                   onClick={addToCart}
                   mode="add"
+                  priceOverride={selectedPriceList ? listPrices[item.productId] : null}
+                  priceListName={selectedPriceList ? priceLists.find(l => l.id === selectedPriceList)?.nombre : null}
+                  priceListVariant={getPriceListVariant(selectedPriceList)}
                 />
               ))}
             </div>
@@ -544,6 +617,21 @@ export default function POSPage() {
                 icon={<Tag size={14} />}
               />
             </div>
+            {/* Lista de Precios */}
+            {priceLists.length > 0 && (
+              <div className="pb-2 text-sm text-neutral-300">
+                <Select
+                  label="Lista de Precios Aplicada"
+                  value={selectedPriceList?.toString() || ""}
+                  onChange={(val: string) => setSelectedPriceList(val ? Number(val) : null)}
+                  options={[
+                    { value: "", label: "Precio Minorista (Base)" },
+                    ...priceLists.map(l => ({ value: l.id.toString(), label: l.nombre }))
+                  ]}
+                  icon={<DollarSign size={14} />}
+                />
+              </div>
+            )}
 
             <div className="flex items-center gap-4 py-2 border-y border-neutral-800/50">
                <div className="flex-1">

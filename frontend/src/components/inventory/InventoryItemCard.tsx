@@ -18,11 +18,17 @@ interface InventoryItemCardProps {
   item: InventoryItem;
   onClick: (item: InventoryItem) => void;
   mode?: "add" | "view";
+  priceOverride?: number | null;
+  priceListName?: string | null;
+  priceListVariant?: "success" | "danger" | "warning" | "neutral" | "info";
 }
 
-export default function InventoryItemCard({ item, onClick, mode = "add" }: InventoryItemCardProps) {
+export default function InventoryItemCard({ item, onClick, mode = "add", priceOverride, priceListName, priceListVariant = "info" }: InventoryItemCardProps) {
   const formatCurrency = (amount: number) => 
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
+
+  const finalPrice = priceOverride || item.precioVenta;
+  const isOverride = !!priceOverride && priceOverride !== item.precioVenta;
 
   return (
     <Card 
@@ -47,12 +53,24 @@ export default function InventoryItemCard({ item, onClick, mode = "add" }: Inven
       </h3>
       
       <div className="mt-6 flex items-baseline justify-between">
-        <div>
-            <p className="text-[10px] text-neutral-500 uppercase font-black tracking-tighter">Precio de Venta</p>
-            <span className="text-xl font-black text-white">
-              {formatCurrency(item.precioVenta)}
-            </span>
+        <div className="flex flex-col">
+            <p className="text-[10px] text-neutral-500 uppercase font-black tracking-tighter">
+              {isOverride ? "Precio de Lista" : "Precio de Venta"}
+            </p>
+            <div className="flex items-center gap-2">
+              <span className={`text-xl font-black ${isOverride ? 'text-brand-400' : 'text-white'}`}>
+                {formatCurrency(finalPrice)}
+              </span>
+              {isOverride && (
+                <span className="text-[10px] line-through text-neutral-600 font-bold">
+                  {formatCurrency(item.precioVenta)}
+                </span>
+              )}
+            </div>
         </div>
+        {isOverride && (
+          <Badge variant={priceListVariant} dot>{priceListName || "LISTA"}</Badge>
+        )}
       </div>
     </Card>
   );

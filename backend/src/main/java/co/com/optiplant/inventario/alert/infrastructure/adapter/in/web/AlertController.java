@@ -31,10 +31,17 @@ public class AlertController {
     }
 
     @GetMapping
-    public ResponseEntity<List<StockAlertResponse>> getActiveAlerts(@RequestParam Long branchId) {
-        List<StockAlertResponse> responses = alertUseCase.getActiveAlerts(branchId).stream()
-                .map(StockAlertResponse::fromDomain)
-                .toList();
+    public ResponseEntity<List<StockAlertResponse>> getActiveAlerts(@RequestParam(required = false) Long branchId) {
+        List<StockAlertResponse> responses;
+        if (branchId != null) {
+            responses = alertUseCase.getActiveAlerts(branchId).stream()
+                    .map(StockAlertResponse::fromDomain)
+                    .toList();
+        } else {
+            responses = alertUseCase.getGlobalActiveAlerts().stream()
+                    .map(StockAlertResponse::fromDomain)
+                    .toList();
+        }
         return ResponseEntity.ok(responses);
     }
 

@@ -40,6 +40,12 @@ public class AlertPersistenceAdapter implements AlertRepositoryPort {
                 .stream().map(this::toDomain).toList();
     }
 
+    @Override
+    public List<StockAlert> getGlobalActiveAlerts() {
+        return repository.findByResolvedFalse()
+                .stream().map(this::toDomain).toList();
+    }
+
     private AlertEntity toEntity(StockAlert domain) {
         AlertEntity entity = new AlertEntity();
         entity.setId(domain.getId());

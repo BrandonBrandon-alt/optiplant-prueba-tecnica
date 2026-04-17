@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { apiClient } from "@/api/client";
 import { getSession } from "@/api/auth";
 import type { components } from "@/api/schema";
@@ -112,12 +113,9 @@ export default function DashboardPage() {
         setBranches(branchList);
 
         if (branchList.length > 0) {
-          const alertResults = await Promise.all(
-            branchList.map((b) =>
-              apiClient.GET("/api/v1/alerts", { params: { query: { branchId: b.id! } } })
-            )
-          );
-          setAlerts(alertResults.flatMap((r) => r.data ?? []).filter(a => !a.resolved));
+          // @ts-ignore - branchId is now optional in backend, schema pending update
+          const alertRes = await apiClient.GET("/api/v1/alerts", { params: { query: {} } });
+          setAlerts((alertRes.data ?? []).filter(a => !a.resolved));
         }
       } catch (e) {
         console.error("Dashboard fetch error:", e);
@@ -174,22 +172,26 @@ export default function DashboardPage() {
           delay="0.1s"
           icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 8l-9-4-9 4m18 8l-9 4-9-4m18-4l-9 4-9-4m9-11v11"/></svg>}
         />
-        <KpiCard
-          label="Traslados Activos"
-          value={String(transfers.length)}
-          sub="Movimientos en proceso"
-          accent="#3b82f6"
-          delay="0.2s"
-          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>}
-        />
-        <KpiCard
-          label="Alertas Críticas"
-          value={String(activeAlerts)}
-          sub="Acciones requeridas"
-          accent={activeAlerts > 0 ? "var(--brand-500)" : "#10b981"}
-          delay="0.3s"
-          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>}
-        />
+        <Link href="/transfers/monitor" style={{ textDecoration: 'none' }} className="transition-transform hover:scale-[1.02]">
+          <KpiCard
+            label="Traslados Activos"
+            value={String(transfers.length)}
+            sub="Movimientos en proceso"
+            accent="#3b82f6"
+            delay="0.2s"
+            icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>}
+          />
+        </Link>
+        <Link href="/alerts" style={{ textDecoration: 'none' }} className="transition-transform hover:scale-[1.02]">
+          <KpiCard
+            label="Alertas Críticas"
+            value={String(activeAlerts)}
+            sub="Acciones requeridas"
+            accent={activeAlerts > 0 ? "var(--brand-500)" : "#10b981"}
+            delay="0.3s"
+            icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>}
+          />
+        </Link>
       </div>
 
       <div className="dashboard-grid">
@@ -205,33 +207,68 @@ export default function DashboardPage() {
             }
           }
         `}</style>
-        {/* Rendimiento por Sucursal */}
-        <Card title="Rendimiento por Sucursal" delay="0.4s">
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {performance.map((p, i) => (
-              <div key={p.branchId} style={{ background: "var(--bg-surface)", padding: "14px", borderRadius: "12px", border: "1px solid var(--border-subtle)", display: "grid", gridTemplateColumns: "1fr auto auto", gap: "16px", alignItems: "center" }}>
-                <div>
-                  <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--neutral-100)" }}>{p.branchName}</p>
-                  <p style={{ fontSize: "11px", color: "var(--neutral-500)" }}>{p.salesCount} ventas realizadas</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          {/* Rendimiento por Sucursal */}
+          <Card title="Rendimiento por Sucursal" delay="0.4s">
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {performance.map((p, i) => (
+                <div key={p.branchId} style={{ background: "var(--bg-surface)", padding: "14px", borderRadius: "12px", border: "1px solid var(--border-subtle)", display: "grid", gridTemplateColumns: "1fr auto auto", gap: "16px", alignItems: "center" }}>
+                  <div>
+                    <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--neutral-100)" }}>{p.branchName}</p>
+                    <p style={{ fontSize: "11px", color: "var(--neutral-500)" }}>{p.salesCount} ventas realizadas</p>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ fontSize: "13px", fontWeight: 700, color: "var(--neutral-100)" }}>{formatCOP(p.revenue ?? 0)}</p>
+                    <p style={{ fontSize: "11px", color: "var(--color-success)" }}>Ventas</p>
+                  </div>
+                  <div style={{ height: "40px", width: "40px", borderRadius: "10px", background: "var(--bg-hover)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 800, color: i === 0 ? "var(--color-warning)" : "var(--neutral-400)" }}>#{i+1}</span>
+                  </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ fontSize: "13px", fontWeight: 700, color: "var(--neutral-100)" }}>{formatCOP(p.revenue ?? 0)}</p>
-                  <p style={{ fontSize: "11px", color: "var(--color-success)" }}>Ventas</p>
+              ))}
+              {performance.length === 0 && (
+                <EmptyState 
+                  title="Sin datos" 
+                  description="No hay sucursales con ventas registradas." 
+                  icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>}
+                />
+              )}
+            </div>
+          </Card>
+
+          {/* Top Products */}
+          <Card title="Top Productos más vendidos" delay="0.45s">
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {topProducts.map((prod, idx) => (
+                <div key={prod.productId} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 14px", background: "var(--bg-surface)", borderRadius: "12px", border: "1px solid var(--border-subtle)" }}>
+                  <div style={{ 
+                    width: "32px", height: "32px", borderRadius: "50%", 
+                    background: idx === 0 ? "rgba(251, 191, 36, 0.2)" : (idx === 1 ? "rgba(156, 163, 175, 0.2)" : "rgba(180, 83, 9, 0.2)"),
+                    color: idx === 0 ? "var(--color-warning)" : (idx === 1 ? "var(--neutral-400)" : "#b45309"),
+                    display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "12px"
+                  }}>
+                    {idx + 1}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: "14px", fontWeight: 700, color: "var(--neutral-100)", lineHeight: 1.2 }}>{prod.productName}</p>
+                    <p style={{ fontSize: "11px", color: "var(--brand-500)", fontFamily: "var(--font-mono)", marginTop: "2px" }}>ID: {prod.productId}</p>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ fontSize: "15px", fontWeight: 900, color: "var(--color-success)" }}>{prod.totalSoldQuantity}</p>
+                    <p style={{ fontSize: "10px", color: "var(--neutral-500)" }}>UNDS</p>
+                  </div>
                 </div>
-                <div style={{ height: "40px", width: "40px", borderRadius: "10px", background: "var(--bg-hover)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 800, color: i === 0 ? "var(--color-warning)" : "var(--neutral-400)" }}>#{i+1}</span>
-                </div>
-              </div>
-            ))}
-            {performance.length === 0 && (
-              <EmptyState 
-                title="Sin datos" 
-                description="No hay sucursales con ventas registradas." 
-                icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>}
-              />
-            )}
-          </div>
-        </Card>
+              ))}
+              {topProducts.length === 0 && (
+                 <EmptyState 
+                   title="Sin datos" 
+                   description="No hay ventas suficientes registradas." 
+                   icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
+                 />
+              )}
+            </div>
+          </Card>
+        </div>
 
         {/* Valorización de Inventario y Alertas */}
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>

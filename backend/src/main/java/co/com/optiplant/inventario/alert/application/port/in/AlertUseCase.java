@@ -8,6 +8,7 @@ import java.util.List;
 public interface AlertUseCase {
     void scanForAlerts();
     List<StockAlert> getActiveAlerts(Long branchId);
+    List<StockAlert> getGlobalActiveAlerts();
     void resolveAlert(Long alertId);
     
     // Decision Gateway Methods

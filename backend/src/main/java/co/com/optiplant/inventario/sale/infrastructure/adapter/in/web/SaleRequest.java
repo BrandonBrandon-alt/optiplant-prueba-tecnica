@@ -18,6 +18,8 @@ public record SaleRequest(
 
         java.math.BigDecimal globalDiscountPercentage,
 
+        Long priceListId,
+
         @NotEmpty(message = "La venta debe contener al menos un producto.")
         @Valid
         List<SaleDetailRequest> items

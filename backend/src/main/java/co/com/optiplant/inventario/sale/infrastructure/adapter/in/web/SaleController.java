@@ -31,6 +31,7 @@ public class SaleController {
                 request.customerName(),
                 request.customerDocument(),
                 request.globalDiscountPercentage(),
+                request.priceListId(),
                 request.items().stream()
                         .map(item -> new CreateSaleCommand.Detail(
                                 item.productId(), 

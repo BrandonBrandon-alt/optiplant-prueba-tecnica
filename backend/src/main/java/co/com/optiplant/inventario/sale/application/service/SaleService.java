@@ -4,6 +4,7 @@ import co.com.optiplant.inventario.catalog.application.port.in.ProductUseCase;
 import co.com.optiplant.inventario.catalog.domain.model.Product;
 import co.com.optiplant.inventario.inventory.application.port.in.InventoryUseCase;
 import co.com.optiplant.inventario.inventory.domain.model.MovementReason;
+import co.com.optiplant.inventario.pricelist.application.port.in.PriceListUseCase;
 import co.com.optiplant.inventario.sale.application.port.in.CreateSaleCommand;
 import co.com.optiplant.inventario.sale.application.port.in.CreateSaleUseCase;
 import co.com.optiplant.inventario.sale.application.port.in.SaleManagementUseCase;
@@ -26,29 +27,36 @@ public class SaleService implements CreateSaleUseCase, SaleManagementUseCase {
     private final InventoryUseCase inventoryUseCase;
     private final BranchUseCase branchUseCase;
     private final UserUseCase userUseCase;
+    private final PriceListUseCase priceListUseCase;
 
     public SaleService(SaleRepositoryPort saleRepositoryPort, ProductUseCase productUseCase, InventoryUseCase inventoryUseCase,
-                       BranchUseCase branchUseCase, UserUseCase userUseCase) {
+                       BranchUseCase branchUseCase, UserUseCase userUseCase, PriceListUseCase priceListUseCase) {
         this.saleRepositoryPort = saleRepositoryPort;
         this.productUseCase = productUseCase;
         this.inventoryUseCase = inventoryUseCase;
         this.branchUseCase = branchUseCase;
         this.userUseCase = userUseCase;
+        this.priceListUseCase = priceListUseCase;
     }
 
     @Override
     @Transactional
     public Sale execute(CreateSaleCommand command) {
-        // 1. Mapear a detalles y validar precios pactados
+        // 1. Resolver precios y construir detalles de la venta
         List<SaleDetail> details = command.items().stream()
                 .map(item -> {
                     Product product = productUseCase.getProductById(item.productId());
-                    
+
+                    // Precio con fallback: lista seleccionada → precio base del producto
+                    BigDecimal price = priceListUseCase
+                            .getPriceForProduct(command.priceListId(), item.productId())
+                            .orElse(product.getSalePrice());
+
                     return SaleDetail.create(
                             item.productId(),
                             product.getName(),
                             item.quantity(),
-                            product.getSalePrice(),
+                            price,
                             item.discountPercentage()
                     );
                 }).toList();

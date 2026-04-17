@@ -97,6 +97,11 @@ public class AlertService implements AlertUseCase {
     }
 
     @Override
+    public List<StockAlert> getGlobalActiveAlerts() {
+        return alertRepository.getGlobalActiveAlerts();
+    }
+
+    @Override
     @Transactional
     public void resolveAlert(Long alertId) {
         StockAlert alert = findAlert(alertId);

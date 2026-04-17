@@ -10,4 +10,5 @@ public interface AlertRepositoryPort {
     Optional<StockAlert> findById(Long id);
     List<StockAlert> findUnresolvedByBranchAndProduct(Long branchId, Long productId);
     List<StockAlert> findActiveAlerts(Long branchId);
+    List<StockAlert> getGlobalActiveAlerts();
 }
