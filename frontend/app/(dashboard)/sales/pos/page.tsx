@@ -60,7 +60,7 @@ export default function POSPage() {
 
   // Persistence logic: Load state from localStorage on mount
   useEffect(() => {
-    const savedState = localStorage.getItem("zenvory_pos_state");
+    const savedState = localStorage.getItem("zen_inventory_pos_state");
     if (savedState) {
       try {
         const { cart: savedCart, customerName: savedName, customerDocument: savedDoc, selectedPriceList: savedPList } = JSON.parse(savedState);
@@ -85,7 +85,7 @@ export default function POSPage() {
       customerDocument,
       selectedPriceList
     };
-    localStorage.setItem("zenvory_pos_state", JSON.stringify(stateToSave));
+    localStorage.setItem("zen_inventory_pos_state", JSON.stringify(stateToSave));
   }, [cart, customerName, customerDocument, selectedPriceList, isLoaded]);
 
   useEffect(() => {
@@ -103,7 +103,7 @@ export default function POSPage() {
             params: { path: { branchId: sess.sucursalId } }
           }) : Promise.resolve({ data: null }),
           fetch("http://localhost:8080/api/v1/price-lists", {
-            headers: { Authorization: `Bearer ${localStorage.getItem("zenvory_token")}` }
+            headers: { Authorization: `Bearer ${localStorage.getItem("zen_inventory_token")}` }
           }).catch(() => ({ ok: false, json: () => [] }))
         ]);
 
@@ -135,7 +135,7 @@ export default function POSPage() {
       }
       try {
         const res = await fetch(`http://localhost:8080/api/v1/price-lists/${selectedPriceList}/prices`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("zenvory_token")}` }
+          headers: { Authorization: `Bearer ${localStorage.getItem("zen_inventory_token")}` }
         });
         if (res.ok) {
           const data = await res.json();

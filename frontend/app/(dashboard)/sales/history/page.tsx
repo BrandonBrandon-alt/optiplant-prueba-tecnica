@@ -26,7 +26,7 @@ export default function SalesHistoryPage() {
 
   // Persistence logic: Load state from localStorage on mount
   useEffect(() => {
-    const savedState = localStorage.getItem("zenvory_history_state");
+    const savedState = localStorage.getItem("zen_inventory_history_state");
     if (savedState) {
       try {
         const { search } = JSON.parse(savedState);
@@ -45,7 +45,7 @@ export default function SalesHistoryPage() {
     const stateToSave = {
       search: searchTerm,
     };
-    localStorage.setItem("zenvory_history_state", JSON.stringify(stateToSave));
+    localStorage.setItem("zen_inventory_history_state", JSON.stringify(stateToSave));
   }, [searchTerm, isLoaded]);
 
   useEffect(() => {

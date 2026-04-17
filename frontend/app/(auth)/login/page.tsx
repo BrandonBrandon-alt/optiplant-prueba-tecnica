@@ -3,8 +3,8 @@ import LoginForm from "@/components/auth/LoginForm";
 import Logo from "@/components/ui/Logo";
 
 export const metadata: Metadata = {
-  title: "Ingresar | Zenvory",
-  description: "Accede al sistema de gestión de inventario de Zenvory.",
+  title: "Ingresar | Zen Inventory",
+  description: "Accede al sistema de gestión de inventario de Zen Inventory.",
 };
 
 export default function LoginPage() {
@@ -54,7 +54,7 @@ export default function LoginPage() {
               letterSpacing: "-0.02em",
             }}
           >
-            Zenvory
+            Zen Inventory
           </span>
         </div>
 
@@ -99,7 +99,7 @@ export default function LoginPage() {
 
         {/* Footer branding */}
         <p style={{ fontSize: "13px", color: "var(--neutral-500)", fontFamily: "var(--font-sans)" }}>
-          © {new Date().getFullYear()} Zenvory Logic
+          © {new Date().getFullYear()} Zen Inventory Logic
         </p>
       </div>
 
@@ -127,7 +127,7 @@ export default function LoginPage() {
         >
           <Logo size={32} />
           <span style={{ fontSize: "15px", fontWeight: 700, color: "var(--neutral-100)", letterSpacing: "-0.02em" }}>
-            Zenvory
+            Zen Inventory
           </span>
         </div>
 
@@ -173,9 +173,9 @@ export default function LoginPage() {
           {/* Demo accounts */}
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             {[
-              { role: "Admin",    email: "admin@zenvory.co",    pw: "admin123",    dot: "var(--brand-500)" },
-              { role: "Gerente",  email: "gerente@zenvory.co",  pw: "gerente123",  dot: "var(--neutral-400)" },
-              { role: "Operador", email: "operador@zenvory.co", pw: "operador123", dot: "var(--neutral-500)" },
+              { role: "Admin",    email: "admin@zeninventory.co",    pw: "admin123",    dot: "var(--brand-500)" },
+              { role: "Gerente",  email: "gerente@zeninventory.co",  pw: "gerente123",  dot: "var(--neutral-400)" },
+              { role: "Operador", email: "operador@zeninventory.co", pw: "operador123", dot: "var(--neutral-500)" },
             ].map(({ role, email, pw, dot }) => (
               <div
                 key={role}

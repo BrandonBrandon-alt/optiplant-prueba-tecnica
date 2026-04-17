@@ -389,7 +389,7 @@ export default function BranchesPage() {
               <em style={{ color: "var(--brand-500)", fontStyle: "italic", fontFamily: "var(--font-serif)" }}>
                 sedes
               </em>{" "}
-              de Zenvory en toda la red.
+              de Zen Inventory en toda la red.
             </>
           }
         />

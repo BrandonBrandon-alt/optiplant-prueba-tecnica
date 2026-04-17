@@ -111,7 +111,7 @@ export default function AuditPage() {
     <div style={{ padding: "36px 40px", maxWidth: "1200px" }}>
       <PageHeader
         title="Auditoría Global"
-        description="Seguimiento detallado de todos los movimientos de stock realizados en la red Zenvory."
+        description="Seguimiento detallado de todos los movimientos de stock realizados en la red Zen Inventory."
       />
 
       <Card style={{ padding: 0, overflow: "hidden", marginTop: "32px" }}>

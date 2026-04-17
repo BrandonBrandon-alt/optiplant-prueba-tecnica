@@ -57,7 +57,7 @@ export default function Logo({
           textTransform: "lowercase",
           marginTop: "1px"
         }}>
-          zenvory
+          zen inventory
         </span>
       )}
     </div>

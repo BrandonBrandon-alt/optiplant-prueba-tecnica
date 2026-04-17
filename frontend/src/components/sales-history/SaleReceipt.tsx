@@ -81,7 +81,7 @@ export default function SaleReceipt({ sale }: SaleReceiptProps) {
             color: TEXT_DARK,
           }}
         >
-          ZENVORY
+          ZEN INVENTORY
         </div>
         <div
           style={{
@@ -269,7 +269,7 @@ export default function SaleReceipt({ sale }: SaleReceiptProps) {
           <br />
           Favor verificar su mercancía.
           <br />
-          Software: Zenvory ERP v2.0
+          Software: Zen Inventory ERP v2.0
         </div>
       </div>
     </div>

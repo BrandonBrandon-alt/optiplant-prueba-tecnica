@@ -394,7 +394,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             fontFamily: "var(--font-sans)",
           }}
         >
-          Zenvory
+          Zen Inventory
         </span>
       </div>
 
