@@ -28,4 +28,6 @@ public class StockRequest {
 
     private String observations;
     private String subReason;
+
+    private Long unitId;
 }

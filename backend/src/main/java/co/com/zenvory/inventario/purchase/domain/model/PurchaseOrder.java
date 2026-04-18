@@ -89,24 +89,40 @@ public class PurchaseOrder {
     }
 
     /**
-     * Registra la recepción física de la mercancía.
+     * Registra la recepción física (total o parcial) de la mercancía.
      * @param userId ID del usuario que recibe físicamente el pedido.
+     * @param totalsAreMet Si todas las cantidades cuadran al 100%.
      */
-    public void receive(Long userId) {
+    public void receive(Long userId, boolean totalsAreMet) {
         if (this.receptionStatus == ReceptionStatus.RECEIVED_TOTAL) {
             throw new InvalidPurchaseStateException("La orden ya ha sido recibida completamente.");
         }
         if (this.receptionStatus == ReceptionStatus.CANCELLED) {
             throw new InvalidPurchaseStateException("No se puede recibir una orden cancelada.");
         }
-        this.receptionStatus = ReceptionStatus.RECEIVED_TOTAL;
+        
+        this.receptionStatus = totalsAreMet ? ReceptionStatus.RECEIVED_TOTAL : ReceptionStatus.RECEIVED_PARTIAL;
         this.receivingUserId = userId;
         this.actualArrivalDate = LocalDateTime.now();
     }
 
+    /**
+     * Fuerza el cierre de una orden que quedó con faltantes definitivos.
+     * @param userId Usuario responsable del cierre (Admin/Manager).
+     */
+    public void closeShortfall(Long userId) {
+        if (this.receptionStatus != ReceptionStatus.RECEIVED_PARTIAL) {
+            throw new InvalidPurchaseStateException("Solo se puede liquidar una orden que esté en estado RECEIVED_PARTIAL.");
+        }
+        this.receptionStatus = ReceptionStatus.RECEIVED_TOTAL;
+        this.resolvedById = userId;
+        this.resolutionDate = LocalDateTime.now();
+        this.reasonResolution = "Cerrado con faltante por decisión administrativa.";
+    }
+
     public void cancel(String reason, Long userId) {
-        if (this.receptionStatus != ReceptionStatus.PENDING) {
-            throw new InvalidPurchaseStateException("Solo se pueden cancelar órdenes en estado PENDING.");
+        if (this.receptionStatus != ReceptionStatus.PENDING && this.receptionStatus != ReceptionStatus.IN_TRANSIT) {
+            throw new InvalidPurchaseStateException("Solo se pueden cancelar órdenes que no hayan sido recibidas aún.");
         }
         if (reason == null || reason.isBlank()) {
             throw new IllegalArgumentException("El motivo de cancelación es obligatorio.");
@@ -118,8 +134,8 @@ public class PurchaseOrder {
     }
 
     public void registerPayment() {
-        if (this.receptionStatus != ReceptionStatus.RECEIVED_TOTAL) {
-            throw new InvalidPurchaseStateException("Solo se pueden pagar órdenes que ya han sido recibidas totalmente.");
+        if (this.receptionStatus != ReceptionStatus.RECEIVED_TOTAL && this.receptionStatus != ReceptionStatus.RECEIVED_PARTIAL) {
+            throw new InvalidPurchaseStateException("Solo se pueden pagar órdenes que ya han sido recibidas (total o parcialmente).");
         }
         if (this.paymentStatus == PaymentStatus.PAGADO) {
             throw new InvalidPurchaseStateException("La orden ya se encuentra pagada.");

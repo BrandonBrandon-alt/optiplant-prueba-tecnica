@@ -6,7 +6,7 @@ import {
   Package, TrendingUp, Search, Plus, Trash2, 
   ShoppingCart, Building2, Calendar, DollarSign,
   CheckCircle, ArrowRight, Truck, Minus, X, 
-  Eye, Percent, CreditCard, Clock, Warehouse, XCircle
+  Eye, Percent, CreditCard, Clock, Warehouse, XCircle, ChevronDown
 } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
@@ -32,8 +32,10 @@ const formatCurrency = (amount: number) => {
 // ── Types ──────────────────────────────────────────────────
 interface Product { id: number; sku: string; nombre: string; costoPromedio: number; precioVenta: number; proveedorId: number; }
 interface PurchaseDetail { productId: number; nombre: string; sku: string; quantity: number; unitPrice: number | ""; discountPct: number | ""; }
-interface OrderDetailItem { id: number; productId: number; quantity: number; unitPrice: number; subtotal: number; discountPct?: number; }
-interface PurchaseOrder { id: number; supplierId: number; branchId: number; requestDate: string; estimatedArrivalDate: string; actualArrivalDate: string | null; receptionStatus: "PENDING" | "IN_TRANSIT" | "RECEIVED_TOTAL" | "CANCELLED"; paymentStatus: "POR_PAGAR" | "PAGADO"; total: number; details?: OrderDetailItem[]; resolutionReason?: string; resolutionDate?: string; }
+interface OrderDetailItem { id: number; productId: number; quantity: number; unitPrice: number; subtotal: number; discountPct?: number; productName?: string; }
+interface PurchaseOrder { id: number; supplierId: number; branchId: number; requestDate: string; estimatedArrivalDate: string; actualArrivalDate: string | null; receptionStatus: "PENDING" | "IN_TRANSIT" | "RECEIVED_TOTAL" | "RECEIVED_PARTIAL" | "CANCELLED"; paymentStatus: "POR_PAGAR" | "PAGADO"; total: number; details?: OrderDetailItem[]; resolutionReason?: string; resolutionDate?: string; }
+interface CppImpact { productId: number; productName: string; oldCpp: number; newCpp: number; quantityReceived: number; }
+interface ReceiveOrderResult { orderId: number; status: string; impacts: CppImpact[]; }
 
 // ── UI Sub-Components (Clean & Minimalist) ─────────────────
 
@@ -160,6 +162,10 @@ function PurchasesContent() {
   const [cart, setCart] = useState<PurchaseDetail[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resolvingOrder, setResolvingOrder] = useState<PurchaseOrder | null>(null);
+  const [receivingOrder, setReceivingOrder] = useState<PurchaseOrder | null>(null);
+  const [receivingItems, setReceivingItems] = useState<Record<number, number>>({});
+  const [receivingUnits, setReceivingUnits] = useState<Record<number, number | null>>({});
+  const [productUnitsData, setProductUnitsData] = useState<Record<number, any[]>>({});
 
   useEffect(() => {
     fetchCatalogs();
@@ -252,8 +258,6 @@ function PurchasesContent() {
       const prodId = parseInt(productIdPreselected);
       const prod = products.find(p => p.id === prodId);
       if (prod) {
-        // Solo agregamos si no está ya (o dejamos que addToCart maneje el incremento)
-        // Pero para "pre-llenar" la intención original suele ser que aparezca al menos una vez
         cartActions.addToCart(prod);
       }
     }
@@ -264,6 +268,30 @@ function PurchasesContent() {
       setBranchId(branchIdPreselected);
     }
   }, [branchIdPreselected]);
+
+  useEffect(() => {
+    if (receivingOrder) {
+      const initialItems: Record<number, number> = {};
+      const initialUnits: Record<number, number | null> = {};
+      receivingOrder.details?.forEach(detail => {
+        initialItems[detail.id] = detail.quantity;
+        initialUnits[detail.id] = null;
+        
+        if (!productUnitsData[detail.productId]) {
+          // @ts-ignore - Endpoint may not be in generated schema yet
+          apiClient.GET(`/api/catalog/products/${detail.productId}/units`, {})
+            .then(res => {
+              if (res.data) {
+                setProductUnitsData(prev => ({ ...prev, [detail.productId]: res.data as any[] }));
+              }
+            })
+            .catch(err => console.error("Error fetching units", err));
+        }
+      });
+      setReceivingItems(initialItems);
+      setReceivingUnits(initialUnits);
+    }
+  }, [receivingOrder]);
 
   const handleSubmitOrder = async () => {
     if (!supplierId || !branchId || cart.length === 0) {
@@ -292,7 +320,7 @@ function PurchasesContent() {
         }))
       };
 
-      const { error, response } = await apiClient.POST("/api/v1/purchases", { body: payload as any });
+      const { error } = await apiClient.POST("/api/v1/purchases", { body: payload as any });
       if (error) {
         const msg = (error as any).message || "Error al procesar la orden.";
         showToast(msg, "error");
@@ -313,7 +341,73 @@ function PurchasesContent() {
   };
 
   const receiveOrder = async (orderId: number) => {
-    // ... logic remains same ...
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    setReceivingOrder(order);
+  };
+
+  const handleReceiveConfirm = async () => {
+    if (!receivingOrder) return;
+    const session = getSession();
+    if (!session) return;
+
+    setIsSubmitting(true);
+    try {
+      const items = Object.entries(receivingItems).map(([detailId, qty]) => ({
+        detailId: parseInt(detailId),
+        quantityReceived: qty
+      }));
+
+      const { data, error } = await (apiClient as any).POST("/api/v1/purchases/{id}/receive", {
+        params: { path: { id: receivingOrder.id } },
+        body: { userId: session.id, items }
+      });
+
+      if (!error) {
+        const result = data as ReceiveOrderResult;
+        showToast("Mercancía recibida correctamente.", "success");
+        
+        if (result.impacts && result.impacts.length > 0) {
+          result.impacts.forEach(impact => {
+            const diff = impact.newCpp - impact.oldCpp;
+            showToast(
+              `${impact.productName}: CPP ${formatCurrency(impact.oldCpp)} -> ${formatCurrency(impact.newCpp)}`,
+              diff > 0 ? "warning" : diff < 0 ? "success" : "info"
+            );
+          });
+        }
+        
+        setReceivingOrder(null);
+        fetchOrders();
+      } else {
+        showToast("Error al procesar la recepción.", "error");
+      }
+    } catch (err) {
+      showToast("Error de conexión.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCloseShortfall = async (orderId: number) => {
+    if (!confirm("¿Estás seguro de liquidar esta orden? Los saldos pendientes no podrán recibirse después.")) return;
+    
+    const session = getSession();
+    if (!session) return;
+
+    try {
+      const { error } = await (apiClient as any).POST("/api/v1/purchases/{id}/close-shortfall", {
+        params: { path: { id: orderId }, query: { userId: session.id } }
+      });
+      if (!error) {
+        showToast("Orden liquidada y cerrada con éxito.", "success");
+        fetchOrders();
+      } else {
+        showToast("Error al liquidar la orden.", "error");
+      }
+    } catch (err) {
+      showToast("Error de conexión.", "error");
+    }
   };
 
   const handleCancelPurchase = async (orderId: number, reason: string) => {
@@ -462,40 +556,58 @@ function PurchasesContent() {
       { 
         key: "actions", 
         label: "", 
-        render: (row: PurchaseOrder) => (
-          <div className="flex justify-end gap-2">
-            <button onClick={() => openOrderDetail(row)} className="p-2 text-[var(--neutral-400)] hover:text-[var(--neutral-50)] hover:bg-[var(--bg-hover)] rounded-lg transition-all" title="Ver Detalle">
-              <Eye size={16} />
-            </button>
-            {row.receptionStatus !== "RECEIVED_TOTAL" && (
-              <button 
-                onClick={() => receiveOrder(row.id)} 
-                className="p-2 text-[var(--color-success)] hover:bg-[var(--color-success)]/10 rounded-lg transition-all" 
-                title="Confirmar Recepción"
-              >
-                <Truck size={16} />
+        render: (row: PurchaseOrder) => {
+          const session = getSession();
+          const isManager = session?.rol === "ADMIN" || session?.rol === "GERENTE";
+          
+          return (
+            <div className="flex justify-end gap-2">
+              <button onClick={() => openOrderDetail(row)} className="p-2 text-[var(--neutral-400)] hover:text-[var(--neutral-50)] hover:bg-[var(--bg-hover)] rounded-lg transition-all" title="Ver Detalle">
+                <Eye size={16} />
               </button>
-            )}
-            {row.paymentStatus === "POR_PAGAR" && (row.receptionStatus as string) !== "CANCELLED" && (
-              <button 
-                onClick={() => registerPayment(row.id)} 
-                className="p-2 text-[var(--brand-400)] hover:bg-[var(--brand-500)]/10 rounded-lg transition-all" 
-                title="Registrar Pago"
-              >
-                <CreditCard size={16} />
-              </button>
-            )}
-            {row.receptionStatus === "PENDING" && (
-              <button 
-                onClick={() => setResolvingOrder(row)} 
-                className="p-2 text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-lg transition-all" 
-                title="Anular Orden"
-              >
-                <XCircle size={16} />
-              </button>
-            )}
-          </div>
-        ) 
+              
+              {row.receptionStatus !== "RECEIVED_TOTAL" && row.receptionStatus !== "CANCELLED" && (
+                <button 
+                  onClick={() => receiveOrder(row.id)} 
+                  className="p-2 text-[var(--color-success)] hover:bg-[var(--color-success)]/10 rounded-lg transition-all" 
+                  title={row.receptionStatus === "RECEIVED_PARTIAL" ? "Recibir Restante" : "Confirmar Recepción"}
+                >
+                  <Truck size={16} />
+                </button>
+              )}
+
+              {row.receptionStatus === "RECEIVED_PARTIAL" && isManager && (
+                <button 
+                  onClick={() => handleCloseShortfall(row.id)} 
+                  className="p-2 text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-lg transition-all" 
+                  title="Liquidación Final (Cerrar con Faltante)"
+                >
+                  <X size={16} />
+                </button>
+              )}
+
+              {row.paymentStatus === "POR_PAGAR" && row.receptionStatus !== "CANCELLED" && (
+                <button 
+                  onClick={() => registerPayment(row.id)} 
+                  className="p-2 text-[var(--brand-400)] hover:bg-[var(--brand-500)]/10 rounded-lg transition-all" 
+                  title="Registrar Pago"
+                >
+                  <CreditCard size={16} />
+                </button>
+              )}
+
+              {row.receptionStatus === "PENDING" && (
+                <button 
+                  onClick={() => setResolvingOrder(row)} 
+                  className="p-2 text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-lg transition-all" 
+                  title="Anular Orden"
+                >
+                  <XCircle size={16} />
+                </button>
+              )}
+            </div>
+          );
+        }
       }
     ];
 
@@ -889,6 +1001,88 @@ function PurchasesContent() {
           }
         }}
       />
+
+      <Modal 
+        open={!!receivingOrder} 
+        onClose={() => setReceivingOrder(null)} 
+        title="Confirmar Recepción de Mercancía"
+        size="md"
+      >
+        {receivingOrder && (
+          <div className="space-y-6">
+            <div className="p-4 bg-[var(--brand-500)]/10 border border-[var(--brand-500)]/20 rounded-2xl">
+              <p className="text-sm text-[var(--neutral-100)] leading-relaxed">
+                Ingrese las cantidades físicas recibidas. Si recibe menos de lo pedido, la orden pasará a estado <span className="font-bold text-[var(--brand-400)]">PARCIAL</span>.
+              </p>
+            </div>
+
+            <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+              {receivingOrder.details?.map(detail => {
+                const product = products.find(p => p.id === detail.productId);
+                return (
+                  <div key={detail.id} className="p-5 bg-[var(--bg-card)] border border-[var(--neutral-800)] rounded-3xl flex flex-col gap-5 shadow-sm">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <h4 className="text-[13px] font-black text-[var(--neutral-50)] uppercase tracking-tight">{product?.nombre || "Producto"}</h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="neutral">{detail.quantity} PEDIDOS</Badge>
+                        </div>
+                      </div>
+                      <div className="w-32">
+                        <QuantitySelector 
+                          value={receivingItems[detail.id] || 0}
+                          onChange={(val) => setReceivingItems(prev => ({ ...prev, [detail.id]: val }))}
+                          onIncrease={() => setReceivingItems(prev => ({ ...prev, [detail.id]: (prev[detail.id] || 0) + 1 }))}
+                          onDecrease={() => setReceivingItems(prev => ({ ...prev, [detail.id]: Math.max(0, (prev[detail.id] || 0) - 1) }))}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Unit Selector */}
+                    <div className="pt-4 border-t border-[var(--neutral-800)]/50">
+                      <div className="flex flex-col gap-2">
+                         <span className="text-[10px] font-black text-[var(--neutral-500)] uppercase tracking-[0.15em]">Unidad de Recepción</span>
+                         <div className="relative">
+                           <select 
+                             className="w-full bg-[var(--neutral-900)] border border-[var(--neutral-800)] rounded-xl px-4 py-3 text-[12px] font-bold text-[var(--neutral-100)] focus:ring-2 focus:ring-[var(--brand-500)]/20 focus:border-[var(--brand-500)] outline-none transition-all appearance-none cursor-pointer"
+                             value={receivingUnits[detail.id] || ""}
+                             onChange={(e) => setReceivingUnits(prev => ({ ...prev, [detail.id]: e.target.value ? Number(e.target.value) : null }))}
+                           >
+                             <option value="">Unidad Base (Sistema)</option>
+                             {productUnitsData[detail.productId]?.map(u => (
+                               !u.esBase && (
+                                 <option key={u.id} value={u.unidadId}>
+                                   {u.nombreUnidad} (x{u.factorConversion})
+                                 </option>
+                               )
+                             ))}
+                           </select>
+                           <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--neutral-500)]">
+                             <ChevronDown size={14} />
+                           </div>
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-4 mt-8">
+              <Button variant="ghost" fullWidth onClick={() => setReceivingOrder(null)}>Cancelar</Button>
+              <Button 
+                variant="primary" 
+                fullWidth
+                loading={isSubmitting}
+                onClick={handleReceiveConfirm}
+                style={{ height: "50px", borderRadius: "16px" }}
+              >
+                Sincronizar Inventario
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }

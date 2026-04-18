@@ -88,6 +88,7 @@ public class TransferService implements TransferUseCase {
                     detail.getProductId(),
                     productName,
                     BigDecimal.valueOf(detail.getSentQuantity()),
+                    null,
                     MovementReason.TRASLADO,
                     command.userId(),
                     transfer.getId(),
@@ -148,6 +149,7 @@ public class TransferService implements TransferUseCase {
                         transfer.getDestinationBranchId(),
                         detail.getProductId(),
                         BigDecimal.valueOf(detail.getReceivedQuantity()),
+                        null,
                         MovementReason.TRASLADO,
                         command.userId(),
                         transfer.getId(),
@@ -180,12 +182,13 @@ public class TransferService implements TransferUseCase {
                             transfer.getOriginBranchId(),
                             detail.getProductId(),
                             BigDecimal.valueOf(detail.getSentQuantity()),
+                            null, // unitId
                             MovementReason.DEVOLUCION,
                             userId,
                             transfer.getId(),
                             "TRASLADO_ANULADO_TRANSITO",
-                            null,
-                            reason, // El motivo de la resolución pasa a ser la observación del movimiento
+                            null, // unitCost
+                            reason, 
                             null
                     );
                 }
@@ -221,11 +224,12 @@ public class TransferService implements TransferUseCase {
                             transfer.getOriginBranchId(),
                             detail.getProductId(),
                             BigDecimal.valueOf(detail.getSentQuantity()),
+                            null, // unitId
                             MovementReason.DEVOLUCION,
                             userId,
                             transfer.getId(),
                             "TRASLADO_RECHAZADO_TRANSITO",
-                            null,
+                            null, // unitCost
                             reason, 
                             null
                     );

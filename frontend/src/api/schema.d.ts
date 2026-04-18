@@ -340,6 +340,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/purchases/{id}/close-shortfall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["closeShortfall"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/purchases/{id}/cancel": {
         parameters: {
             query?: never;
@@ -724,25 +740,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/analytics/dashboard": {
-        parameters: {
-            query?: {
-                startDate?: string;
-                endDate?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getDashboard"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/analytics/valuations": {
         parameters: {
             query?: never;
@@ -799,6 +796,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["getGlobalSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getDashboard"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1175,6 +1188,30 @@ export interface components {
             total?: number;
             reasonResolution?: string;
             details?: components["schemas"]["PurchaseDetailResponse"][];
+        };
+        ItemReceipt: {
+            /** Format: int64 */
+            detailId: number;
+            quantityReceived: number;
+        };
+        ReceiveOrderRequest: {
+            /** Format: int64 */
+            userId: number;
+            items: components["schemas"]["ItemReceipt"][];
+        };
+        CppImpact: {
+            /** Format: int64 */
+            productId?: number;
+            productName?: string;
+            oldCpp?: number;
+            newCpp?: number;
+            quantityReceived?: number;
+        };
+        PurchaseReceiptResponse: {
+            /** Format: int64 */
+            orderId?: number;
+            status?: string;
+            impacts?: components["schemas"]["CppImpact"][];
         };
         StockRequest: {
             quantity: number;
@@ -2108,16 +2145,18 @@ export interface operations {
     };
     receiveOrder: {
         parameters: {
-            query: {
-                userId: number;
-            };
+            query?: never;
             header?: never;
             path: {
                 id: number;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiveOrderRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -2125,7 +2164,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["PurchaseResponse"];
+                    "*/*": components["schemas"]["PurchaseReceiptResponse"];
                 };
             };
         };
@@ -2155,6 +2194,30 @@ export interface operations {
     markAsInTransit: {
         parameters: {
             query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PurchaseResponse"];
+                };
+            };
+        };
+    };
+    closeShortfall: {
+        parameters: {
+            query: {
+                userId: number;
+            };
             header?: never;
             path: {
                 id: number;
@@ -2968,6 +3031,29 @@ export interface operations {
             };
         };
     };
+    getDashboard: {
+        parameters: {
+            query?: {
+                startDate?: string;
+                endDate?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DashboardAnalyticsResponse"];
+                };
+            };
+        };
+    };
     getBranchPerformance: {
         parameters: {
             query?: {
@@ -3029,29 +3115,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["RoleResponse"][];
-                };
-            };
-        };
-    };
-    getDashboard: {
-        parameters: {
-            query?: {
-                startDate?: string;
-                endDate?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["DashboardAnalyticsResponse"];
                 };
             };
         };

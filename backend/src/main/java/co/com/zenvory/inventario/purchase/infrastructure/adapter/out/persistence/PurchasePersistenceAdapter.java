@@ -65,6 +65,7 @@ public class PurchasePersistenceAdapter implements PurchaseRepositoryPort {
             dEntity.setQuantity(d.getQuantity());
             dEntity.setUnitPrice(d.getUnitPrice());
             dEntity.setDiscountPct(d.getDiscountPct());
+            dEntity.setReceivedQuantity(d.getReceivedQuantity());
             dEntity.setSubtotal(d.computeSubtotal());
             entity.addDetail(dEntity);
         });
@@ -74,7 +75,7 @@ public class PurchasePersistenceAdapter implements PurchaseRepositoryPort {
 
     public PurchaseOrder toDomain(PurchaseOrderEntity entity) {
         List<PurchaseOrderDetail> details = entity.getDetails().stream()
-                .map(d -> new PurchaseOrderDetail(d.getId(), d.getProductId(), d.getQuantity(), d.getUnitPrice(), d.getDiscountPct()))
+                .map(d -> new PurchaseOrderDetail(d.getId(), d.getProductId(), d.getQuantity(), d.getUnitPrice(), d.getDiscountPct(), d.getReceivedQuantity()))
                 .toList();
 
         return new PurchaseOrder(

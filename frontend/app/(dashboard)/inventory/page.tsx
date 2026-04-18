@@ -19,7 +19,7 @@ import Select     from "@/components/ui/Select";
 import DataTable  from "@/components/ui/DataTable";
 import Separator  from "@/components/ui/Separator";
 import { useToast } from "@/context/ToastContext";
-import { Search, Info, Lock, ShoppingCart, RotateCcw, Truck, CreditCard, ArrowRight, ShoppingBag, Repeat, AlertTriangle, CheckCircle, MinusCircle } from "lucide-react";
+import { Search, Info, Lock, ShoppingCart, RotateCcw, Truck, CreditCard, ArrowRight, ShoppingBag, Repeat, AlertTriangle, CheckCircle, MinusCircle, ChevronDown } from "lucide-react";
 import StockStatus from "@/components/ui/StockStatus";
 import { usePersistence } from "@/hooks/usePersistence";
 import SearchFilter from "@/components/ui/SearchFilter";
@@ -121,7 +121,9 @@ export default function InventoryPage() {
     unitCost: "" as number | "",
     observations: "",
     subReason: "",
+    unitId: null as number | null,
   });
+  const [adjustingProductUnits, setAdjustingProductUnits] = useState<any[]>([]);
   const [minStockValue, setMinStockValue] = useState<number | "">("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -203,6 +205,16 @@ export default function InventoryPage() {
     }));
   };
 
+  useEffect(() => {
+    if (adjustingProduct) {
+      setAdjustData(prev => ({ ...prev, unitId: null }));
+      // @ts-ignore
+      apiClient.GET(`/api/catalog/products/${adjustingProduct.id}/units`, {})
+        .then(res => setAdjustingProductUnits((res.data ?? []) as any[]))
+        .catch(err => console.error("Error fetching units", err));
+    }
+  }, [adjustingProduct]);
+
   const handleAdjustSubmit = async () => {
     if (!adjustingProduct || !selectedBranchId) return;
     const qty = typeof adjustData.quantity === "number" ? adjustData.quantity : 0;
@@ -212,10 +224,6 @@ export default function InventoryPage() {
     }
     if (!adjustData.reason) {
       showToast("El motivo es obligatorio", "warning");
-      return;
-    }
-    if (adjustData.reason === "MERMA" && !adjustData.subReason) {
-      showToast("Debe categorizar la merma (seleccionar sub-motivo)", "warning");
       return;
     }
 
@@ -229,6 +237,7 @@ export default function InventoryPage() {
         params: { path: { branchId: selectedBranchId, productId: adjustingProduct.id! } },
         body: {
           quantity: qty,
+          unitId: adjustData.unitId,
           reason: adjustData.reason,
           userId: session?.id || 1,
           unitCost: adjustData.type === "INGRESO" ? (Number(adjustData.unitCost) || 0) : undefined,
@@ -423,11 +432,20 @@ export default function InventoryPage() {
                     sortable: true,
                     render: (p) => {
                       const inv = inventoryMap.get(p.id!);
+                      const isCritical = inv && (inv.stockActual ?? 0) <= (inv.stockMinimo ?? 0);
                       return (
                         <div className="flex flex-col gap-1 items-end">
-                           <span className="tabular" style={{ fontSize: "16px", fontWeight: 900, color: "var(--neutral-50)" }}>
-                            {inv?.stockActual ?? 0}
-                          </span>
+                           <div className="flex items-center gap-2">
+                             {isCritical && (
+                               <div className="animate-pulse flex items-center gap-1 bg-[var(--color-danger)]/10 text-[var(--color-danger)] px-2 py-0.5 rounded-md border border-[var(--color-danger)]/20 shadow-sm">
+                                 <AlertTriangle size={10} />
+                                 <span className="text-[9px] font-black uppercase tracking-tighter">Crítico</span>
+                               </div>
+                             )}
+                             <span className="tabular" style={{ fontSize: "16px", fontWeight: 900, color: isCritical ? "var(--color-danger)" : "var(--neutral-50)" }}>
+                              {inv?.stockActual ?? 0}
+                            </span>
+                           </div>
                           <StockStatus current={inv?.stockActual ?? 0} min={inv?.stockMinimo ?? 10} max={100} size="sm" />
                         </div>
                       );
@@ -460,7 +478,8 @@ export default function InventoryPage() {
                               reason: "", 
                               unitCost: p.costoPromedio ?? "",
                               observations: "",
-                              subReason: ""
+                              subReason: "",
+                              unitId: null
                             });
                           }}
                         >
@@ -678,6 +697,28 @@ export default function InventoryPage() {
               placeholder="Seleccione categoría..."
             />
           )}
+
+          {/* Unit Selector */}
+          <div className="space-y-2">
+            <span className="text-[11px] font-black text-[var(--neutral-500)] uppercase tracking-widest block">Unidad del Movimiento</span>
+            <div className="relative">
+              <select 
+                className="w-full bg-[var(--bg-surface)] border border-[var(--neutral-800)] rounded-xl px-4 py-3 text-[13px] font-bold text-[var(--neutral-100)] focus:ring-2 focus:ring-[var(--brand-500)]/20 focus:border-[var(--brand-500)] outline-none transition-all appearance-none cursor-pointer"
+                value={adjustData.unitId || ""}
+                onChange={(e) => setAdjustData({...adjustData, unitId: e.target.value ? Number(e.target.value) : null})}
+              >
+                <option value="">Unidad Base ({adjustingProductUnits.find(u => u.esBase)?.nombreUnidad || 'Sistema'})</option>
+                {adjustingProductUnits.filter(u => !u.esBase).map(u => (
+                  <option key={u.id} value={u.unidadId}>
+                    {u.nombreUnidad} (x{u.factorConversion})
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--neutral-500)]">
+                <ChevronDown size={16} />
+              </div>
+            </div>
+          </div>
 
           {EXTERNAL_MOTIVES[adjustData.reason as string] ? (
             <div style={{ 
