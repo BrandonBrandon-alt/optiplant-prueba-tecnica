@@ -17,10 +17,9 @@ interface DispatchTransferModalProps {
   onClose: () => void;
   onSuccess: () => void;
   transfer: TransferResponse | null;
-  userId: number | null;
 }
 
-export default function DispatchTransferModal({ open, onClose, onSuccess, transfer, userId }: DispatchTransferModalProps) {
+export default function DispatchTransferModal({ open, onClose, onSuccess, transfer }: DispatchTransferModalProps) {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Map<number, string>>(new Map());
@@ -56,7 +55,7 @@ export default function DispatchTransferModal({ open, onClose, onSuccess, transf
   };
 
   const handleSubmit = async () => {
-    if (!transfer || !userId || !carrier) {
+    if (!transfer || !carrier) {
       showToast("Por favor ingresa el transportista", "warning");
       return;
     }
@@ -66,10 +65,10 @@ export default function DispatchTransferModal({ open, onClose, onSuccess, transf
       await (apiClient as any).POST("/api/v1/transfers/{id}/dispatch", {
         params: { path: { id: transfer.id! } },
         body: {
-          userId,
           carrier,
           shippingCost: parseFloat(shippingCost) || 0,
           trackingNumber: trackingNumber || null,
+          estimatedArrivalDate: estimatedArrivalDate ? new Date(estimatedArrivalDate).toISOString() : null,
           items: Object.entries(sentQuantities).map(([id, qty]) => ({
             detailId: parseInt(id),
             sentQuantity: qty,
@@ -97,7 +96,7 @@ export default function DispatchTransferModal({ open, onClose, onSuccess, transf
       header: "Solicitado",
       key: "requestedQuantity",
       align: "center",
-      render: (d) => <span style={{ fontWeight: 600, color: "var(--neutral-400)" }}>{d.requestedQuantity}</span>
+      render: (d) => <span style={{ fontWeight: 700, color: "var(--neutral-50)" }}>{d.requestedQuantity}</span>
     },
     {
       header: "A Enviar",

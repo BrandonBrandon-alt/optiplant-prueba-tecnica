@@ -17,10 +17,9 @@ interface ReceiveTransferModalProps {
   onClose: () => void;
   onSuccess: () => void;
   transfer: TransferResponse | null;
-  userId: number | null;
 }
 
-export default function ReceiveTransferModal({ open, onClose, onSuccess, transfer, userId }: ReceiveTransferModalProps) {
+export default function ReceiveTransferModal({ open, onClose, onSuccess, transfer }: ReceiveTransferModalProps) {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Map<number, string>>(new Map());
@@ -50,7 +49,7 @@ export default function ReceiveTransferModal({ open, onClose, onSuccess, transfe
   };
 
   const handleSubmit = async () => {
-    if (!transfer || !userId) return;
+    if (!transfer) return;
 
     const hasDiscrepancy = Object.entries(receivedQuantities).some(([id, qty]) => {
       const detail = transfer.details?.find(d => d.id === parseInt(id));
@@ -67,7 +66,6 @@ export default function ReceiveTransferModal({ open, onClose, onSuccess, transfe
       await (apiClient as any).POST("/api/v1/transfers/{id}/receive", {
         params: { path: { id: transfer.id! } },
         body: {
-          userId,
           notes,
           items: Object.entries(receivedQuantities).map(([id, qty]) => ({
             detailId: parseInt(id),

@@ -260,6 +260,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/transfers/{id}/approve-destination": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["approveDestination"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sales": {
         parameters: {
             query?: never;
@@ -1027,6 +1043,7 @@ export interface components {
             id?: number;
             /** Format: int64 */
             productId?: number;
+            productName?: string;
             /** Format: int32 */
             requestedQuantity?: number;
             /** Format: int32 */
@@ -1046,6 +1063,8 @@ export interface components {
             estimatedArrivalDate?: string;
             /** Format: date-time */
             actualArrivalDate?: string;
+            /** Format: date-time */
+            dispatchDate?: string;
             /** Format: int64 */
             originBranchId?: number;
             /** Format: int64 */
@@ -1058,6 +1077,21 @@ export interface components {
             shippingCost?: number;
             trackingNumber?: string;
             reasonResolution?: string;
+            /** Format: int64 */
+            solicitanteId?: number;
+            solicitanteNombre?: string;
+            /** Format: int64 */
+            autorizadorId?: number;
+            autorizadorNombre?: string;
+            /** Format: int64 */
+            despachadorId?: number;
+            despachadorNombre?: string;
+            /** Format: int64 */
+            recibidorId?: number;
+            recibidorNombre?: string;
+            /** Format: int64 */
+            resolutorId?: number;
+            resolutorNombre?: string;
             details?: components["schemas"]["TransferDetailResponse"][];
         };
         ResolutionRequest: {
@@ -1072,8 +1106,6 @@ export interface components {
             receivedQuantity: number;
         };
         TransferReceiveRequest: {
-            /** Format: int64 */
-            userId: number;
             notes?: string;
             items: components["schemas"]["ReceivedItemRequest"][];
         };
@@ -1093,11 +1125,11 @@ export interface components {
             sentQuantity: number;
         };
         TransferDispatchRequest: {
-            /** Format: int64 */
-            userId: number;
             carrier: string;
             shippingCost?: number;
             trackingNumber?: string;
+            /** Format: date-time */
+            estimatedArrivalDate?: string;
             items: components["schemas"]["DispatchItemRequest"][];
         };
         SaleDetailRequest: {
@@ -1257,6 +1289,8 @@ export interface components {
             originBranchId?: number;
             /** Format: int32 */
             quantity?: number;
+            /** Format: int64 */
+            userId?: number;
         };
         MessageResponse: {
             message?: string;
@@ -2087,6 +2121,28 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    approveDestination: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TransferResponse"];
+                };
             };
         };
     };

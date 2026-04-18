@@ -83,7 +83,7 @@ export default function PrepareTransferModal({ open, onClose, onSuccess, transfe
       header: "Pedido",
       key: "requestedQuantity",
       align: "center",
-      render: (d) => <span style={{ fontWeight: 700, fontFamily: "monospace" }}>{d.requestedQuantity}</span>
+      render: (d) => <span style={{ fontWeight: 800, color: "var(--neutral-50)", fontSize: "14px", fontFamily: "monospace" }}>{d.requestedQuantity}</span>
     },
     {
       header: "En Stock",

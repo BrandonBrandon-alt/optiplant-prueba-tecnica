@@ -51,8 +51,16 @@ public class TransferPersistenceAdapter implements TransferRepositoryPort {
         entity.setReceiptNotes(domain.getReceiptNotes());
         entity.setParentTransferId(domain.getParentTransferId());
         entity.setReasonResolution(domain.getReasonResolution());
-        entity.setReasonResolution(domain.getReasonResolution());
-        entity.setResueltoPorId(domain.getResolvedById());
+        entity.setSolicitanteId(domain.getSolicitanteId());
+        entity.setSolicitanteNombre(domain.getSolicitanteNombre());
+        entity.setAutorizadorId(domain.getAutorizadorId());
+        entity.setAutorizadorNombre(domain.getAutorizadorNombre());
+        entity.setDespachadorId(domain.getDespachadorId());
+        entity.setDespachadorNombre(domain.getDespachadorNombre());
+        entity.setRecibidorId(domain.getRecibidorId());
+        entity.setRecibidorNombre(domain.getRecibidorNombre());
+        entity.setResolutorId(domain.getResolutorId());
+        entity.setResolutorNombre(domain.getResolutorNombre());
         entity.setFechaResolucion(domain.getResolutionDate());
         entity.setVersion(domain.getVersion());
         entity.setPriority(domain.getPriority() != null ? domain.getPriority().name() : null);
@@ -102,10 +110,19 @@ public class TransferPersistenceAdapter implements TransferRepositoryPort {
                 entity.getShippingCost(),
                 entity.getTrackingNumber(),
                 entity.getReasonResolution(),
-                entity.getResueltoPorId(),
                 entity.getFechaResolucion(),
                 entity.getDispatchDate(),
-                entity.getVersion()
+                entity.getVersion(),
+                entity.getSolicitanteId(),
+                entity.getSolicitanteNombre(),
+                entity.getAutorizadorId(),
+                entity.getAutorizadorNombre(),
+                entity.getDespachadorId(),
+                entity.getDespachadorNombre(),
+                entity.getRecibidorId(),
+                entity.getRecibidorNombre(),
+                entity.getResolutorId(),
+                entity.getResolutorNombre()
         );
     }
 }

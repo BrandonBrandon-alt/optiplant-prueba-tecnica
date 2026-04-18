@@ -216,8 +216,8 @@ export default function DashboardPage() {
 
   // Operative Dashboard UI for Bodeguero
   if (isInventory) {
-     const vehiculosPorRecibir = transfers.filter(t => t.destinationBranchId === session?.sucursalId && t.status === "EN_TRANSITO").length;
-     const porEmpacar = transfers.filter(t => t.originBranchId === session?.sucursalId && (t.status === "PENDING" || t.status === "PREPARING")).length;
+     const vehiculosPorRecibir = transfers.filter(t => t.destinationBranchId === session?.sucursalId && t.status === "IN_TRANSIT").length;
+     const porEmpacar = transfers.filter(t => t.originBranchId === session?.sucursalId && t.status === "PREPARING").length;
 
      return (
         <div style={{ padding: "var(--page-padding)", maxWidth: "1400px", margin: "0 auto" }}>

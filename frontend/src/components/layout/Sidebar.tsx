@@ -185,6 +185,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const scrollRef = useRef<HTMLElement>(null);
   const [alertCount, setAlertCount] = useState(0);
+  const [branchName, setBranchName] = useState<string | null>(null);
 
   useEffect(() => {
     setSession(getSession());
@@ -199,8 +200,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   useEffect(() => {
     if (!session) return;
 
-    async function fetchAlerts() {
+    async function fetchBranchAndAlerts() {
       try {
+        // 1. Fetch Branch Name
+        if (session?.rol === "ADMIN") {
+          setBranchName("Gestión Global");
+        } else if (session?.sucursalId) {
+          const { data: branch } = await apiClient.GET("/api/branches/{id}", {
+            params: { path: { id: session.sucursalId } }
+          });
+          if (branch) setBranchName(branch.nombre || null);
+        }
+
+        // 2. Fetch Alerts
         let count = 0;
         if (session?.rol === "ADMIN") {
           const { data: branches } = await apiClient.GET("/api/branches");
@@ -220,11 +232,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         }
         setAlertCount(count);
       } catch (e) {
-        console.error("Error fetching alerts for sidebar", e);
+        console.error("Error fetching data for sidebar", e);
       }
     }
 
-    fetchAlerts();
+    fetchBranchAndAlerts();
   }, [session]);
 
   const handleScroll = (e: React.UIEvent<HTMLElement>) => {
@@ -458,7 +470,45 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {session && (
           <div style={{ padding: "0 10px", marginBottom: "12px" }}>
             <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--neutral-100)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{session.nombre}</p>
-            <p style={{ fontSize: "11px", color: "var(--neutral-500)" }}>{session.rol}</p>
+            <div style={{ marginTop: "4px", display: "flex", gap: "6px", alignItems: "center" }}>
+              <span style={{ 
+                fontSize: "10px", 
+                fontWeight: 700, 
+                padding: "2px 8px", 
+                borderRadius: "4px",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                background: session.rol === "ADMIN" ? "rgba(var(--brand-500-rgb), 0.15)" : 
+                            session.rol === "MANAGER" ? "rgba(var(--color-success-rgb), 0.15)" : 
+                            session.rol === "OPERADOR_INVENTARIO" ? "rgba(var(--color-warning-rgb), 0.15)" :
+                            session.rol === "SELLER" ? "rgba(var(--color-info-rgb), 0.15)" :
+                            "rgba(var(--neutral-500-rgb), 0.15)",
+                color: session.rol === "ADMIN" ? "var(--brand-400)" : 
+                       session.rol === "MANAGER" ? "var(--color-success)" : 
+                       session.rol === "OPERADOR_INVENTARIO" ? "var(--color-warning)" :
+                       session.rol === "SELLER" ? "var(--color-info)" :
+                       "var(--neutral-400)",
+                border: session.rol === "ADMIN" ? "1px solid rgba(var(--brand-500-rgb), 0.3)" : 
+                        session.rol === "MANAGER" ? "1px solid rgba(var(--color-success-rgb), 0.3)" : 
+                        session.rol === "OPERADOR_INVENTARIO" ? "1px solid rgba(var(--color-warning-rgb), 0.3)" :
+                        session.rol === "SELLER" ? "1px solid rgba(var(--color-info-rgb), 0.3)" :
+                        "1px solid rgba(var(--neutral-500-rgb), 0.3)"
+              }}>
+                {session.rol === "OPERADOR_INVENTARIO" ? "Operador" : session.rol}
+              </span>
+            </div>
+            {branchName && (
+              <p style={{ 
+                fontSize: "10px", 
+                color: "var(--brand-500)", 
+                fontWeight: 600, 
+                marginTop: "2px",
+                textTransform: "uppercase",
+                letterSpacing: "0.02em"
+              }}>
+                {branchName}
+              </p>
+            )}
           </div>
         )}
         <button

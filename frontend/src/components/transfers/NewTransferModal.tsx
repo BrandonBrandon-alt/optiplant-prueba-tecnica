@@ -27,16 +27,33 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
   const { showToast } = useToast();
   const [products, setProducts] = useState<ProductResponse[]>([]);
   const [loading, setLoading] = useState(false);
+  const [transferType, setTransferType] = useState<"INBOUND" | "OUTBOUND">("INBOUND");
 
   const [formData, setFormData] = useState({
     originBranchId: "",
     destinationBranchId: currentBranchId?.toString() || "",
-    estimatedArrivalDate: new Date(Date.now() + 86400000).toISOString().split("T")[0],
     productId: "",
     quantity: 1,
     priority: "NORMAL",
   });
   const [availableStock, setAvailableStock] = useState<number | null>(null);
+
+  // Re-sync when type changes
+  useEffect(() => {
+    if (transferType === "INBOUND") {
+      setFormData(prev => ({ 
+        ...prev, 
+        destinationBranchId: currentBranchId?.toString() || "",
+        originBranchId: prev.originBranchId === currentBranchId?.toString() ? "" : prev.originBranchId
+      }));
+    } else {
+      setFormData(prev => ({ 
+        ...prev, 
+        originBranchId: currentBranchId?.toString() || "",
+        destinationBranchId: prev.destinationBranchId === currentBranchId?.toString() ? "" : prev.destinationBranchId
+      }));
+    }
+  }, [transferType, currentBranchId]);
 
   useEffect(() => {
     if (open) {
@@ -83,23 +100,13 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
       return;
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const selectedDate = new Date(formData.estimatedArrivalDate);
-    selectedDate.setHours(24, 0, 0, 0); // Consider end of selected day for date inputs
-
-    if (selectedDate < today) {
-      showToast("La fecha estimada de llegada no puede ser anterior a hoy", "warning");
-      return;
-    }
-
     setLoading(true);
     try {
       await apiClient.POST("/api/v1/transfers", {
         body: {
           originBranchId: parseInt(formData.originBranchId),
           destinationBranchId: parseInt(formData.destinationBranchId),
-          estimatedArrivalDate: new Date(formData.estimatedArrivalDate).toISOString(),
+          estimatedArrivalDate: undefined,
           items: [
             {
               productId: parseInt(formData.productId),
@@ -107,7 +114,6 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
             },
           ],
           priority: formData.priority,
-          userId: getSession()?.id,
         },
       });
 
@@ -118,11 +124,11 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
       setFormData({
         originBranchId: "",
         destinationBranchId: currentBranchId?.toString() || "",
-        estimatedArrivalDate: new Date(Date.now() + 86400000).toISOString().split("T")[0],
         productId: "",
         quantity: 1,
         priority: "NORMAL",
       });
+      setTransferType("INBOUND");
     } catch (err) {
       showToast("Error al crear la solicitud", "error");
     } finally {
@@ -130,34 +136,79 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
     }
   };
 
+  const originSelector = (
+    <Select
+      label={transferType === "INBOUND" ? "Sede de Origen (Donde pido)" : "Sede de Origen (Mi Sede)"}
+      placeholder="Selecciona origen"
+      value={formData.originBranchId}
+      error={formData.originBranchId && formData.originBranchId === formData.destinationBranchId ? "No puede ser la misma" : undefined}
+      disabled={transferType === "OUTBOUND" && !isAdmin}
+      onChange={(val) => setFormData({ ...formData, originBranchId: val })}
+      options={branches.map(b => ({ value: b.id!.toString(), label: b.nombre! }))}
+    />
+  );
+
+  const destinationSelector = (
+    <Select
+      label={transferType === "OUTBOUND" ? "Sede de Destino (A donde envío)" : "Sede de Destino (Mi Sede)"}
+      placeholder="Selecciona destino"
+      value={formData.destinationBranchId}
+      error={formData.destinationBranchId && formData.originBranchId === formData.destinationBranchId ? "No puede ser la misma" : undefined}
+      disabled={transferType === "INBOUND" && !isAdmin}
+      onChange={(val) => setFormData({ ...formData, destinationBranchId: val })}
+      options={branches.map(b => ({ value: b.id!.toString(), label: b.nombre! }))}
+    />
+  );
+
   return (
-    <Modal open={open} onClose={onClose} title="Solicitar Traslado de Mercancía">
+    <Modal open={open} onClose={onClose} title="Gestionar Traslado de Mercancía">
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        
+        {/* Toggle Mode */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px", background: "var(--bg-accent)", padding: "4px", borderRadius: "10px" }}>
+          <button
+            onClick={() => setTransferType("INBOUND")}
+            style={{
+              padding: "8px", borderRadius: "8px", border: "none", fontSize: "13px", fontWeight: 600, cursor: "pointer",
+              background: transferType === "INBOUND" ? "var(--brand-500)" : "transparent",
+              color: transferType === "INBOUND" ? "#fff" : "var(--neutral-400)",
+              transition: "all 0.2s"
+            }}
+          >
+            Solicitar Entrada (Ingreso)
+          </button>
+          <button
+            onClick={() => setTransferType("OUTBOUND")}
+            style={{
+              padding: "8px", borderRadius: "8px", border: "none", fontSize: "13px", fontWeight: 600, cursor: "pointer",
+              background: transferType === "OUTBOUND" ? "var(--brand-500)" : "transparent",
+              color: transferType === "OUTBOUND" ? "#fff" : "var(--neutral-400)",
+              transition: "all 0.2s"
+            }}
+          >
+            Registrar Salida (Retiro)
+          </button>
+        </div>
+
         <p style={{ fontSize: "13px", color: "var(--neutral-400)" }}>
-          Crea una solicitud formal para mover productos desde otra sucursal hacia la tuya. 
-          Un administrador o personal de la sede origen deberá despachar el pedido.
+          {transferType === "INBOUND" 
+            ? "Pide mercancía de otra sede hacia la tuya. El responsable de la otra sede deberá autorizar el envío."
+            : "Selecciona una sede destino para enviar productos desde tu inventario actual."
+          }
         </p>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-          <Select
-            label="Sede Origen (De donde sale)"
-            placeholder="Selecciona origen"
-            value={formData.originBranchId}
-            error={formData.originBranchId && formData.originBranchId === formData.destinationBranchId ? "No puede ser la misma que el destino" : undefined}
-            onChange={(val) => setFormData({ ...formData, originBranchId: val })}
-            options={branches.map(b => ({ value: b.id!.toString(), label: b.nombre! }))}
-          />
-
-          <Select
-            label="Sede Destino (A donde llega)"
-            placeholder="Selecciona destino"
-            value={formData.destinationBranchId}
-            error={formData.destinationBranchId && formData.originBranchId === formData.destinationBranchId ? "No puede ser la misma que el origen" : undefined}
-            // If not admin, the destination is automatically the user's branch (Pull/Request flow)
-            disabled={!isAdmin && !!currentBranchId}
-            onChange={(val) => setFormData({ ...formData, destinationBranchId: val })}
-            options={branches.map(b => ({ value: b.id!.toString(), label: b.nombre! }))}
-          />
+          {transferType === "INBOUND" ? (
+            <>
+              {destinationSelector}
+              {originSelector}
+            </>
+          ) : (
+            <>
+              {originSelector}
+              {destinationSelector}
+            </>
+          )}
 
           <Select
             label="Prioridad"
@@ -183,7 +234,7 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
             />
             {availableStock !== null && (
               <span style={{ fontSize: "12px", color: availableStock > 0 ? "var(--neutral-400)" : "var(--color-danger)" }}>
-                Disp. en origen: <strong>{availableStock}</strong> unidades
+                Stock en sede origen: <strong>{availableStock}</strong> unidades
               </span>
             )}
           </div>
@@ -198,18 +249,10 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
           />
         </div>
 
-        <Input
-          label="Fecha Estimada de Llegada"
-          type="date"
-          min={new Date().toISOString().split("T")[0]}
-          value={formData.estimatedArrivalDate}
-          onChange={(e) => setFormData({ ...formData, estimatedArrivalDate: e.target.value })}
-        />
-
         <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
           <Button variant="ghost" fullWidth onClick={onClose} disabled={loading}>Cancelar</Button>
           <Button variant="primary" fullWidth onClick={handleSubmit} loading={loading}>
-            Crear Solicitud
+            {transferType === "INBOUND" ? "Solicitar Traslado" : "Registrar Salida"}
           </Button>
         </div>
       </div>

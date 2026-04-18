@@ -7,9 +7,6 @@ import jakarta.validation.constraints.PositiveOrZero;
 import java.util.List;
 
 public record TransferDispatchRequest(
-        @NotNull(message = "El ID de usuario es obligatorio.")
-        Long userId,
-
         @NotNull(message = "El nombre del transportista es obligatorio.")
         String carrier,
 
@@ -17,6 +14,7 @@ public record TransferDispatchRequest(
         java.math.BigDecimal shippingCost,
 
         String trackingNumber,
+        java.time.LocalDateTime estimatedArrivalDate,
 
         @NotEmpty(message = "Debe enviar al menos un item.")
         @Valid

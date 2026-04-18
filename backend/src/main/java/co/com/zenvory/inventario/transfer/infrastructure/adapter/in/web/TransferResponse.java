@@ -21,6 +21,16 @@ public record TransferResponse(
         java.math.BigDecimal shippingCost,
         String trackingNumber,
         String reasonResolution,
+        Long solicitanteId,
+        String solicitanteNombre,
+        Long autorizadorId,
+        String autorizadorNombre,
+        Long despachadorId,
+        String despachadorNombre,
+        Long recibidorId,
+        String recibidorNombre,
+        Long resolutorId,
+        String resolutorNombre,
         List<TransferDetailResponse> details
 ) {
     public record TransferDetailResponse(
@@ -50,6 +60,16 @@ public record TransferResponse(
                 transfer.getShippingCost(),
                 transfer.getTrackingNumber(),
                 transfer.getReasonResolution(),
+                transfer.getSolicitanteId(),
+                transfer.getSolicitanteNombre(),
+                transfer.getAutorizadorId(),
+                transfer.getAutorizadorNombre(),
+                transfer.getDespachadorId(),
+                transfer.getDespachadorNombre(),
+                transfer.getRecibidorId(),
+                transfer.getRecibidorNombre(),
+                transfer.getResolutorId(),
+                transfer.getResolutorNombre(),
                 transfer.getDetails().stream().map(d -> new TransferDetailResponse(
                         d.getId(),
                         d.getProductId(),

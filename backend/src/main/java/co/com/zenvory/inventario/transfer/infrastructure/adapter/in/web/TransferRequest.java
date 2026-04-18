@@ -21,9 +21,6 @@ public record TransferRequest(
         @NotNull(message = "La prioridad de envío es obligatoria.")
         String priority,
 
-        @NotNull(message = "El ID del usuario es obligatorio.")
-        Long userId,
-
         @NotEmpty(message = "La transferencia debe contener al menos un producto a mover.")
         @Valid
         List<TransferDetailRequest> items

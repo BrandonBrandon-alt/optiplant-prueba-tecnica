@@ -29,7 +29,6 @@ public class TransferController {
                 request.destinationBranchId(),
                 request.estimatedArrivalDate(),
                 request.priority() != null ? co.com.zenvory.inventario.transfer.domain.model.TransferPriority.valueOf(request.priority().toUpperCase()) : co.com.zenvory.inventario.transfer.domain.model.TransferPriority.NORMAL,
-                request.userId(),
                 request.items().stream()
                         .map(item -> new RequestTransferCommand.Detail(item.productId(), item.requestedQuantity()))
                         .toList()
@@ -51,10 +50,10 @@ public class TransferController {
             @Valid @RequestBody TransferDispatchRequest request) {
         
         DispatchTransferCommand command = new DispatchTransferCommand(
-                request.userId(),
                 request.carrier(),
                 request.shippingCost() != null ? request.shippingCost() : java.math.BigDecimal.ZERO,
                 request.trackingNumber(),
+                request.estimatedArrivalDate(),
                 request.items().stream()
                         .map(item -> new DispatchTransferCommand.DispatchDetail(item.detailId(), item.sentQuantity()))
                         .toList()
@@ -84,7 +83,6 @@ public class TransferController {
             @Valid @RequestBody TransferReceiveRequest request) {
         
         ReceiveTransferCommand command = new ReceiveTransferCommand(
-                request.userId(),
                 request.notes(),
                 request.items().stream()
                         .map(item -> new ReceiveTransferCommand.ReceivedDetail(item.detailId(), item.receivedQuantity()))
@@ -121,7 +119,7 @@ public class TransferController {
     public ResponseEntity<Void> cancelTransfer(
             @PathVariable Long id,
             @Valid @RequestBody ResolutionRequest request) {
-        transferUseCase.cancelTransfer(id, request.reason(), request.userId());
+        transferUseCase.cancelTransfer(id, request.reason());
         return ResponseEntity.noContent().build();
     }
 
@@ -130,7 +128,7 @@ public class TransferController {
     public ResponseEntity<Void> rejectTransfer(
             @PathVariable Long id,
             @Valid @RequestBody ResolutionRequest request) {
-        transferUseCase.rejectTransfer(id, request.reason(), request.userId());
+        transferUseCase.rejectTransfer(id, request.reason());
         return ResponseEntity.noContent().build();
     }
 

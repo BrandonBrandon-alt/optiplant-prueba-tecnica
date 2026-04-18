@@ -141,7 +141,7 @@ function TransfersContent() {
   const handleCancel = async (id: number, reason: string) => {
     try {
       await (apiClient as any).POST(`/api/v1/transfers/${id}/cancel`, {
-        body: { reason, userId: session?.id }
+        body: { reason }
       });
       showToast("Traslado cancelado correctamente", "success");
       fetchTransfers();
@@ -153,7 +153,7 @@ function TransfersContent() {
   const handleReject = async (id: number, reason: string) => {
     try {
       await (apiClient as any).POST(`/api/v1/transfers/${id}/reject`, {
-        body: { reason, userId: session?.id }
+        body: { reason }
       });
       showToast("Traslado rechazado", "success");
       fetchTransfers();
@@ -242,7 +242,7 @@ function TransfersContent() {
         }
 
         return (
-          <div className="flex flex-col gap-1.5">
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             <Badge variant={variant} dot>
               <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                 {icon}
@@ -250,13 +250,13 @@ function TransfersContent() {
               </div>
             </Badge>
             {(s === "CANCELLED" || s === "REJECTED") && (t as any).reasonResolution && (
-              <div className="flex items-center gap-2 mt-1">
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
                 <p style={{ fontSize: "10px", color: "var(--neutral-500)", fontStyle: "italic", lineHeight: "1.2", maxWidth: "110px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {(t as any).reasonResolution}
                 </p>
                 <button 
                   onClick={(e) => { e.stopPropagation(); setViewingReason(t); }}
-                  className="p-1 hover:bg-[var(--brand-500)]/10 text-[var(--brand-400)] rounded-md transition-all animate-pulse"
+                  style={{ background: "transparent", border: "none", cursor: "pointer", padding: "4px", color: "var(--brand-400)" }}
                   title="Leer motivo detallado"
                 >
                   <MessageCircle size={12} />
@@ -264,6 +264,28 @@ function TransfersContent() {
               </div>
             )}
           </div>
+        );
+      }
+    },
+    {
+      header: "Prioridad",
+      key: "priority",
+      width: "120px",
+      render: (t) => {
+        const p = t.priority || "NORMAL";
+        let variant: "neutral" | "success" | "warning" | "danger" | "info" = "neutral";
+        let label = "Normal";
+
+        switch (p) {
+          case "HIGH": variant = "danger"; label = "ALTA"; break;
+          case "LOW": variant = "neutral"; label = "Baja"; break;
+          default: variant = "info"; label = "Normal";
+        }
+
+        return (
+          <Badge variant={variant}>
+            <span style={{ fontWeight: 700, fontSize: "10px" }}>{label}</span>
+          </Badge>
         );
       }
     },
@@ -498,16 +520,47 @@ function TransfersContent() {
                       </div>
 
                       <div>
-                        <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "4px" }}>Estado</p>
-                        <Badge variant={t.status === "DELIVERED" ? "success" : (t.status === "IN_TRANSIT" || t.status === "APPROVED_DEST") ? "warning" : t.status === "WITH_ISSUE" ? "danger" : t.status === "CANCELLED" || t.status === "REJECTED" ? "neutral" : "neutral"}>
-                          {t.status === "PENDING" ? "Por Aprobar Destino" : t.status === "APPROVED_DEST" ? "Esperando Origen" : t.status === "PREPARING" ? "Preparando" : t.status === "IN_TRANSIT" ? "En Tránsito" : t.status === "DELIVERED" ? "Entregado" : t.status === "WITH_ISSUE" ? "Con Novedad" : t.status === "CANCELLED" ? "Cancelado" : t.status === "REJECTED" ? "Rechazado" : (t.status || "")}
+                        {(() => {
+                          const s = t.status || "PENDING";
+                          let variant: "neutral" | "success" | "warning" | "danger" | "info" = "neutral";
+                          let icon = <Clock size={12} />;
+                          let label = "Por Aprobar";
+
+                          switch (s) {
+                            case "PENDING": label = "Por Aprobar Destino"; variant = "neutral"; break;
+                            case "APPROVED_DEST": label = "Esperando Origen"; variant = "info"; icon = <Timer size={12} />; break;
+                            case "PREPARING": label = "En Preparación"; variant = "warning"; icon = <Package size={12} />; break;
+                            case "IN_TRANSIT": label = "En Tránsito"; variant = "info"; icon = <Truck size={12} />; break;
+                            case "DELIVERED": label = "Entregado"; variant = "success"; icon = <CheckCircle2 size={12} />; break;
+                            case "WITH_ISSUE": label = "Con Novedad"; variant = "danger"; icon = <AlertCircle size={12} />; break;
+                            case "CANCELLED": label = "Cancelado"; variant = "neutral"; icon = <XCircle size={12} />; break;
+                            case "REJECTED": label = "Rechazado"; variant = "danger"; icon = <XCircle size={12} />; break;
+                          }
+
+                          return (
+                            <Badge variant={variant} dot>
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                {icon}
+                                <span style={{ fontWeight: 700 }}>{label}</span>
+                              </div>
+                            </Badge>
+                          );
+                        })()}
+                      </div>
+
+                      <div>
+                        <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "4px" }}>Prioridad</p>
+                        <Badge variant={t.priority === "HIGH" ? "danger" : t.priority === "LOW" ? "neutral" : "info"}>
+                          {t.priority === "HIGH" ? "ALTA" : t.priority === "LOW" ? "BAJA" : "NORMAL"}
                         </Badge>
                       </div>
 
                       {(t.status === "CANCELLED" || t.status === "REJECTED") && (t as any).reasonResolution && (
                         <div style={{ maxWidth: "250px" }}>
-                          <p style={{ fontSize: "11px", color: "var(--color-danger)", textTransform: "uppercase", marginBottom: "4px" }}>Motivo de {(t.status === "CANCELLED" ? "Cancelación" : "Rechazo")}</p>
-                          <p style={{ fontSize: "13px", fontStyle: "italic", color: "var(--neutral-300)" }}>{(t as any).reasonResolution}</p>
+                          <p style={{ fontSize: "11px", color: "var(--color-danger)", textTransform: "uppercase", marginBottom: "4px" }}>Resuelto por: {(t as any).resolutorNombre || "SISTEMA"}</p>
+                          <p style={{ fontSize: "12px", fontStyle: "italic", color: "var(--neutral-400)", lineHeight: "1.4" }}>
+                             "{ (t as any).reasonResolution }"
+                          </p>
                         </div>
                       )}
 
@@ -592,62 +645,66 @@ function TransfersContent() {
                             { (d as any).productName || `ID: ${d.productId}` }
                           </p>
                           <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
-                            <span style={{ fontSize: "11px", color: "var(--neutral-500)" }}>Solicitado: {d.requestedQuantity}</span>
-                            {d.sentQuantity! > 0 && <span style={{ fontSize: "11px", color: "var(--brand-400)" }}>Enviado: {d.sentQuantity}</span>}
-                            {d.receivedQuantity! > 0 && <span style={{ fontSize: "11px", color: "var(--color-success)" }}>Recibido: {d.receivedQuantity}</span>}
+                            <span style={{ fontSize: "12px", color: "var(--neutral-50)", fontWeight: 700 }}>Solicitado: {d.requestedQuantity}</span>
+                            {d.sentQuantity! > 0 && <span style={{ fontSize: "12px", color: "var(--brand-400)", fontWeight: 700 }}>Enviado: {d.sentQuantity}</span>}
+                            {d.receivedQuantity! > 0 && <span style={{ fontSize: "12px", color: "var(--color-success)", fontWeight: 700 }}>Recibido: {d.receivedQuantity}</span>}
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Línea de Tiempo Logística (Nuevo) */}
+                  {/* Línea de Tiempo Logística (Auditada) */}
                   <div>
                     <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "16px", display: "flex", alignItems: "center", gap: "6px" }}>
                       <Clock size={12} /> Línea de Tiempo Logística
                     </p>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 10px", position: "relative" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "0 10px", position: "relative" }}>
                       {/* Línea conectora base */}
                       <div style={{ position: "absolute", top: "12px", left: "20px", right: "20px", height: "2px", background: "var(--border-default)", zIndex: 0 }} />
                       
-                      {/* Hitos */}
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", zIndex: 1, position: "relative", minWidth: "100px" }}>
-                        <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "var(--brand-500)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
-                          <Clock size={12} />
+                      {/* Hitos Logísticos con Auditoría */}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", zIndex: 1, position: "relative", minWidth: "120px" }}>
+                        <div style={{ 
+                          width: "24px", 
+                          height: "24px", 
+                          borderRadius: "50%", 
+                          background: (t.status === "CANCELLED" || t.status === "REJECTED") ? "var(--color-danger)" : "var(--brand-500)", 
+                          display: "flex", 
+                          alignItems: "center", 
+                          justifyContent: "center", 
+                          color: "white" 
+                        }}>
+                          {t.status === "CANCELLED" || t.status === "REJECTED" ? <XCircle size={12} /> : <Clock size={12} />}
                         </div>
                         <div style={{ textAlign: "center" }}>
-                          <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--neutral-200)" }}>Solicitado</p>
-                          <p style={{ fontSize: "10px", color: "var(--neutral-500)" }}>{new Date(t.requestDate!).toLocaleDateString()}</p>
+                          <p style={{ fontSize: "11px", fontWeight: 700, color: (t.status === "CANCELLED" || t.status === "REJECTED") ? "var(--color-danger)" : "var(--neutral-200)" }}>
+                            {t.status === "CANCELLED" ? "Cancelado" : t.status === "REJECTED" ? "Rechazado" : "Solicitado"}
+                          </p>
+                          <p style={{ fontSize: "10px", color: "var(--neutral-500)", marginBottom: "2px" }}>{new Date(t.requestDate!).toLocaleDateString()}</p>
+                          <p style={{ fontSize: "10px", color: "var(--brand-400)", fontWeight: 600 }}>{t.solicitanteNombre || "Cargando..."}</p>
                         </div>
                       </div>
 
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", zIndex: 1, position: "relative", minWidth: "100px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", zIndex: 1, position: "relative", minWidth: "120px" }}>
                         <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: (t as any).dispatchDate ? "var(--brand-500)" : "var(--neutral-800)", display: "flex", alignItems: "center", justifyContent: "center", color: (t as any).dispatchDate ? "white" : "var(--neutral-600)" }}>
                           <Truck size={12} />
                         </div>
                         <div style={{ textAlign: "center" }}>
-                          <p style={{ fontSize: "11px", fontWeight: 600, color: (t as any).dispatchDate ? "var(--neutral-200)" : "var(--neutral-600)" }}>Despachado</p>
-                          <p style={{ fontSize: "10px", color: "var(--neutral-500)" }}>{ (t as any).dispatchDate ? new Date((t as any).dispatchDate).toLocaleDateString() : "Pending" }</p>
+                          <p style={{ fontSize: "11px", fontWeight: 700, color: (t as any).dispatchDate ? "var(--neutral-200)" : "var(--neutral-600)" }}>Despachado</p>
+                          <p style={{ fontSize: "10px", color: "var(--neutral-500)", marginBottom: "2px" }}>{ (t as any).dispatchDate ? new Date((t as any).dispatchDate).toLocaleDateString() : "-" }</p>
+                          { (t as any).despachadorNombre && <p style={{ fontSize: "10px", color: "var(--brand-400)", fontWeight: 600 }}>{ (t as any).despachadorNombre }</p> }
                         </div>
                       </div>
 
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", zIndex: 1, position: "relative", minWidth: "100px" }}>
-                        <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: t.estimatedArrivalDate ? "var(--brand-900)" : "var(--neutral-800)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--brand-400)", border: "1px solid var(--brand-500)" }}>
-                          <Timer size={12} />
-                        </div>
-                        <div style={{ textAlign: "center" }}>
-                          <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--neutral-200)" }}>Estimado</p>
-                          <p style={{ fontSize: "10px", color: "var(--neutral-500)" }}>{ t.estimatedArrivalDate ? new Date(t.estimatedArrivalDate).toLocaleDateString() : "-" }</p>
-                        </div>
-                      </div>
-
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", zIndex: 1, position: "relative", minWidth: "100px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", zIndex: 1, position: "relative", minWidth: "120px" }}>
                         <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: t.actualArrivalDate ? "var(--color-success)" : "var(--neutral-800)", display: "flex", alignItems: "center", justifyContent: "center", color: t.actualArrivalDate ? "white" : "var(--neutral-600)" }}>
                           <CheckCircle2 size={12} />
                         </div>
                         <div style={{ textAlign: "center" }}>
-                          <p style={{ fontSize: "11px", fontWeight: 600, color: t.actualArrivalDate ? "var(--neutral-200)" : "var(--neutral-600)" }}>Entrada</p>
-                          <p style={{ fontSize: "10px", color: "var(--neutral-500)" }}>{ t.actualArrivalDate ? new Date(t.actualArrivalDate).toLocaleDateString() : "En espera" }</p>
+                          <p style={{ fontSize: "11px", fontWeight: 700, color: t.actualArrivalDate ? "var(--neutral-200)" : "var(--neutral-600)" }}>Recibido</p>
+                          <p style={{ fontSize: "10px", color: "var(--neutral-500)", marginBottom: "2px" }}>{ t.actualArrivalDate ? new Date(t.actualArrivalDate).toLocaleDateString() : "-" }</p>
+                          { (t as any).recibidorNombre && <p style={{ fontSize: "10px", color: "#2ecc71", fontWeight: 600 }}>{ (t as any).recibidorNombre }</p> }
                         </div>
                       </div>
                     </div>
@@ -667,11 +724,11 @@ function TransfersContent() {
       />
       <ReceiveTransferModal
         open={!!receivingTransfer} onClose={() => setReceivingTransfer(null)} onSuccess={fetchTransfers}
-        transfer={receivingTransfer} userId={session?.id || null}
+        transfer={receivingTransfer}
       />
       <DispatchTransferModal
         open={!!dispatchingTransfer} onClose={() => setDispatchingTransfer(null)} onSuccess={fetchTransfers}
-        transfer={dispatchingTransfer} userId={session?.id || null}
+        transfer={dispatchingTransfer}
       />
       <PrepareTransferModal
         open={!!preparingTransfer} onClose={() => setPreparingTransfer(null)} onSuccess={fetchTransfers}
@@ -697,7 +754,13 @@ function TransfersContent() {
               "{ (viewingReason as any)?.reasonResolution }"
             </p>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: "12px", color: "var(--neutral-500)" }}>Responsable:</span>
+            <Badge variant="danger">
+              <span style={{ fontWeight: 700, fontSize: "11px" }}>{(viewingReason as any)?.resolutorNombre || "SISTEMA"}</span>
+            </Badge>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginTop: "12px" }}>
             <span style={{ color: "var(--neutral-500)" }}>Traslado ID:</span>
             <span style={{ color: "var(--neutral-300)", fontWeight: 600 }}>#{viewingReason?.id}</span>
           </div>

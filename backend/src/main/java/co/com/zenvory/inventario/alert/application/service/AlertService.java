@@ -165,7 +165,6 @@ public class AlertService implements AlertUseCase {
                 alert.getBranchId(),
                 LocalDateTime.now().plusDays(2),
                 co.com.zenvory.inventario.transfer.domain.model.TransferPriority.HIGH,
-                userId,
                 List.of(new RequestTransferCommand.Detail(alert.getProductId(), quantity))
         );
         
