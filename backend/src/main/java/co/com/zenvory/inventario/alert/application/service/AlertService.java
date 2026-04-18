@@ -163,7 +163,8 @@ public class AlertService implements AlertUseCase {
         RequestTransferCommand cmd = new RequestTransferCommand(
                 originBranchId,
                 alert.getBranchId(),
-                LocalDateTime.now().plusDays(2), // +2 días sugerido por Tech Lead
+                LocalDateTime.now().plusDays(2),
+                co.com.zenvory.inventario.transfer.domain.model.TransferPriority.HIGH,
                 List.of(new RequestTransferCommand.Detail(alert.getProductId(), quantity))
         );
         

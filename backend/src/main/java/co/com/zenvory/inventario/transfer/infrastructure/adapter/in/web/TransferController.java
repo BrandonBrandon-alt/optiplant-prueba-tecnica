@@ -28,6 +28,7 @@ public class TransferController {
                 request.originBranchId(),
                 request.destinationBranchId(),
                 request.estimatedArrivalDate(),
+                request.priority() != null ? co.com.zenvory.inventario.transfer.domain.model.TransferPriority.valueOf(request.priority().toUpperCase()) : co.com.zenvory.inventario.transfer.domain.model.TransferPriority.NORMAL,
                 request.items().stream()
                         .map(item -> new RequestTransferCommand.Detail(item.productId(), item.requestedQuantity()))
                         .toList()
@@ -45,6 +46,8 @@ public class TransferController {
         DispatchTransferCommand command = new DispatchTransferCommand(
                 request.userId(),
                 request.carrier(),
+                request.shippingCost() != null ? request.shippingCost() : java.math.BigDecimal.ZERO,
+                request.trackingNumber(),
                 request.items().stream()
                         .map(item -> new DispatchTransferCommand.DispatchDetail(item.detailId(), item.sentQuantity()))
                         .toList()
@@ -129,5 +132,10 @@ public class TransferController {
         return ResponseEntity.ok(transferUseCase.getAllTransfers().stream()
                 .map(TransferResponse::fromDomain)
                 .toList());
+    }
+
+    @GetMapping("/fulfillment-report")
+    public ResponseEntity<TransferFulfillmentReport> getFulfillmentReport() {
+        return ResponseEntity.ok(transferUseCase.getFulfillmentReport());
     }
 }

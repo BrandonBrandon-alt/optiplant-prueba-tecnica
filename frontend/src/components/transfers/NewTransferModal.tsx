@@ -33,6 +33,7 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
     estimatedArrivalDate: new Date(Date.now() + 86400000).toISOString().split("T")[0],
     productId: "",
     quantity: 1,
+    priority: "NORMAL",
   });
   const [availableStock, setAvailableStock] = useState<number | null>(null);
 
@@ -108,6 +109,7 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
               requestedQuantity: formData.quantity,
             },
           ],
+          priority: formData.priority,
         },
       });
 
@@ -121,6 +123,7 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
         estimatedArrivalDate: new Date(Date.now() + 86400000).toISOString().split("T")[0],
         productId: "",
         quantity: 1,
+        priority: "NORMAL",
       });
     } catch (err) {
       showToast("Error al crear la solicitud", "error");
@@ -155,6 +158,18 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
             disabled={!isAdmin}
             onChange={(val) => setFormData({ ...formData, destinationBranchId: val })}
             options={branches.map(b => ({ value: b.id!.toString(), label: b.nombre! }))}
+          />
+
+          <Select
+            label="Prioridad"
+            placeholder="Nivel de prioridad"
+            value={formData.priority}
+            onChange={(val) => setFormData({ ...formData, priority: val })}
+            options={[
+              { value: "HIGH", label: "Alta Urgencia" },
+              { value: "NORMAL", label: "Normal" },
+              { value: "LOW", label: "Baja Prioridad" },
+            ]}
           />
         </div>
 

@@ -612,6 +612,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/transfers/fulfillment-report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getFulfillmentReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sales/{id}": {
         parameters: {
             query?: never;
@@ -1003,6 +1019,7 @@ export interface components {
             destinationBranchId: number;
             /** Format: date-time */
             estimatedArrivalDate?: string;
+            priority: string;
             items: components["schemas"]["TransferDetailRequest"][];
         };
         TransferDetailResponse: {
@@ -1037,6 +1054,9 @@ export interface components {
             receiptNotes?: string;
             /** Format: int64 */
             parentTransferId?: number;
+            priority?: string;
+            shippingCost?: number;
+            trackingNumber?: string;
             reasonResolution?: string;
             details?: components["schemas"]["TransferDetailResponse"][];
         };
@@ -1076,6 +1096,8 @@ export interface components {
             /** Format: int64 */
             userId: number;
             carrier: string;
+            shippingCost?: number;
+            trackingNumber?: string;
             items: components["schemas"]["DispatchItemRequest"][];
         };
         SaleDetailRequest: {
@@ -1193,6 +1215,8 @@ export interface components {
             /** Format: int64 */
             detailId: number;
             quantityReceived: number;
+            /** Format: int64 */
+            unitId?: number;
         };
         ReceiveOrderRequest: {
             /** Format: int64 */
@@ -1225,6 +1249,8 @@ export interface components {
             unitCost?: number;
             observations?: string;
             subReason?: string;
+            /** Format: int64 */
+            unitId?: number;
         };
         TransferResolutionRequest: {
             /** Format: int64 */
@@ -1258,6 +1284,8 @@ export interface components {
             productoId?: number;
             /** Format: int64 */
             unidadId?: number;
+            nombreUnidad?: string;
+            abreviaturaUnidad?: string;
             factorConversion?: number;
             esBase?: boolean;
         };
@@ -1275,6 +1303,18 @@ export interface components {
             sucursalId?: number;
             /** Format: int64 */
             id?: number;
+        };
+        TransferFulfillmentReport: {
+            /** Format: int64 */
+            totalTransfers?: number;
+            /** Format: int64 */
+            deliveredTransfers?: number;
+            /** Format: int64 */
+            delayedTransfers?: number;
+            /** Format: double */
+            onTimePercentage?: number;
+            /** Format: double */
+            averageDelayHours?: number;
         };
         PriceListResponse: {
             /** Format: int64 */
@@ -2741,6 +2781,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TransferResponse"];
+                };
+            };
+        };
+    };
+    getFulfillmentReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TransferFulfillmentReport"];
                 };
             };
         };

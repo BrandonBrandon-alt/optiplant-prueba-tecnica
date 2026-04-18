@@ -13,6 +13,11 @@ public record TransferDispatchRequest(
         @NotNull(message = "El nombre del transportista es obligatorio.")
         String carrier,
 
+        @PositiveOrZero(message = "El costo de envío no puede ser negativo.")
+        java.math.BigDecimal shippingCost,
+
+        String trackingNumber,
+
         @NotEmpty(message = "Debe enviar al menos un item.")
         @Valid
         List<DispatchItemRequest> items

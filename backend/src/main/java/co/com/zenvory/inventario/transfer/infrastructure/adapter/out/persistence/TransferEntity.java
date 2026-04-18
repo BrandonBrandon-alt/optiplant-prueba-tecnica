@@ -2,6 +2,7 @@ package co.com.zenvory.inventario.transfer.infrastructure.adapter.out.persistenc
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,6 +40,15 @@ public class TransferEntity {
 
     @Column(name = "parent_transfer_id")
     private Long parentTransferId;
+
+    @Column(name = "prioridad")
+    private String priority;
+
+    @Column(name = "costo_envio")
+    private BigDecimal shippingCost;
+
+    @Column(name = "numero_guia")
+    private String trackingNumber;
 
     @Column(name = "motivo_resolucion")
     private String reasonResolution;
@@ -96,6 +106,15 @@ public class TransferEntity {
 
     public Long getParentTransferId() { return parentTransferId; }
     public void setParentTransferId(Long parentTransferId) { this.parentTransferId = parentTransferId; }
+
+    public String getPriority() { return priority; }
+    public void setPriority(String priority) { this.priority = priority; }
+
+    public BigDecimal getShippingCost() { return shippingCost; }
+    public void setShippingCost(BigDecimal shippingCost) { this.shippingCost = shippingCost; }
+
+    public String getTrackingNumber() { return trackingNumber; }
+    public void setTrackingNumber(String trackingNumber) { this.trackingNumber = trackingNumber; }
 
     public String getReasonResolution() { return reasonResolution; }
     public void setReasonResolution(String reasonResolution) { this.reasonResolution = reasonResolution; }

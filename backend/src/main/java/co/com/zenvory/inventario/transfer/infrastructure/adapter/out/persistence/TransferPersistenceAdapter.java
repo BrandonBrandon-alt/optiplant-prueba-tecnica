@@ -51,9 +51,13 @@ public class TransferPersistenceAdapter implements TransferRepositoryPort {
         entity.setReceiptNotes(domain.getReceiptNotes());
         entity.setParentTransferId(domain.getParentTransferId());
         entity.setReasonResolution(domain.getReasonResolution());
+        entity.setReasonResolution(domain.getReasonResolution());
         entity.setResueltoPorId(domain.getResolvedById());
         entity.setFechaResolucion(domain.getResolutionDate());
         entity.setVersion(domain.getVersion());
+        entity.setPriority(domain.getPriority() != null ? domain.getPriority().name() : null);
+        entity.setShippingCost(domain.getShippingCost());
+        entity.setTrackingNumber(domain.getTrackingNumber());
 
         if (domain.getDetails() != null) {
             for (TransferDetail detail : domain.getDetails()) {
@@ -91,6 +95,9 @@ public class TransferPersistenceAdapter implements TransferRepositoryPort {
                         d.getMissingQuantity()
                 )).collect(Collectors.toList()),
                 entity.getParentTransferId(),
+                entity.getPriority() != null ? co.com.zenvory.inventario.transfer.domain.model.TransferPriority.valueOf(entity.getPriority()) : null,
+                entity.getShippingCost(),
+                entity.getTrackingNumber(),
                 entity.getReasonResolution(),
                 entity.getResueltoPorId(),
                 entity.getFechaResolucion(),

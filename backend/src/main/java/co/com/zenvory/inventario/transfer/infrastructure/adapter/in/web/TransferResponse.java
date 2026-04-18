@@ -16,6 +16,9 @@ public record TransferResponse(
         String carrier,
         String receiptNotes,
         Long parentTransferId,
+        String priority,
+        java.math.BigDecimal shippingCost,
+        String trackingNumber,
         String reasonResolution,
         List<TransferDetailResponse> details
 ) {
@@ -40,6 +43,9 @@ public record TransferResponse(
                 transfer.getCarrier(),
                 transfer.getReceiptNotes(),
                 transfer.getParentTransferId(),
+                transfer.getPriority() != null ? transfer.getPriority().name() : null,
+                transfer.getShippingCost(),
+                transfer.getTrackingNumber(),
                 transfer.getReasonResolution(),
                 transfer.getDetails().stream().map(d -> new TransferDetailResponse(
                         d.getId(),

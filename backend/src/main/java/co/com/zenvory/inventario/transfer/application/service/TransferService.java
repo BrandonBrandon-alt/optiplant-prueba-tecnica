@@ -49,7 +49,8 @@ public class TransferService implements TransferUseCase {
                 command.originBranchId(),
                 command.destinationBranchId(),
                 command.estimatedArrivalDate(),
-                details
+                details,
+                co.com.zenvory.inventario.transfer.domain.model.TransferPriority.NORMAL // Setting default for now until command is updated
         );
 
         // REGLA DE NEGOCIO: Reservar stock en la sucursal de origen
@@ -70,7 +71,7 @@ public class TransferService implements TransferUseCase {
         Transfer transfer = getTransferById(transferId);
         
         // El agregado valida su estado internamente
-        transfer.dispatch(command.carrier());
+        transfer.dispatch(command.carrier(), java.math.BigDecimal.ZERO, null); // Setting defaults until command is updated
 
         // Operamos contra el Inventario de la sucursal origen
         for (DispatchTransferCommand.DispatchDetail dDetail : command.items()) {
@@ -296,5 +297,42 @@ public class TransferService implements TransferUseCase {
     @Override
     public List<Transfer> getAllTransfers() {
         return transferRepositoryPort.findAll();
+    }
+
+    @Override
+    public co.com.zenvory.inventario.transfer.infrastructure.adapter.in.web.TransferFulfillmentReport getFulfillmentReport() {
+        List<Transfer> transfers = transferRepositoryPort.findAll();
+        
+        long totalTransfers = transfers.size();
+        
+        List<Transfer> delivered = transfers.stream()
+            .filter(t -> t.getStatus() == TransferStatus.DELIVERED)
+            .toList();
+            
+        long totalDelivered = delivered.size();
+        
+        long delayedCount = 0;
+        double totalDelayHours = 0.0;
+        
+        for (Transfer t : delivered) {
+            if (t.getEstimatedArrivalDate() != null && t.getActualArrivalDate() != null) {
+                if (t.getActualArrivalDate().isAfter(t.getEstimatedArrivalDate())) {
+                    delayedCount++;
+                    java.time.Duration duration = java.time.Duration.between(t.getEstimatedArrivalDate(), t.getActualArrivalDate());
+                    totalDelayHours += duration.toHours();
+                }
+            }
+        }
+        
+        double onTimePercentage = totalDelivered > 0 ? ((double) (totalDelivered - delayedCount) / totalDelivered) * 100.0 : 0.0;
+        double averageDelayHours = delayedCount > 0 ? totalDelayHours / delayedCount : 0.0;
+        
+        return new co.com.zenvory.inventario.transfer.infrastructure.adapter.in.web.TransferFulfillmentReport(
+            totalTransfers,
+            totalDelivered,
+            delayedCount,
+            onTimePercentage,
+            averageDelayHours
+        );
     }
 }

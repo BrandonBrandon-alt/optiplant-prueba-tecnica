@@ -26,6 +26,8 @@ export default function DispatchTransferModal({ open, onClose, onSuccess, transf
   const [products, setProducts] = useState<Map<number, string>>(new Map());
   const [carrier, setCarrier] = useState("");
   const [estimatedArrivalDate, setEstimatedArrivalDate] = useState("");
+  const [shippingCost, setShippingCost] = useState("");
+  const [trackingNumber, setTrackingNumber] = useState("");
   const [sentQuantities, setSentQuantities] = useState<{ [key: number]: number }>({});
 
   useEffect(() => {
@@ -37,6 +39,8 @@ export default function DispatchTransferModal({ open, onClose, onSuccess, transf
       });
       setSentQuantities(initial);
       setCarrier("");
+      setShippingCost("");
+      setTrackingNumber("");
       setEstimatedArrivalDate(new Date(Date.now() + 86400000).toISOString().split("T")[0]);
 
       // Fetch products to show names
@@ -64,6 +68,8 @@ export default function DispatchTransferModal({ open, onClose, onSuccess, transf
         body: {
           userId,
           carrier,
+          shippingCost: parseFloat(shippingCost) || 0,
+          trackingNumber: trackingNumber || null,
           items: Object.entries(sentQuantities).map(([id, qty]) => ({
             detailId: parseInt(id),
             sentQuantity: qty,
@@ -145,6 +151,21 @@ export default function DispatchTransferModal({ open, onClose, onSuccess, transf
             value={estimatedArrivalDate}
             onChange={(e) => setEstimatedArrivalDate(e.target.value)}
             required
+          />
+          <Input
+            label="Costo Flete / Envío ($)"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="Ej: 50.00"
+            value={shippingCost}
+            onChange={(e) => setShippingCost(e.target.value)}
+          />
+          <Input
+            label="Número de Guía / Tracking"
+            placeholder="Opcional"
+            value={trackingNumber}
+            onChange={(e) => setTrackingNumber(e.target.value)}
           />
         </div>
 

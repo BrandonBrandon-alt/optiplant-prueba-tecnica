@@ -41,6 +41,7 @@ function TransfersContent() {
   const { showToast } = useToast();
   const [transfers, setTransfers] = useState<TransferResponse[]>([]);
   const [branches, setBranches] = useState<Map<number, string>>(new Map());
+  const [fulfillmentReport, setFulfillmentReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<number | null>(null);
   const searchParams = useSearchParams();
@@ -75,9 +76,10 @@ function TransfersContent() {
 
   const fetchTransfers = useCallback(async () => {
     try {
-      const [tRes, bRes] = await Promise.all([
+      const [tRes, bRes, fRes] = await Promise.all([
         apiClient.GET("/api/v1/transfers"),
         apiClient.GET("/api/branches"),
+        (apiClient as any).GET("/api/v1/transfers/fulfillment-report")
       ]);
       
       const allTransfers = tRes.data ?? [];
@@ -87,8 +89,8 @@ function TransfersContent() {
       } else {
         setTransfers(allTransfers);
       }
-      
       setBranches(new Map((bRes.data ?? []).map(b => [b.id!, b.nombre!])));
+      if (fRes.data) setFulfillmentReport(fRes.data);
     } catch (err) {
       showToast("Error al cargar traslados", "error");
     } finally {
@@ -353,6 +355,36 @@ function TransfersContent() {
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--neutral-500)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Con Novedades</span>
                   <span style={{ fontSize: "24px", fontWeight: 700, color: "var(--brand-500)" }}>{transfers.filter(t => t.status === "WITH_ISSUE").length}</span>
+                </div>
+              </Card>
+            )}
+
+            {fulfillmentReport && (
+              <Card style={{ padding: "16px 24px", display: "flex", alignItems: "center", gap: "16px", marginBottom: "0px", minWidth: "220px", border: "1px solid rgba(46,204,113,0.3)" }}>
+                <div style={{ padding: "10px", borderRadius: "10px", background: "rgba(46,204,113,0.1)", color: "#2ecc71" }}>
+                  <Timer size={24} />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--neutral-500)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Entregas a Tiempo (SLA)</span>
+                  <span style={{ fontSize: "24px", fontWeight: 700, color: "#2ecc71" }}>
+                    {fulfillmentReport.onTimePercentage?.toFixed(1) || 0}%
+                  </span>
+                </div>
+              </Card>
+            )}
+            
+            {fulfillmentReport && fulfillmentReport.delayedTransfers > 0 && (
+              <Card style={{ padding: "16px 24px", display: "flex", alignItems: "center", gap: "16px", marginBottom: "0px", minWidth: "220px" }}>
+                <div style={{ padding: "10px", borderRadius: "10px", background: "rgba(243,156,18,0.1)", color: "#f39c12" }}>
+                  <Clock size={24} />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--neutral-500)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Demora Promedio</span>
+                  <span style={{ fontSize: "24px", fontWeight: 700, color: "#f39c12" }}>
+                    {fulfillmentReport.averageDelayHours > 24 
+                      ? `${(fulfillmentReport.averageDelayHours / 24).toFixed(1)} días`
+                      : `${fulfillmentReport.averageDelayHours?.toFixed(1) || 0} hrs`}
+                  </span>
                 </div>
               </Card>
             )}
