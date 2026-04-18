@@ -47,7 +47,7 @@ public class InventoryService implements InventoryUseCase {
 
     @Override
     @Transactional
-    public void withdrawStock(Long branchId, Long productId, String productName, BigDecimal quantity, MovementReason reason, Long userId, Long referenceId, String referenceType) {
+    public void withdrawStock(Long branchId, Long productId, String productName, BigDecimal quantity, MovementReason reason, Long userId, Long referenceId, String referenceType, String observations, String subReason) {
         LocalInventory inventory = getInventory(branchId, productId);
         
         if (!inventory.hasSufficientStock(quantity)) {
@@ -68,6 +68,8 @@ public class InventoryService implements InventoryUseCase {
                 .userId(userId)
                 .referenceId(referenceId)
                 .referenceType(referenceType)
+                .observations(observations)
+                .subReason(subReason)
                 .finalBalance(inventory.getCurrentQuantity())
                 .build();
         inventoryMovementRepository.save(movement);
@@ -78,7 +80,7 @@ public class InventoryService implements InventoryUseCase {
 
     @Override
     @Transactional
-    public void addStock(Long branchId, Long productId, BigDecimal quantity, MovementReason reason, Long userId, Long referenceId, String referenceType, BigDecimal unitCost) {
+    public void addStock(Long branchId, Long productId, BigDecimal quantity, MovementReason reason, Long userId, Long referenceId, String referenceType, BigDecimal unitCost, String observations, String subReason) {
         LocalInventory inventory = localInventoryRepository.findByBranchAndProduct(branchId, productId)
                 .orElseGet(() -> LocalInventory.builder()
                         .branchId(branchId)
@@ -106,6 +108,8 @@ public class InventoryService implements InventoryUseCase {
                 .userId(userId)
                 .referenceId(referenceId)
                 .referenceType(referenceType)
+                .observations(observations)
+                .subReason(subReason)
                 .finalBalance(inventory.getCurrentQuantity())
                 .build();
         inventoryMovementRepository.save(movement);

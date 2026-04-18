@@ -18,9 +18,10 @@ interface NewTransferModalProps {
   onSuccess: () => void;
   currentBranchId: number | null;
   isAdmin: boolean;
+  initialProductId?: string | null;
 }
 
-export default function NewTransferModal({ open, onClose, onSuccess, currentBranchId, isAdmin }: NewTransferModalProps) {
+export default function NewTransferModal({ open, onClose, onSuccess, currentBranchId, isAdmin, initialProductId }: NewTransferModalProps) {
   const { showToast } = useToast();
   const [branches, setBranches] = useState<BranchResponse[]>([]);
   const [products, setProducts] = useState<ProductResponse[]>([]);
@@ -52,6 +53,12 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
       fetchData();
     }
   }, [open, showToast]);
+
+  useEffect(() => {
+    if (open && initialProductId) {
+      setFormData(prev => ({ ...prev, productId: initialProductId }));
+    }
+  }, [open, initialProductId]);
 
   useEffect(() => {
     if (formData.originBranchId && formData.productId) {

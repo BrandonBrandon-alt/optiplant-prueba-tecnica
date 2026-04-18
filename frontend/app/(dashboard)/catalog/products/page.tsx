@@ -53,8 +53,8 @@ export default function MasterProductsPage() {
   const [formData, setFormData] = useState({
     sku: "",
     nombre: "",
-    costoPromedio: 0,
-    precioVenta: 0,
+    costoPromedio: "" as number | "",
+    precioVenta: "" as number | "",
     proveedorId: 0,
     unitId: 0,
   });
@@ -96,8 +96,8 @@ export default function MasterProductsPage() {
       setFormData({
         sku: product.sku ?? "",
         nombre: product.nombre ?? "",
-        costoPromedio: product.costoPromedio ?? 0,
-        precioVenta: product.precioVenta ?? 0,
+        costoPromedio: product.costoPromedio ?? "",
+        precioVenta: product.precioVenta ?? "",
         proveedorId: product.proveedorId ?? 0,
         unitId: product.unitId ?? 0,
       });
@@ -126,7 +126,14 @@ export default function MasterProductsPage() {
       setShowPriceLists(true);
     } else {
       setEditingProduct(null);
-      setFormData({ sku: "", nombre: "", costoPromedio: 0, precioVenta: 0, proveedorId: suppliers[0]?.id ?? 0, unitId: units[0]?.id ?? 0 });
+      setFormData({ 
+        sku: "", 
+        nombre: "", 
+        costoPromedio: "", 
+        precioVenta: "", 
+        proveedorId: suppliers[0]?.id ?? 0, 
+        unitId: units[0]?.id ?? 0 
+      });
       const defaults: Record<number, string> = {};
       priceLists.forEach(l => { defaults[l.id] = ""; });
       setPriceListValues(defaults);
@@ -144,11 +151,21 @@ export default function MasterProductsPage() {
         if (editingProduct) {
           await apiClient.PUT("/api/catalog/products/{id}", {
             params: { path: { id: editingProduct.id! } },
-            body: formData as any,
+            body: {
+              ...formData,
+              costoPromedio: Number(formData.costoPromedio) || 0,
+              precioVenta: Number(formData.precioVenta) || 0,
+            } as any,
           });
           showToast("Producto actualizado correctamente.", "success", "Cambios guardados");
         } else {
-          const res = await apiClient.POST("/api/catalog/products", { body: formData as any });
+          const res = await apiClient.POST("/api/catalog/products", { 
+            body: {
+              ...formData,
+              costoPromedio: Number(formData.costoPromedio) || 0,
+              precioVenta: Number(formData.precioVenta) || 0,
+            } as any 
+          });
           savedProductId = (res.data as any)?.id;
           showToast("Nuevo producto registrado en el catálogo.", "success", "Registro exitoso");
         }
@@ -357,16 +374,18 @@ export default function MasterProductsPage() {
             <Input
               type="number"
               label="Costo Promedio"
-              value={formData.costoPromedio.toString()}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, costoPromedio: Number(e.target.value) })}
+              value={formData.costoPromedio}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, costoPromedio: e.target.value === "" ? "" : Number(e.target.value) })}
               icon={<span style={{ fontSize: "12px", fontWeight: 700 }}>$</span>}
+              placeholder="0"
             />
             <Input
               type="number"
               label="Precio Venta Base (Fallback)"
-              value={formData.precioVenta.toString()}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, precioVenta: Number(e.target.value) })}
+              value={formData.precioVenta}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, precioVenta: e.target.value === "" ? "" : Number(e.target.value) })}
               icon={<span style={{ fontSize: "12px", fontWeight: 700 }}>$</span>}
+              placeholder="0"
             />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>

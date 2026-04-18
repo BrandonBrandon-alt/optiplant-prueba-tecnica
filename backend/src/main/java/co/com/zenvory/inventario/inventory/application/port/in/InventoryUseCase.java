@@ -19,7 +19,9 @@ public interface InventoryUseCase {
             MovementReason reason, 
             Long userId, 
             Long referenceId, 
-            String referenceType
+            String referenceType,
+            String observations,
+            String subReason
     );
     
     void addStock(
@@ -30,7 +32,9 @@ public interface InventoryUseCase {
             Long userId, 
             Long referenceId, 
             String referenceType,
-            BigDecimal unitCost
+            BigDecimal unitCost,
+            String observations,
+            String subReason
     );
 
     List<LocalInventory> getInventoryByBranch(Long branchId);

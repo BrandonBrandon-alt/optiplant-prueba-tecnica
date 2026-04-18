@@ -70,7 +70,9 @@ public class PurchaseService implements PurchaseUseCase {
                     userId,
                     savedOrder.getId(),
                     "ORDEN_COMPRA",
-                    detail.getUnitPrice()
+                    detail.getUnitPrice(),
+                    null,
+                    null
             );
         }
 

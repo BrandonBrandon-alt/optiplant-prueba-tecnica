@@ -94,8 +94,9 @@ export default function CartItemCard({
           <span className="text-[10px] font-bold text-[var(--neutral-500)] uppercase">Dto</span>
           <input
             type="number"
-            value={item.discountPercentage}
-            onChange={(e) => updateDiscount(item.productId, parseInt(e.target.value) || 0)}
+            value={item.discountPercentage === 0 ? "" : item.discountPercentage}
+            onChange={(e) => updateDiscount(item.productId, e.target.value === "" ? 0 : (parseInt(e.target.value) || 0))}
+            placeholder="0"
             className="flex-1 bg-transparent border-none text-[var(--color-success)] text-[13px] font-extrabold text-right outline-none"
           />
           <span className="text-[11px] font-extrabold text-[var(--neutral-600)]">%</span>

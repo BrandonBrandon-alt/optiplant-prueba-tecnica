@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { apiClient } from "@/api/client";
 import { getSession, type AuthSession } from "@/api/auth";
 import { useToast } from "@/context/ToastContext";
@@ -45,7 +45,7 @@ interface CartItem {
 }
 
 // ── Main Page ──────────────────────────────────────────────
-export default function POSPage() {
+function POSContent() {
   const router = useRouter();
   const { showToast } = useToast();
   const { print, isPrinting } = usePrint();
@@ -53,13 +53,15 @@ export default function POSPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [globalDiscount, setGlobalDiscount] = useState(0);
+  const [globalDiscount, setGlobalDiscount] = useState<number | "">("");
   const [priceLists, setPriceLists] = useState<{id: number, nombre: string}[]>([]);
   const [listPrices, setListPrices] = useState<Record<number, Record<number, number>>>({}); // listId -> productId -> price
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSaleId, setLastSaleId] = useState<number | null>(null);
   const [lastSaleData, setLastSaleData] = useState<SaleReceiptData | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const searchParams = useSearchParams();
+  const productIdPreselected = searchParams.get("productId");
 
   const [posState, setPosState, isLoaded] = usePersistence("zen_inventory_pos_state", {
     cart: [] as CartItem[],
@@ -186,6 +188,16 @@ export default function POSPage() {
     });
   };
 
+  useEffect(() => {
+    if (productIdPreselected && inventory.length > 0) {
+      const prodId = parseInt(productIdPreselected);
+      const product = inventory.find(item => item.productId === prodId);
+      if (product) {
+        addToCart(product);
+      }
+    }
+  }, [productIdPreselected, inventory]);
+
   const removeFromCart = (productId: number) => {
     setCart(prev => prev.filter(item => item.productId !== productId));
   };
@@ -260,8 +272,9 @@ export default function POSPage() {
       return acc + (base - discount);
     }, 0);
 
-    // Aplicar descuento global sobre el total de líneas
-    const globalDiscountAmount = lineTotalsSum * (globalDiscount / 100);
+    // Aplicar descuento global sobre el total de líneas (tratar "" como 0)
+    const discountVal = Number(globalDiscount) || 0;
+    const globalDiscountAmount = lineTotalsSum * (discountVal / 100);
     const totalFinal = lineTotalsSum - globalDiscountAmount;
     const totalDiscount = subtotal - totalFinal;
 
@@ -278,7 +291,7 @@ export default function POSPage() {
         userId: session?.id,
         customerName: customerName.trim() || null,
         customerDocument: customerDocument.trim() || null,
-        globalDiscountPercentage: globalDiscount,
+        globalDiscountPercentage: Number(globalDiscount) || 0,
         priceListId: selectedPriceList || null,
         items: cart.map(item => ({
           productId: item.productId,
@@ -315,7 +328,7 @@ export default function POSPage() {
         userName: session?.nombre ?? null,
         customerName: customerName.trim() || null,
         customerDocument: customerDocument.trim() || null,
-        globalDiscountPercentage: globalDiscount,
+        globalDiscountPercentage: Number(globalDiscount) || 0,
         details: cart.map((item, idx) => ({
           id: idx,
           productId: item.productId,
@@ -331,7 +344,7 @@ export default function POSPage() {
       setCart([]);
       setCustomerName("");
       setCustomerDocument("");
-      setGlobalDiscount(0);
+      setGlobalDiscount("");
       setShowSuccessModal(true);
       
       // Refresh inventory
@@ -521,8 +534,9 @@ export default function POSPage() {
                    min="0"
                    max="100"
                    value={globalDiscount}
-                   onChange={(e: any) => setGlobalDiscount(Number(e.target.value))}
+                   onChange={(e: any) => setGlobalDiscount(e.target.value === "" ? "" : Number(e.target.value))}
                    icon={<Tag size={14} className="text-[var(--brand-400)]" />}
+                   placeholder="0"
                  />
                </div>
                <div className="text-right flex flex-col justify-end h-full pt-6">
@@ -628,5 +642,13 @@ export default function POSPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function POSPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center bg-[var(--bg-base)]"><Spinner size={48} /></div>}>
+      <POSContent />
+    </Suspense>
   );
 }

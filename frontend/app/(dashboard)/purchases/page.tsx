@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { 
   Package, TrendingUp, Search, Plus, Trash2, 
   ShoppingCart, Building2, Calendar, DollarSign,
@@ -29,7 +30,7 @@ const formatCurrency = (amount: number) => {
 
 // ── Types ──────────────────────────────────────────────────
 interface Product { id: number; sku: string; nombre: string; costoPromedio: number; precioVenta: number; proveedorId: number; }
-interface PurchaseDetail { productId: number; nombre: string; sku: string; quantity: number; unitPrice: number; discountPct: number; }
+interface PurchaseDetail { productId: number; nombre: string; sku: string; quantity: number; unitPrice: number | ""; discountPct: number | ""; }
 interface OrderDetailItem { id: number; productId: number; quantity: number; unitPrice: number; subtotal: number; discountPct?: number; }
 interface PurchaseOrder { id: number; supplierId: number; branchId: number; requestDate: string; estimatedArrivalDate: string; actualArrivalDate: string | null; receptionStatus: "PENDING" | "IN_TRANSIT" | "RECEIVED_TOTAL"; paymentStatus: "POR_PAGAR" | "PAGADO"; total: number; details?: OrderDetailItem[]; }
 
@@ -76,7 +77,7 @@ const CartItemRow = ({ item, actions }: { item: PurchaseDetail, actions: any }) 
         <span className="text-[10px] font-mono text-[var(--brand-400)] font-bold tracking-tight uppercase">{item.sku}</span>
       </div>
       <div className="text-right">
-        <p className="text-[14px] font-black text-[var(--neutral-50)]">{formatCurrency(item.unitPrice * item.quantity)}</p>
+        <p className="text-[14px] font-black text-[var(--neutral-50)]">{formatCurrency((Number(item.unitPrice) || 0) * item.quantity)}</p>
       </div>
     </div>
 
@@ -94,7 +95,8 @@ const CartItemRow = ({ item, actions }: { item: PurchaseDetail, actions: any }) 
         <DollarSign size={12} className="text-[var(--brand-400)] mr-1" />
         <input 
           type="number" step="0.01" value={item.unitPrice} 
-          onChange={(e) => actions.setUnitPrice(item.productId, parseFloat(e.target.value) || 0)}
+          onChange={(e) => actions.setUnitPrice(item.productId, e.target.value === "" ? "" : (parseFloat(e.target.value) || 0))}
+          placeholder="0"
           className="flex-1 bg-transparent border-none text-[var(--neutral-100)] text-[12px] font-black focus:outline-none text-right"
         />
       </div>
@@ -103,8 +105,9 @@ const CartItemRow = ({ item, actions }: { item: PurchaseDetail, actions: any }) 
         <Percent size={10} className="text-[var(--brand-400)] mr-1" />
         <input 
           type="number" min="0" max="100" step="0.5" value={item.discountPct} 
-          onChange={(e) => actions.setDiscount(item.productId, parseFloat(e.target.value) || 0)}
-          className={`w-full bg-transparent border-none text-[12px] font-black focus:outline-none text-center ${item.discountPct > 0 ? 'text-[var(--brand-400)]' : 'text-[var(--neutral-500)]'}`}
+          onChange={(e) => actions.setDiscount(item.productId, e.target.value === "" ? "" : (parseFloat(e.target.value) || 0))}
+          placeholder="0"
+          className={`w-full bg-transparent border-none text-[12px] font-black focus:outline-none text-center ${(Number(item.discountPct) || 0) > 0 ? 'text-[var(--brand-400)]' : 'text-[var(--neutral-500)]'}`}
         />
       </div>
 
@@ -116,10 +119,10 @@ const CartItemRow = ({ item, actions }: { item: PurchaseDetail, actions: any }) 
       </button>
     </div>
 
-    {item.discountPct > 0 && (
+    {(Number(item.discountPct) || 0) > 0 && (
       <div className="flex justify-between items-center px-3 py-1.5 bg-[var(--color-success)]/10 rounded-lg border border-dashed border-[var(--color-success)]/30">
-        <span className="text-[9px] text-[var(--color-success)] font-black uppercase tracking-widest">Ahorro ({item.discountPct}%)</span>
-        <span className="text-[9px] text-[var(--color-success)] font-black">-{formatCurrency(item.quantity * item.unitPrice * (item.discountPct / 100))}</span>
+        <span className="text-[9px] text-[var(--color-success)] font-black uppercase tracking-widest">Ahorro ({(Number(item.discountPct) || 0)}%)</span>
+        <span className="text-[9px] text-[var(--color-success)] font-black">-{formatCurrency(item.quantity * (Number(item.unitPrice) || 0) * ((Number(item.discountPct) || 0) / 100))}</span>
       </div>
     )}
   </div>
@@ -127,9 +130,12 @@ const CartItemRow = ({ item, actions }: { item: PurchaseDetail, actions: any }) 
 
 // ── Main Page Component ──────────────────────────────────────
 
-export default function PurchasesPage() {
+function PurchasesContent() {
   const [activeTab, setActiveTab] = useState<"history" | "new">("new");
   const { showToast } = useToast();
+  const searchParams = useSearchParams();
+  const productIdPreselected = searchParams.get("productId");
+  const branchIdPreselected = searchParams.get("branchId");
 
   // State: Catalogs
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -149,7 +155,7 @@ export default function PurchasesPage() {
   const [supplierId, setSupplierId] = useState<string>("");
   const [branchId, setBranchId] = useState<string>("");
   const [estimatedArrival, setEstimatedArrival] = useState<string>("");
-  const [paymentDueDays, setPaymentDueDays] = useState<string>("30");
+  const [paymentDueDays, setPaymentDueDays] = useState<string>("");
   const [cart, setCart] = useState<PurchaseDetail[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -207,8 +213,9 @@ export default function PurchasesPage() {
 
   const financialSummary = useMemo(() => {
     return cart.reduce((acc, curr) => {
-      const discount = curr.discountPct || 0;
-      return acc + (curr.quantity * curr.unitPrice * (1 - discount / 100));
+      const discount = Number(curr.discountPct) || 0;
+      const price = Number(curr.unitPrice) || 0;
+      return acc + (curr.quantity * price * (1 - discount / 100));
     }, 0);
   }, [cart]);
 
@@ -233,10 +240,28 @@ export default function PurchasesPage() {
     removeFromCart: (id: number) => setCart(prev => prev.filter(item => item.productId !== id)),
     updateQuantity: (id: number, delta: number) => setCart(prev => prev.map(item => item.productId === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item)),
     setQuantity: (id: number, val: number) => val >= 1 && setCart(prev => prev.map(item => item.productId === id ? { ...item, quantity: val } : item)),
-    setUnitPrice: (id: number, val: number) => val >= 0 && setCart(prev => prev.map(item => item.productId === id ? { ...item, unitPrice: val } : item)),
-    setDiscount: (id: number, val: number) => setCart(prev => prev.map(item => item.productId === id ? { ...item, discountPct: Math.min(100, Math.max(0, val)) } : item)),
+    setUnitPrice: (id: number, val: number | "") => setCart(prev => prev.map(item => item.productId === id ? { ...item, unitPrice: val } : item)),
+    setDiscount: (id: number, val: number | "") => setCart(prev => prev.map(item => item.productId === id ? { ...item, discountPct: typeof val === "number" ? Math.min(100, Math.max(0, val)) : val } : item)),
     clearCart: () => { if (confirm("¿Descartar el borrador entero?")) setCart([]); }
   };
+
+  useEffect(() => {
+    if (productIdPreselected && products.length > 0) {
+      const prodId = parseInt(productIdPreselected);
+      const prod = products.find(p => p.id === prodId);
+      if (prod) {
+        // Solo agregamos si no está ya (o dejamos que addToCart maneje el incremento)
+        // Pero para "pre-llenar" la intención original suele ser que aparezca al menos una vez
+        cartActions.addToCart(prod);
+      }
+    }
+  }, [productIdPreselected, products]);
+
+  useEffect(() => {
+    if (branchIdPreselected) {
+      setBranchId(branchIdPreselected);
+    }
+  }, [branchIdPreselected]);
 
   const handleSubmitOrder = async () => {
     if (!supplierId || !branchId || cart.length === 0) {
@@ -260,8 +285,8 @@ export default function PurchasesPage() {
         items: cart.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          discountPct: item.discountPct
+          unitPrice: Number(item.unitPrice) || 0,
+          discountPct: Number(item.discountPct) || 0
         }))
       };
 
@@ -348,7 +373,46 @@ export default function PurchasesPage() {
       { 
         key: "requestDate", 
         label: "Fecha Emisión", 
-        render: (row: PurchaseOrder) => <div className="flex items-center gap-2 text-[var(--neutral-300)]"><Calendar size={12} className="text-[var(--neutral-500)]" /> {new Date(row.requestDate).toLocaleDateString()}</div> 
+        render: (row: PurchaseOrder) => (
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-2 text-[var(--neutral-300)] font-bold">
+              <Calendar size={12} className="text-[var(--neutral-500)]" /> 
+              {new Date(row.requestDate).toLocaleDateString()}
+            </div>
+            <div className="flex items-center gap-2 text-[10px] text-[var(--neutral-500)] font-mono ml-5">
+              <Clock size={10} />
+              {new Date(row.requestDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </div>
+          </div>
+        )
+      },
+      { 
+        key: "details", 
+        label: "Mercancía", 
+        render: (row: PurchaseOrder) => (
+          <div className="flex flex-col gap-1 max-w-[220px]">
+            {row.details && row.details.length > 0 ? (
+              row.details.slice(0, 2).map((detail, idx) => {
+                const prod = products.find(p => p.id === detail.productId);
+                return (
+                  <div key={idx} className="flex items-center gap-2 bg-[var(--bg-surface)] px-2 py-1 rounded-lg border border-[var(--neutral-800)]/50 group hover:border-[var(--brand-500)]/30 transition-colors">
+                    <span className="text-[10px] font-black text-[var(--brand-400)]">{detail.quantity}x</span>
+                    <span className="text-[11px] font-bold text-[var(--neutral-300)] truncate uppercase tracking-tight">
+                      {prod?.nombre || `Prod #${detail.productId}`}
+                    </span>
+                  </div>
+                );
+              })
+            ) : (
+              <span className="text-[10px] text-[var(--neutral-600)] uppercase font-black tracking-widest">Sin detalles</span>
+            )}
+            {row.details && row.details.length > 2 && (
+              <span className="text-[9px] font-black text-[var(--neutral-500)] uppercase tracking-[0.2em] ml-2">
+                + {row.details.length - 2} ítem(s) más
+              </span>
+            )}
+          </div>
+        ) 
       },
       { 
         key: "supplierId", 
@@ -574,10 +638,11 @@ export default function PurchasesPage() {
               onChange={(e: any) => setPaymentDueDays(e.target.value)}
               icon={<Clock size={14} />}
               className="bg-[var(--bg-surface)]/50"
+              placeholder="0"
             />
             <div className="text-right flex flex-col justify-end">
                 <span className="text-[10px] text-[var(--neutral-500)] uppercase font-black tracking-widest mb-1">Ahorro Aplicado</span>
-                <span className="text-sm font-black text-[var(--color-success)]">-{formatCurrency(cart.reduce((acc, curr) => acc + (curr.quantity * curr.unitPrice * ((curr.discountPct || 0) / 100)), 0))}</span>
+                <span className="text-sm font-black text-[var(--color-success)]">-{formatCurrency(cart.reduce((acc, curr) => acc + (curr.quantity * (Number(curr.unitPrice) || 0) * ((Number(curr.discountPct) || 0) / 100)), 0))}</span>
             </div>
           </div>
 
@@ -772,5 +837,20 @@ export default function PurchasesPage() {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
       `}</style>
     </div>
+  );
+}
+
+export default function PurchasesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-[var(--bg-base)]">
+        <div className="flex flex-col items-center gap-4">
+          <Spinner size={40} />
+          <p className="text-[10px] font-black text-[var(--neutral-500)] uppercase tracking-[0.2em]">Cargando gestor de abastecimiento...</p>
+        </div>
+      </div>
+    }>
+      <PurchasesContent />
+    </Suspense>
   );
 }

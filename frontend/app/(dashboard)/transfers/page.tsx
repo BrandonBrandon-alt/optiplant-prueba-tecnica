@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { apiClient } from "@/api/client";
 import { getSession } from "@/api/auth";
 import type { components } from "@/api/schema";
@@ -23,12 +23,15 @@ import PrepareTransferModal from "@/components/transfers/PrepareTransferModal";
 type TransferResponse = components["schemas"]["TransferResponse"];
 type BranchResponse = components["schemas"]["BranchResponse"];
 
-export default function TransfersManagementPage() {
+function TransfersContent() {
   const { showToast } = useToast();
   const [transfers, setTransfers] = useState<TransferResponse[]>([]);
   const [branches, setBranches] = useState<Map<number, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<number | null>(null);
+  const searchParams = useSearchParams();
+  const productIdPreselected = searchParams.get("productId");
+  const branchIdPreselected = searchParams.get("branchId");
 
   // Modal states
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -80,6 +83,18 @@ export default function TransfersManagementPage() {
   useEffect(() => {
     fetchTransfers();
   }, [fetchTransfers]);
+
+  useEffect(() => {
+    if (productIdPreselected) {
+      setIsNewModalOpen(true);
+    }
+  }, [productIdPreselected]);
+
+  useEffect(() => {
+    if (branchIdPreselected) {
+      setFilterOrigin(branchIdPreselected);
+    }
+  }, [branchIdPreselected]);
 
   const filteredTransfers = transfers.filter(t => {
     if (activeTab === "resolutions" && t.status !== "WITH_ISSUE") return false;
@@ -343,6 +358,7 @@ export default function TransfersManagementPage() {
         onSuccess={fetchTransfers}
         currentBranchId={myBranchId}
         isAdmin={isAdmin}
+        initialProductId={productIdPreselected}
       />
 
       <ReceiveTransferModal
@@ -368,5 +384,13 @@ export default function TransfersManagementPage() {
         transfer={preparingTransfer}
       />
     </div>
+  );
+}
+
+export default function TransfersManagementPage() {
+  return (
+    <Suspense fallback={<Spinner fullPage />}>
+      <TransfersContent />
+    </Suspense>
   );
 }

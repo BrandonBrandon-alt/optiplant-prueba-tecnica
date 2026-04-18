@@ -106,7 +106,9 @@ public class SaleService implements CreateSaleUseCase, SaleManagementUseCase {
                     MovementReason.VENTA, 
                     command.userId(),
                     savedSale.getId(),
-                    "VENTA"
+                    "VENTA",
+                    null,
+                    null
             );
         }
 
@@ -152,8 +154,10 @@ public class SaleService implements CreateSaleUseCase, SaleManagementUseCase {
                     MovementReason.DEVOLUCION,
                     sale.getUserId(), 
                     sale.getId(),
-                    "ANULACIÓN DE VENTA #" + id + ": " + reason,
-                    detail.getUnitPriceApplied()
+                    "ANULACION_VENTA",
+                    detail.getUnitPriceApplied(),
+                    "Anulación #" + id + ": " + reason,
+                    null
             );
         }
     }

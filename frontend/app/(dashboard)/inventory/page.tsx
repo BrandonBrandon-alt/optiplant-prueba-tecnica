@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { apiClient } from "@/api/client";
 import { getSession } from "@/api/auth";
 import type { components } from "@/api/schema";
@@ -18,7 +19,7 @@ import Select     from "@/components/ui/Select";
 import DataTable  from "@/components/ui/DataTable";
 import Separator  from "@/components/ui/Separator";
 import { useToast } from "@/context/ToastContext";
-import { Search, Info, Lock } from "lucide-react";
+import { Search, Info, Lock, ShoppingCart, RotateCcw, Truck, CreditCard, ArrowRight, ShoppingBag, Repeat, AlertTriangle, CheckCircle, MinusCircle } from "lucide-react";
 import StockStatus from "@/components/ui/StockStatus";
 import { usePersistence } from "@/hooks/usePersistence";
 import SearchFilter from "@/components/ui/SearchFilter";
@@ -28,6 +29,33 @@ type ProductResponse  = components["schemas"]["ProductResponse"];
 type LocalInventory   = components["schemas"]["LocalInventory"];
 type BranchResponse   = components["schemas"]["BranchResponse"];
 type InventoryProductResponse = components["schemas"]["InventoryProductResponse"];
+
+const EXTERNAL_MOTIVES: Record<string, { label: string, path: string, description: string, icon: any }> = {
+  COMPRA: {
+    label: "Ir a Compras",
+    path: "/purchases",
+    description: "Para registrar el ingreso de mercancía por compra, debes generar una Orden de Compra formal para afectar correctamente las cuentas por pagar.",
+    icon: <ShoppingCart size={24} />
+  },
+  DEVOLUCION: {
+    label: "Ir a Historial de Ventas",
+    path: "/sales/history",
+    description: "Las devoluciones de clientes deben procesarse desde el historial de ventas para anular la factura y cargar el stock automáticamente.",
+    icon: <RotateCcw size={24} />
+  },
+  TRASLADO: {
+    label: "Ir a Traslados",
+    path: "/transfers",
+    description: "El movimiento de stock entre sedes se gestiona desde el módulo de traslados para asegurar la trazabilidad y el inventario en tránsito.",
+    icon: <Truck size={24} />
+  },
+  VENTA: {
+    label: "Ir al POS",
+    path: "/sales/pos",
+    description: "Las salidas por venta deben realizarse a través del Punto de Venta (POS) para emitir el comprobante y descargar el stock vinculado a la factura.",
+    icon: <CreditCard size={24} />
+  }
+};
 
 interface InventoryMovementExtended {
   id: number;
@@ -40,11 +68,14 @@ interface InventoryMovementExtended {
   userId: number;
   referenceId?: number;
   referenceType?: string;
+  observations?: string;
   finalBalance: number;
+  subReason?: string;
 }
 
 // ── Main Page ──────────────────────────────────────────────
 export default function InventoryPage() {
+  const router = useRouter();
   const { showToast } = useToast();
   const session = typeof window !== "undefined" ? getSession() : null;
   const isAdmin = session?.rol === "ADMIN";
@@ -85,11 +116,13 @@ export default function InventoryPage() {
   
   const [adjustData, setAdjustData] = useState({
     type: "INGRESO" as "INGRESO" | "RETIRO",
-    quantity: 0,
+    quantity: "" as number | "",
     reason: "" as any,
-    unitCost: 0,
+    unitCost: "" as number | "",
+    observations: "",
+    subReason: "",
   });
-  const [minStockValue, setMinStockValue] = useState(0);
+  const [minStockValue, setMinStockValue] = useState<number | "">("");
   const [submitting, setSubmitting] = useState(false);
 
   const canEdit = isAdmin || (isManager && selectedBranchId === myBranchId);
@@ -172,12 +205,17 @@ export default function InventoryPage() {
 
   const handleAdjustSubmit = async () => {
     if (!adjustingProduct || !selectedBranchId) return;
-    if (adjustData.quantity <= 0) {
+    const qty = typeof adjustData.quantity === "number" ? adjustData.quantity : 0;
+    if (qty <= 0) {
       showToast("La cantidad debe ser mayor a 0", "warning");
       return;
     }
     if (!adjustData.reason) {
       showToast("El motivo es obligatorio", "warning");
+      return;
+    }
+    if (adjustData.reason === "MERMA" && !adjustData.subReason) {
+      showToast("Debe categorizar la merma (seleccionar sub-motivo)", "warning");
       return;
     }
 
@@ -190,10 +228,12 @@ export default function InventoryPage() {
       const { error } = await apiClient.POST(endpoint as any, {
         params: { path: { branchId: selectedBranchId, productId: adjustingProduct.id! } },
         body: {
-          quantity: adjustData.quantity,
+          quantity: qty,
           reason: adjustData.reason,
           userId: session?.id || 1,
-          unitCost: adjustData.type === "INGRESO" ? adjustData.unitCost : undefined,
+          unitCost: adjustData.type === "INGRESO" ? (Number(adjustData.unitCost) || 0) : undefined,
+          observations: adjustData.observations,
+          subReason: adjustData.subReason,
         }
       });
 
@@ -216,7 +256,7 @@ export default function InventoryPage() {
       const { error } = await apiClient.PUT("/api/v1/inventory/branches/{branchId}/products/{productId}/config", {
         params: { 
           path: { branchId: selectedBranchId, productId: configProduct.p.id! },
-          query: { minimumStock: minStockValue }
+          query: { minimumStock: Number(minStockValue) || 0 }
         }
       });
 
@@ -414,7 +454,14 @@ export default function InventoryPage() {
                           size="sm"
                           onClick={() => {
                             setAdjustingProduct(p);
-                            setAdjustData({ type: "INGRESO", quantity: 0, reason: "", unitCost: p.costoPromedio ?? 0 });
+                            setAdjustData({ 
+                              type: "INGRESO", 
+                              quantity: "", 
+                              reason: "", 
+                              unitCost: p.costoPromedio ?? "",
+                              observations: "",
+                              subReason: ""
+                            });
                           }}
                         >
                           Acciones
@@ -469,7 +516,18 @@ export default function InventoryPage() {
                   {
                     header: "Producto",
                     key: "productId",
-                    render: (m) => <span style={{ fontSize: "14px", fontWeight: 600 }}>{getProductName(m.productId)}</span>
+                    render: (m) => (
+                      <div className="flex flex-col">
+                        <span style={{ fontSize: "14px", fontWeight: 600 }}>{getProductName(m.productId)}</span>
+                        {m.observations && (
+                          <div className="flex gap-2 items-center flex-wrap">
+                            <span style={{ fontSize: "11px", color: "var(--brand-400)", fontWeight: 700, fontStyle: "italic" }}>
+                              Obs: {m.observations}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )
                   },
                   {
                     header: "Tipo",
@@ -479,6 +537,48 @@ export default function InventoryPage() {
                   {
                     header: "Motivo",
                     key: "reason",
+                    render: (m) => {
+                      const reasonStyles: Record<string, { color: string, bg: string, icon: any }> = {
+                        COMPRA: { color: "#10b981", bg: "rgba(16, 185, 129, 0.1)", icon: <ShoppingBag size={12} /> },
+                        VENTA: { color: "#3b82f6", bg: "rgba(59, 130, 246, 0.1)", icon: <ShoppingCart size={12} /> },
+                        DEVOLUCION: { color: "#8b5cf6", bg: "rgba(139, 92, 246, 0.1)", icon: <Repeat size={12} /> },
+                        TRASLADO: { color: "#6366f1", bg: "rgba(99, 102, 241, 0.1)", icon: <Truck size={12} /> },
+                        MERMA: { color: "#f43f5e", bg: "rgba(244, 63, 94, 0.1)", icon: <AlertTriangle size={12} /> },
+                        AJUSTE_POSITIVO: { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)", icon: <CheckCircle size={12} /> },
+                        AJUSTE_NEGATIVO: { color: "#64748b", bg: "rgba(100, 116, 139, 0.1)", icon: <MinusCircle size={12} /> },
+                      };
+
+                      const style = reasonStyles[m.reason!] || { color: "var(--neutral-400)", bg: "var(--neutral-800)", icon: null };
+
+                      return (
+                        <div className="flex flex-col items-start gap-1">
+                          <span style={{ 
+                            fontSize: "9px", 
+                            fontWeight: 800, 
+                            padding: "2px 6px", 
+                            borderRadius: "4px",
+                            background: style.bg,
+                            color: style.color,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "3px",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.03em",
+                            border: `1px solid ${style.color}20`
+                          }}>
+                            {style.icon}
+                            {m.reason || "—"}
+                          </span>
+                          {m.subReason && (
+                            <div style={{ transform: 'scale(0.8)', transformOrigin: 'left' }}>
+                              <Badge variant="warning">
+                                {m.subReason.replace("_", " ")}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
                   },
                   {
                     header: "Cantidad",
@@ -547,53 +647,141 @@ export default function InventoryPage() {
             </button>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-            <Input 
-              label={`Cantidad a ${adjustData.type === "INGRESO" ? "Ingresar" : "Retirar"}`}
-              type="number"
-              value={adjustData.quantity}
-              onChange={(e) => setAdjustData({...adjustData, quantity: Number(e.target.value)})}
-              placeholder="0.00"
-            />
-            <Select
-              label="Motivo Obligatorio"
-              value={adjustData.reason}
-              onChange={(val) => setAdjustData({...adjustData, reason: val})}
-              options={adjustData.type === "INGRESO" ? [
-                { value: "COMPRA", label: "Compra a Proveedor" },
-                { value: "DEVOLUCION", label: "Devolución de Cliente" },
-                { value: "AJUSTE_POSITIVO", label: "Ajuste de Auditoría (+)" },
-                { value: "TRASLADO", label: "Traslado Recibido" }
-              ] : [
-                { value: "VENTA", label: "Venta a Cliente" },
-                { value: "MERMA", label: "Merma / Daño" },
-                { value: "AJUSTE_NEGATIVO", label: "Ajuste de Auditoría (-)" },
-                { value: "TRASLADO", label: "Traslado Enviado" }
-              ]}
-            />
-          </div>
+          <Select
+            label="Motivo del Movimiento"
+            value={adjustData.reason}
+            onChange={(val) => setAdjustData({...adjustData, reason: val})}
+            options={adjustData.type === "INGRESO" ? [
+              { value: "COMPRA", label: "Compra a Proveedor" },
+              { value: "DEVOLUCION", label: "Devolución de Cliente" },
+              { value: "AJUSTE_POSITIVO", label: "Ajuste de Auditoría (+)" },
+              { value: "TRASLADO", label: "Traslado Recibido" }
+            ] : [
+              { value: "VENTA", label: "Venta a Cliente" },
+              { value: "MERMA", label: "Merma / Daño" },
+              { value: "AJUSTE_NEGATIVO", label: "Ajuste de Auditoría (-)" },
+              { value: "TRASLADO", label: "Traslado Enviado" }
+            ]}
+          />
 
-          {adjustData.type === "INGRESO" && (
-            <Input 
-              label="Costo Unitario (Sugerido)"
-              type="number"
-              value={adjustData.unitCost}
-              onChange={(e) => setAdjustData({...adjustData, unitCost: Number(e.target.value)})}
+          {adjustData.reason === "MERMA" && (
+            <Select 
+              label="Categoría de Merma / Daño (Obligatorio)"
+              value={adjustData.subReason}
+              onChange={(val) => setAdjustData({...adjustData, subReason: val})}
+              options={[
+                { value: "CADUCIDAD", label: "Caducidad (Semillas viejas)" },
+                { value: "DAÑO_FISICO", label: "Daño Físico (Bulto roto, accidente)" },
+                { value: "ROBO_PERDIDA", label: "Robo / Pérdida" },
+                { value: "DEFECTO_FABRICA", label: "Defecto de Fábrica (Proveedor)" }
+              ]}
+              placeholder="Seleccione categoría..."
             />
           )}
 
-          <div style={{ display: "flex", gap: "12px" }}>
-            <Button variant="ghost" fullWidth onClick={() => setAdjustingProduct(null)}>Cancelar</Button>
-            <Button 
-              variant="primary" 
-              fullWidth 
-              onClick={handleAdjustSubmit} 
-              loading={submitting}
-              style={{ background: adjustData.type === "INGRESO" ? "var(--color-success)" : "var(--color-danger)" }}
-            >
-              Registrar {adjustData.type === "INGRESO" ? "Entrada" : "Salida"}
-            </Button>
-          </div>
+          {EXTERNAL_MOTIVES[adjustData.reason as string] ? (
+            <div style={{ 
+              padding: "24px", 
+              borderRadius: "16px", 
+              background: "var(--bg-surface)", 
+              border: "1px solid var(--neutral-800)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
+              gap: "16px",
+              animation: "fade-in 0.3s ease"
+            }}>
+              <div style={{ 
+                width: "48px", 
+                height: "48px", 
+                borderRadius: "50%", 
+                background: "var(--brand-500-10)", 
+                color: "var(--brand-400)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}>
+                {EXTERNAL_MOTIVES[adjustData.reason as string].icon}
+              </div>
+              <div>
+                <h4 style={{ margin: "0 0 8px 0", color: "var(--neutral-50)" }}>Flujo Protegido</h4>
+                <p style={{ margin: 0, fontSize: "13px", color: "var(--neutral-400)", lineHeight: "1.5" }}>
+                  {EXTERNAL_MOTIVES[adjustData.reason as string].description}
+                </p>
+              </div>
+              <Button 
+                variant="primary" 
+                fullWidth 
+                onClick={() => {
+                  const path = EXTERNAL_MOTIVES[adjustData.reason as string].path;
+                  const productId = adjustingProduct?.id;
+                  setAdjustingProduct(null);
+                  
+                  const params = new URLSearchParams();
+                  if (productId) params.set("productId", productId.toString());
+                  if (selectedBranchId) params.set("branchId", selectedBranchId.toString());
+                  
+                  const query = params.toString();
+                  router.push(`${path}${query ? `?${query}` : ""}`);
+                }}
+                leftIcon={<ArrowRight size={16} />}
+              >
+                {EXTERNAL_MOTIVES[adjustData.reason as string].label}
+              </Button>
+            </div>
+          ) : (
+            <>
+          {(adjustData.reason === "AJUSTE_POSITIVO" || adjustData.reason === "MERMA" || adjustData.reason === "AJUSTE_NEGATIVO") && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              <Input 
+                label={`Cantidad a ${adjustData.type === "INGRESO" ? "Ingresar" : "Retirar"}`}
+                type="number"
+                value={adjustData.quantity}
+                onChange={(e) => setAdjustData({...adjustData, quantity: e.target.value === "" ? "" : Number(e.target.value)})}
+                placeholder="0"
+              />
+              {adjustData.type === "INGRESO" && (
+                <Input 
+                  label="Costo Unitario (Sugerido)"
+                  type="number"
+                  value={adjustData.unitCost}
+                  onChange={(e) => setAdjustData({...adjustData, unitCost: e.target.value === "" ? "" : Number(e.target.value)})}
+                  placeholder="0"
+                />
+              )}
+            </div>
+          )}
+
+              {(adjustData.reason === "AJUSTE_POSITIVO" || adjustData.reason === "AJUSTE_NEGATIVO") && (
+                <Input 
+                  label="Justificación del Ajuste (Motivo Detallado)"
+                  value={adjustData.observations}
+                  onChange={(e) => setAdjustData({...adjustData, observations: e.target.value})}
+                  placeholder="Explique el motivo de este ajuste manual..."
+                />
+              )}
+
+              {(adjustData.reason === "AJUSTE_POSITIVO" || adjustData.reason === "MERMA" || adjustData.reason === "AJUSTE_NEGATIVO") && (
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <Button variant="ghost" fullWidth onClick={() => setAdjustingProduct(null)}>Cancelar</Button>
+                  <Button 
+                    variant="primary" 
+                    fullWidth 
+                    onClick={handleAdjustSubmit} 
+                    loading={submitting}
+                    style={{ background: adjustData.type === "INGRESO" ? "var(--color-success)" : "var(--color-danger)" }}
+                  >
+                    Registrar {adjustData.type === "INGRESO" ? "Entrada" : "Salida"}
+                  </Button>
+                </div>
+              )}
+              
+              {!adjustData.reason && (
+                <Button variant="ghost" fullWidth onClick={() => setAdjustingProduct(null)}>Cerrar</Button>
+              )}
+            </>
+          )}
         </div>
       </Modal>
 
@@ -608,7 +796,8 @@ export default function InventoryPage() {
             label="Stock Mínimo para Alerta"
             type="number"
             value={minStockValue}
-            onChange={(e) => setMinStockValue(Number(e.target.value))}
+            onChange={(e) => setMinStockValue(e.target.value === "" ? "" : Number(e.target.value))}
+            placeholder="0"
           />
           <Button variant="primary" fullWidth onClick={handleConfigSubmit} loading={submitting}>Guardar Cambios</Button>
         </div>

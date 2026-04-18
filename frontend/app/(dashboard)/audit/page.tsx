@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { apiClient } from "@/api/client";
 import type { components } from "@/api/schema";
-import { History, Search } from "lucide-react";
+import { History, Search, MessageCircle, ShoppingBag, ShoppingCart, Repeat, Truck, AlertTriangle, CheckCircle, MinusCircle } from "lucide-react";
 
 import Spinner from "@/components/ui/Spinner";
 import PageHeader from "@/components/ui/PageHeader";
@@ -12,13 +12,15 @@ import Badge from "@/components/ui/Badge";
 import DataTable, { Column } from "@/components/ui/DataTable";
 import { useToast } from "@/context/ToastContext";
 import SearchFilter from "@/components/ui/SearchFilter";
+import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
 
 type InventoryMovement = components["schemas"]["InventoryMovement"];
 type UserResponse = components["schemas"]["UserResponse"];
 
 export default function AuditPage() {
   const { showToast } = useToast();
-  const [movements, setMovements] = useState<InventoryMovement[]>([]);
+  const [movements, setMovements] = useState<any[]>([]);
   const [branches, setBranches] = useState<Map<number, string>>(new Map());
   const [products, setProducts] = useState<Map<number, components["schemas"]["ProductResponse"]>>(new Map());
   const [suppliers, setSuppliers] = useState<Map<number, string>>(new Map());
@@ -26,6 +28,7 @@ export default function AuditPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" | null }>({ key: "date", direction: "desc" });
+  const [viewingObservation, setViewingObservation] = useState<any | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -79,7 +82,7 @@ export default function AuditPage() {
     return 0;
   });
 
-  const columns: Column<InventoryMovement>[] = [
+  const columns: Column<any>[] = [
     {
       header: "Fecha",
       key: "date",
@@ -109,11 +112,60 @@ export default function AuditPage() {
       render: (m) => {
         const product = products.get(m.productId!);
         const supplierName = product?.proveedorId ? suppliers.get(product.proveedorId) : null;
+        const observations = m.observations;
+        
+        const reasonStyles: Record<string, { color: string, bg: string, icon: any }> = {
+          COMPRA: { color: "#10b981", bg: "rgba(16, 185, 129, 0.1)", icon: <ShoppingBag size={12} /> },
+          VENTA: { color: "#3b82f6", bg: "rgba(59, 130, 246, 0.1)", icon: <ShoppingCart size={12} /> },
+          DEVOLUCION: { color: "#8b5cf6", bg: "rgba(139, 92, 246, 0.1)", icon: <Repeat size={12} /> },
+          TRASLADO: { color: "#6366f1", bg: "rgba(99, 102, 241, 0.1)", icon: <Truck size={12} /> },
+          MERMA: { color: "#f43f5e", bg: "rgba(244, 63, 94, 0.1)", icon: <AlertTriangle size={12} /> },
+          AJUSTE_POSITIVO: { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)", icon: <CheckCircle size={12} /> },
+          AJUSTE_NEGATIVO: { color: "#64748b", bg: "rgba(100, 116, 139, 0.1)", icon: <MinusCircle size={12} /> },
+        };
+
+        const style = reasonStyles[m.reason!] || { color: "var(--neutral-400)", bg: "var(--neutral-800)", icon: null };
+
         return (
-          <div className="flex flex-col">
-            <span style={{ fontSize: "13px", color: "var(--neutral-300)" }}>{m.reason || "—"}</span>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col items-start gap-1">
+              <span style={{ 
+                fontSize: "10px", 
+                fontWeight: 800, 
+                padding: "2px 8px", 
+                borderRadius: "6px",
+                background: style.bg,
+                color: style.color,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                border: `1px solid ${style.color}20`
+              }}>
+                {style.icon}
+                {m.reason || "—"}
+              </span>
+
+              <div className="flex items-center gap-2">
+                {m.subReason && (
+                  <Badge variant="warning">
+                    {m.subReason.replace("_", " ")}
+                  </Badge>
+                )}
+                {m.reason === "AJUSTE_POSITIVO" && observations && (
+                  <button 
+                    onClick={() => setViewingObservation(m)}
+                    className="p-1 hover:bg-[var(--brand-500)]/10 text-[var(--brand-400)] rounded-md transition-all animate-pulse"
+                    title="Leer motivo detallado"
+                  >
+                    <MessageCircle size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
             {m.reason === "COMPRA" && supplierName && (
-              <span style={{ fontSize: "11px", color: "var(--brand-400)", fontWeight: 700 }}>{supplierName}</span>
+              <span style={{ fontSize: "11px", color: "var(--brand-400)", fontWeight: 700, marginLeft: "4px" }}>{supplierName}</span>
             )}
           </div>
         );
@@ -176,6 +228,8 @@ export default function AuditPage() {
     }
   ];
 
+  if (loading) return <Spinner fullPage />;
+
   return (
     <div style={{ padding: "var(--page-padding)", maxWidth: "1400px", margin: "0 auto" }}>
       <PageHeader
@@ -203,7 +257,7 @@ export default function AuditPage() {
       </div>
 
       <Card style={{ padding: 0, overflow: "hidden" }}>
-        <DataTable<InventoryMovement>
+        <DataTable<any>
           columns={columns}
           data={filteredAndSortedMovements}
           sortConfig={sortConfig}
@@ -216,6 +270,50 @@ export default function AuditPage() {
           }}
         />
       </Card>
+
+      {/* MODAL PARA VER OBSERVACIÓN */}
+      <Modal
+        open={!!viewingObservation}
+        onClose={() => setViewingObservation(null)}
+        title="Detalle del Ajuste de Auditoría"
+        size="sm"
+      >
+        <div className="flex flex-col gap-4">
+          <div className="p-4 rounded-xl bg-[var(--brand-500)]/5 border border-[var(--brand-500)]/10">
+            {viewingObservation?.subReason && (
+              <div className="mb-2">
+                <Badge variant="warning">{viewingObservation.subReason.replace("_", " ")}</Badge>
+              </div>
+            )}
+            <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--brand-400)] mb-2">Justificación Registrada:</h4>
+            <p className="text-[15px] text-[var(--neutral-100)] leading-relaxed font-medium">
+              {viewingObservation?.observations || "Sin observaciones detalladas."}
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3 mt-2">
+            <div className="p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--neutral-800)]">
+              <span className="block text-[10px] text-[var(--neutral-500)] uppercase font-bold mb-1">Responsable</span>
+              <span className="text-[12px] text-[var(--neutral-200)] font-semibold">{users.get(viewingObservation?.userId!) || "—"}</span>
+            </div>
+             <div className="p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--neutral-800)]">
+              <span className="block text-[10px] text-[var(--neutral-500)] uppercase font-bold mb-1">Fecha</span>
+              <span className="text-[12px] text-[var(--neutral-200)] font-semibold">
+                {viewingObservation?.date ? new Date(viewingObservation.date).toLocaleDateString() : "—"}
+              </span>
+            </div>
+          </div>
+
+          <Button 
+            variant="primary" 
+            fullWidth 
+            onClick={() => setViewingObservation(null)}
+            className="mt-4"
+          >
+            Entendido
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

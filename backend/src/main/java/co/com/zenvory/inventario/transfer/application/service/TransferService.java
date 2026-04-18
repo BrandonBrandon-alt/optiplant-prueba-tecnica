@@ -81,7 +81,9 @@ public class TransferService implements TransferUseCase {
                     MovementReason.TRASLADO,
                     command.userId(),
                     transfer.getId(),
-                    "TRANSFERENCIA_OUT"
+                    "TRANSFERENCIA_OUT",
+                    null,
+                    null
             );
         }
 
@@ -132,6 +134,8 @@ public class TransferService implements TransferUseCase {
                         command.userId(),
                         transfer.getId(),
                         "TRANSFERENCIA_IN",
+                        null,
+                        command.notes(),
                         null
                 );
             }
