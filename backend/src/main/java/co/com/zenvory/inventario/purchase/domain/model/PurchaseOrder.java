@@ -27,13 +27,19 @@ public class PurchaseOrder {
     private Integer paymentDueDays;
     private LocalDateTime paymentDueDate;
     private BigDecimal total;
-    
-    private List<PurchaseOrderDetail> details;
+       private List<PurchaseOrderDetail> details;
+
+    // Campos de Resolución y Auditoría
+    private String reasonResolution;
+    private Long resolvedById;
+    private LocalDateTime resolutionDate;
+    private Integer version;
 
     public PurchaseOrder(Long id, Long supplierId, Long branchId, Long userId, Long receivingUserId,
                          LocalDateTime requestDate, LocalDateTime estimatedArrivalDate, LocalDateTime actualArrivalDate,
                          ReceptionStatus receptionStatus, PaymentStatus paymentStatus, Integer paymentDueDays, 
-                         LocalDateTime paymentDueDate, BigDecimal total, List<PurchaseOrderDetail> details) {
+                         LocalDateTime paymentDueDate, BigDecimal total, List<PurchaseOrderDetail> details,
+                         String reasonResolution, Long resolvedById, LocalDateTime resolutionDate, Integer version) {
         if (supplierId == null || branchId == null || userId == null) {
             throw new IllegalArgumentException("Proveedor, Sucursal y Usuario Autorizador son obligatorios.");
         }
@@ -55,13 +61,18 @@ public class PurchaseOrder {
         this.paymentDueDate = (paymentDueDate != null) ? paymentDueDate : this.requestDate.plusDays(this.paymentDueDays);
         this.details = details;
         this.total = (total != null) ? total : calculateTotal();
+        this.reasonResolution = reasonResolution;
+        this.resolvedById = resolvedById;
+        this.resolutionDate = resolutionDate;
+        this.version = version;
     }
 
     public static PurchaseOrder create(Long supplierId, Long userId, Long branchId, 
                                      LocalDateTime estimatedArrivalDate, Integer paymentDueDays, List<PurchaseOrderDetail> details) {
         return new PurchaseOrder(null, supplierId, branchId, userId, null, 
-                               LocalDateTime.now(), estimatedArrivalDate, null,
-                               ReceptionStatus.PENDING, PaymentStatus.POR_PAGAR, paymentDueDays, null, null, details);
+                                LocalDateTime.now(), estimatedArrivalDate, null,
+                                ReceptionStatus.PENDING, PaymentStatus.POR_PAGAR, paymentDueDays, null, null, details,
+                                null, null, null, 0);
     }
 
     private BigDecimal calculateTotal() {
@@ -85,9 +96,25 @@ public class PurchaseOrder {
         if (this.receptionStatus == ReceptionStatus.RECEIVED_TOTAL) {
             throw new InvalidPurchaseStateException("La orden ya ha sido recibida completamente.");
         }
+        if (this.receptionStatus == ReceptionStatus.CANCELLED) {
+            throw new InvalidPurchaseStateException("No se puede recibir una orden cancelada.");
+        }
         this.receptionStatus = ReceptionStatus.RECEIVED_TOTAL;
         this.receivingUserId = userId;
         this.actualArrivalDate = LocalDateTime.now();
+    }
+
+    public void cancel(String reason, Long userId) {
+        if (this.receptionStatus != ReceptionStatus.PENDING) {
+            throw new InvalidPurchaseStateException("Solo se pueden cancelar órdenes en estado PENDING.");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("El motivo de cancelación es obligatorio.");
+        }
+        this.receptionStatus = ReceptionStatus.CANCELLED;
+        this.reasonResolution = reason;
+        this.resolvedById = userId;
+        this.resolutionDate = LocalDateTime.now();
     }
 
     public void registerPayment() {
@@ -115,4 +142,8 @@ public class PurchaseOrder {
     public LocalDateTime getPaymentDueDate() { return paymentDueDate; }
     public BigDecimal getTotal() { return total; }
     public List<PurchaseOrderDetail> getDetails() { return Collections.unmodifiableList(details); }
+    public String getReasonResolution() { return reasonResolution; }
+    public Long getResolvedById() { return resolvedById; }
+    public LocalDateTime getResolutionDate() { return resolutionDate; }
+    public Integer getVersion() { return version; }
 }

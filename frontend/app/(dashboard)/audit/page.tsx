@@ -153,7 +153,7 @@ export default function AuditPage() {
                     {m.subReason.replace("_", " ")}
                   </Badge>
                 )}
-                {m.reason === "AJUSTE_POSITIVO" && observations && (
+                {observations && (
                   <button 
                     onClick={() => setViewingObservation(m)}
                     className="p-1 hover:bg-[var(--brand-500)]/10 text-[var(--brand-400)] rounded-md transition-all animate-pulse"

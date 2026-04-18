@@ -23,6 +23,23 @@ type UserRequest    = components["schemas"]["UserRequest"];
 type RoleResponse   = components["schemas"]["RoleResponse"];
 type BranchResponse = components["schemas"]["BranchResponse"];
 
+// ── Role Color Helper ──────────────────────────────────────
+const getRoleStyle = (roleName?: string) => {
+    const name = roleName?.toUpperCase() || "";
+    switch (name) {
+        case "ADMIN":
+            return { variant: "danger" as const, iconColor: "var(--brand-500)" };
+        case "MANAGER":
+            return { variant: "warning" as const, iconColor: "var(--color-warning)" };
+        case "SELLER":
+            return { variant: "info" as const, iconColor: "var(--color-info)" };
+        case "OPERADOR_INVENTARIO":
+            return { variant: "success" as const, iconColor: "var(--color-success)" };
+        default:
+            return { variant: "neutral" as const, iconColor: "var(--neutral-400)" };
+    }
+};
+
 // ── CreateUserModal ────────────────────────────────────────
 function CreateUserModal({ open, onClose, roles, branches, onCreated }: {
     open: boolean;
@@ -410,12 +427,15 @@ export default function UsersPage() {
             header: "Rol",
             key: "role",
             sortable: true,
-            render: (user) => (
-                <Badge variant="info">
-                    <Shield size={12} className="mr-1 text-[var(--brand-400)]" />
-                    {user.role?.nombre || "Sin rol"}
-                </Badge>
-            )
+            render: (user) => {
+                const style = getRoleStyle(user.role?.nombre);
+                return (
+                    <Badge variant={style.variant}>
+                        <Shield size={12} className="mr-1" style={{ color: style.iconColor }} />
+                        {user.role?.nombre || "Sin rol"}
+                    </Badge>
+                );
+            }
         },
         {
             header: "Sede",

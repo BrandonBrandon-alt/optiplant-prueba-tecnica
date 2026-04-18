@@ -120,6 +120,39 @@ public class InventoryService implements InventoryUseCase {
         }
     }
 
+    @Override
+    @Transactional
+    public void reserveStock(Long branchId, Long productId, BigDecimal quantity) {
+        LocalInventory inventory = getInventory(branchId, productId);
+        
+        if (!inventory.hasSufficientStock(quantity)) {
+            Product product = productUseCase.getProductById(productId);
+            throw new InsufficientStockException(product.getName(), quantity, 
+                    inventory.getCurrentQuantity().subtract(inventory.getCommittedQuantity() != null ? inventory.getCommittedQuantity() : BigDecimal.ZERO));
+        }
+
+        BigDecimal currentCommitted = inventory.getCommittedQuantity() != null ? inventory.getCommittedQuantity() : BigDecimal.ZERO;
+        inventory.setCommittedQuantity(currentCommitted.add(quantity));
+        inventory.setLastUpdated(LocalDateTime.now());
+        localInventoryRepository.save(inventory);
+    }
+
+    @Override
+    @Transactional
+    public void releaseStock(Long branchId, Long productId, BigDecimal quantity) {
+        LocalInventory inventory = getInventory(branchId, productId);
+        BigDecimal currentCommitted = inventory.getCommittedQuantity() != null ? inventory.getCommittedQuantity() : BigDecimal.ZERO;
+        
+        BigDecimal newCommitted = currentCommitted.subtract(quantity);
+        if (newCommitted.compareTo(BigDecimal.ZERO) < 0) {
+            newCommitted = BigDecimal.ZERO;
+        }
+        
+        inventory.setCommittedQuantity(newCommitted);
+        inventory.setLastUpdated(LocalDateTime.now());
+        localInventoryRepository.save(inventory);
+    }
+
     private void updateProductAverageCost(Long productId, BigDecimal newQuantity, BigDecimal unitCost) {
         Product product = productUseCase.getProductById(productId);
         

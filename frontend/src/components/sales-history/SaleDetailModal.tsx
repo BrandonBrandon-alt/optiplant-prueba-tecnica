@@ -192,7 +192,10 @@ export default function SaleDetailModal({
         </Card>
 
         {/* Itemized Table - Unified DataTable */}
-        <div className="border border-[var(--neutral-800)] rounded-3xl overflow-hidden bg-[var(--bg-surface)]/30 shadow-2xl">
+        <div 
+            className="border border-[var(--neutral-800)] rounded-3xl overflow-hidden bg-[var(--bg-surface)]/30 shadow-2xl overflow-y-auto custom-scrollbar"
+            style={{ maxHeight: "300px" }}
+        >
             <DataTable<any>
                 columns={columns}
                 data={sale.details ?? []}

@@ -3,6 +3,7 @@ package co.com.zenvory.inventario.purchase.infrastructure.adapter.in.web;
 import co.com.zenvory.inventario.purchase.application.port.in.CreatePurchaseCommand;
 import co.com.zenvory.inventario.purchase.application.port.in.PurchaseUseCase;
 import co.com.zenvory.inventario.purchase.domain.model.PurchaseOrder;
+import co.com.zenvory.inventario.shared.infrastructure.web.ResolutionRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -57,6 +58,14 @@ public class PurchaseController {
     public ResponseEntity<PurchaseResponse> registerPayment(@PathVariable Long id) {
         PurchaseOrder order = purchaseUseCase.registerPayment(id);
         return ResponseEntity.ok(PurchaseResponse.fromDomain(order));
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<Void> cancelPurchase(
+            @PathVariable Long id,
+            @Valid @RequestBody ResolutionRequest request) {
+        purchaseUseCase.cancelPurchase(id, request.reason(), request.userId());
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}")

@@ -37,6 +37,10 @@ public interface InventoryUseCase {
             String subReason
     );
 
+    void reserveStock(Long branchId, Long productId, BigDecimal quantity);
+    
+    void releaseStock(Long branchId, Long productId, BigDecimal quantity);
+
     List<LocalInventory> getInventoryByBranch(Long branchId);
 
     List<co.com.zenvory.inventario.inventory.domain.model.LocalInventoryEnriched> getEnrichedInventoryByBranch(Long branchId);

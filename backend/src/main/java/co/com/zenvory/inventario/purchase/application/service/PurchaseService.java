@@ -88,6 +88,18 @@ public class PurchaseService implements PurchaseUseCase {
     }
 
     @Override
+    @Transactional
+    public void cancelPurchase(Long orderId, String reason, Long userId) {
+        PurchaseOrder order = getOrderById(orderId);
+        order.cancel(reason, userId);
+        
+        repository.save(order);
+        
+        // TODO: Notificar anulación a módulo CXP (Cuentas por Pagar). 
+        // En este MVP lo manejaremos con este placeholder.
+    }
+
+    @Override
     public PurchaseOrder getOrderById(Long orderId) {
         return repository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Orden de compra no encontrada: " + orderId));

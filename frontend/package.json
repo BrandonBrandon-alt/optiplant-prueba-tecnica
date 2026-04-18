@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "predev": "npm run openapi:gen || true",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

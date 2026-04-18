@@ -9,6 +9,7 @@ public interface PurchaseUseCase {
     PurchaseOrder markAsInTransit(Long orderId);
     PurchaseOrder receiveOrder(Long orderId, Long userId);
     PurchaseOrder registerPayment(Long orderId);
+    void cancelPurchase(Long orderId, String reason, Long userId);
     PurchaseOrder getOrderById(Long orderId);
     List<PurchaseOrder> getAllOrders();
 }

@@ -85,6 +85,16 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
       return;
     }
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDate = new Date(formData.estimatedArrivalDate);
+    selectedDate.setHours(24, 0, 0, 0); // Consider end of selected day for date inputs
+
+    if (selectedDate < today) {
+      showToast("La fecha estimada de llegada no puede ser anterior a hoy", "warning");
+      return;
+    }
+
     setLoading(true);
     try {
       await apiClient.POST("/api/v1/transfers", {
@@ -177,6 +187,7 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
         <Input
           label="Fecha Estimada de Llegada"
           type="date"
+          min={new Date().toISOString().split("T")[0]}
           value={formData.estimatedArrivalDate}
           onChange={(e) => setFormData({ ...formData, estimatedArrivalDate: e.target.value })}
         />

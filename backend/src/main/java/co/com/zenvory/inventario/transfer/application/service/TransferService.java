@@ -11,6 +11,7 @@ import co.com.zenvory.inventario.transfer.application.port.out.TransferRepositor
 import co.com.zenvory.inventario.transfer.domain.model.Transfer;
 import java.util.List;
 import co.com.zenvory.inventario.transfer.domain.model.TransferDetail;
+import co.com.zenvory.inventario.transfer.domain.model.TransferStatus;
 import co.com.zenvory.inventario.transfer.application.port.in.UpdateQuantityCommand;
 import co.com.zenvory.inventario.alert.application.port.in.AlertUseCase;
 import org.springframework.context.annotation.Lazy;
@@ -51,6 +52,15 @@ public class TransferService implements TransferUseCase {
                 details
         );
 
+        // REGLA DE NEGOCIO: Reservar stock en la sucursal de origen
+        for (TransferDetail detail : details) {
+            inventoryUseCase.reserveStock(
+                    transfer.getOriginBranchId(),
+                    detail.getProductId(),
+                    BigDecimal.valueOf(detail.getRequestedQuantity())
+            );
+        }
+
         return transferRepositoryPort.save(transfer);
     }
 
@@ -84,6 +94,14 @@ public class TransferService implements TransferUseCase {
                     "TRANSFERENCIA_OUT",
                     null,
                     null
+            );
+
+            // REGLA DE NEGOCIO: Liberar el stock comprometido que ya se retiró físicamente
+            // NOTA: Liberamos la cantidad original solicitada que fue reservada
+            inventoryUseCase.releaseStock(
+                    transfer.getOriginBranchId(),
+                    detail.getProductId(),
+                    BigDecimal.valueOf(detail.getRequestedQuantity())
             );
         }
 
@@ -148,9 +166,83 @@ public class TransferService implements TransferUseCase {
 
     @Override
     @Transactional
-    public void cancelTransfer(Long id) {
+    public void cancelTransfer(Long id, String reason, Long userId) {
         Transfer transfer = getTransferById(id);
-        transfer.cancel();
+        TransferStatus previousStatus = transfer.getStatus();
+        
+        transfer.cancel(reason, userId);
+
+        // Si ya estaba en tránsito, re-ingresar el stock al origen (Devolución por cancelación)
+        if (previousStatus == TransferStatus.IN_TRANSIT) {
+            for (TransferDetail detail : transfer.getDetails()) {
+                if (detail.getSentQuantity() != null && detail.getSentQuantity() > 0) {
+                    inventoryUseCase.addStock(
+                            transfer.getOriginBranchId(),
+                            detail.getProductId(),
+                            BigDecimal.valueOf(detail.getSentQuantity()),
+                            MovementReason.DEVOLUCION,
+                            userId,
+                            transfer.getId(),
+                            "TRASLADO_ANULADO_TRANSITO",
+                            null,
+                            reason, // El motivo de la resolución pasa a ser la observación del movimiento
+                            null
+                    );
+                }
+            }
+        } 
+        // Si no se había despachado, liberar el stock comprometido
+        else {
+            for (TransferDetail detail : transfer.getDetails()) {
+                inventoryUseCase.releaseStock(
+                        transfer.getOriginBranchId(),
+                        detail.getProductId(),
+                        BigDecimal.valueOf(detail.getRequestedQuantity())
+                );
+            }
+        }
+
+        transferRepositoryPort.save(transfer);
+    }
+
+    @Override
+    @Transactional
+    public void rejectTransfer(Long id, String reason, Long userId) {
+        Transfer transfer = getTransferById(id);
+        TransferStatus previousStatus = transfer.getStatus();
+        
+        transfer.reject(reason, userId);
+
+        // Si ya estaba en tránsito, el rechazo implica que la mercancía vuelve al origen
+        if (previousStatus == TransferStatus.IN_TRANSIT) {
+            for (TransferDetail detail : transfer.getDetails()) {
+                if (detail.getSentQuantity() != null && detail.getSentQuantity() > 0) {
+                    inventoryUseCase.addStock(
+                            transfer.getOriginBranchId(),
+                            detail.getProductId(),
+                            BigDecimal.valueOf(detail.getSentQuantity()),
+                            MovementReason.DEVOLUCION,
+                            userId,
+                            transfer.getId(),
+                            "TRASLADO_RECHAZADO_TRANSITO",
+                            null,
+                            reason, 
+                            null
+                    );
+                }
+            }
+        } 
+        // Si se rechazó antes de salir, solo liberamos reserva
+        else {
+            for (TransferDetail detail : transfer.getDetails()) {
+                inventoryUseCase.releaseStock(
+                        transfer.getOriginBranchId(),
+                        detail.getProductId(),
+                        BigDecimal.valueOf(detail.getRequestedQuantity())
+                );
+            }
+        }
+
         transferRepositoryPort.save(transfer);
     }
 

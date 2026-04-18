@@ -53,6 +53,10 @@ public class PurchasePersistenceAdapter implements PurchaseRepositoryPort {
         entity.setPaymentDueDate(domain.getPaymentDueDate());
         entity.setPaymentDueDays(domain.getPaymentDueDays());
         entity.setTotal(domain.getTotal());
+        entity.setReasonResolution(domain.getReasonResolution());
+        entity.setResueltoPorId(domain.getResolvedById());
+        entity.setFechaResolucion(domain.getResolutionDate());
+        entity.setVersion(domain.getVersion());
 
         domain.getDetails().forEach(d -> {
             PurchaseDetailEntity dEntity = new PurchaseDetailEntity();
@@ -87,7 +91,11 @@ public class PurchasePersistenceAdapter implements PurchaseRepositoryPort {
                 entity.getPaymentDueDays(),
                 entity.getPaymentDueDate(),
                 entity.getTotal(),
-                details
+                details,
+                entity.getReasonResolution(),
+                entity.getResueltoPorId(),
+                entity.getFechaResolucion(),
+                entity.getVersion()
         );
     }
 }

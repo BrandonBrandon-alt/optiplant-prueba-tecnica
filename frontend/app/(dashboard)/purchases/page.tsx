@@ -6,7 +6,7 @@ import {
   Package, TrendingUp, Search, Plus, Trash2, 
   ShoppingCart, Building2, Calendar, DollarSign,
   CheckCircle, ArrowRight, Truck, Minus, X, 
-  Eye, Percent, CreditCard, Clock, Warehouse
+  Eye, Percent, CreditCard, Clock, Warehouse, XCircle
 } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
@@ -19,6 +19,7 @@ import Spinner from "@/components/ui/Spinner";
 import EmptyState from "@/components/ui/EmptyState";
 import Modal from "@/components/ui/Modal";
 import QuantitySelector from "@/components/ui/QuantitySelector";
+import ResolutionModal from "@/components/ui/ResolutionModal";
 import { apiClient } from "@/api/client";
 import { useToast } from "@/context/ToastContext";
 import { getSession } from "@/api/auth";
@@ -32,7 +33,7 @@ const formatCurrency = (amount: number) => {
 interface Product { id: number; sku: string; nombre: string; costoPromedio: number; precioVenta: number; proveedorId: number; }
 interface PurchaseDetail { productId: number; nombre: string; sku: string; quantity: number; unitPrice: number | ""; discountPct: number | ""; }
 interface OrderDetailItem { id: number; productId: number; quantity: number; unitPrice: number; subtotal: number; discountPct?: number; }
-interface PurchaseOrder { id: number; supplierId: number; branchId: number; requestDate: string; estimatedArrivalDate: string; actualArrivalDate: string | null; receptionStatus: "PENDING" | "IN_TRANSIT" | "RECEIVED_TOTAL"; paymentStatus: "POR_PAGAR" | "PAGADO"; total: number; details?: OrderDetailItem[]; }
+interface PurchaseOrder { id: number; supplierId: number; branchId: number; requestDate: string; estimatedArrivalDate: string; actualArrivalDate: string | null; receptionStatus: "PENDING" | "IN_TRANSIT" | "RECEIVED_TOTAL" | "CANCELLED"; paymentStatus: "POR_PAGAR" | "PAGADO"; total: number; details?: OrderDetailItem[]; resolutionReason?: string; resolutionDate?: string; }
 
 // ── UI Sub-Components (Clean & Minimalist) ─────────────────
 
@@ -158,6 +159,7 @@ function PurchasesContent() {
   const [paymentDueDays, setPaymentDueDays] = useState<string>("");
   const [cart, setCart] = useState<PurchaseDetail[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resolvingOrder, setResolvingOrder] = useState<PurchaseOrder | null>(null);
 
   useEffect(() => {
     fetchCatalogs();
@@ -311,21 +313,26 @@ function PurchasesContent() {
   };
 
   const receiveOrder = async (orderId: number) => {
+    // ... logic remains same ...
+  };
+
+  const handleCancelPurchase = async (orderId: number, reason: string) => {
     const session = getSession();
     if (!session) return;
     
     try {
-      const { error } = await apiClient.POST("/api/v1/purchases/{id}/receive", {
-        params: { path: { id: orderId }, query: { userId: session.id } }
+      const { error } = await (apiClient as any).POST("/api/v1/purchases/{id}/cancel", {
+        params: { path: { id: orderId } },
+        body: { reason, userId: session.id }
       });
       if (!error) {
-        showToast("Stock ingresado al inventario.", "success");
+        showToast("Orden de compra cancelada.", "success");
         fetchOrders();
       } else {
-        showToast("Error al recibir mercancía.", "error");
+        throw new Error("Error al cancelar la orden.");
       }
-    } catch (err) {
-      showToast("Error de conexión.", "error");
+    } catch (err: any) {
+      throw new Error(err.message || "Error al cancelar la orden.");
     }
   };
 
@@ -428,9 +435,19 @@ function PurchasesContent() {
         key: "receptionStatus", 
         label: "Logística", 
         render: (row: PurchaseOrder) => (
-          <Badge variant={row.receptionStatus === "RECEIVED_TOTAL" ? "success" : row.receptionStatus === "IN_TRANSIT" ? "warning" : "info"} dot>
-            {row.receptionStatus === "RECEIVED_TOTAL" ? "ENTREGADO" : row.receptionStatus === "IN_TRANSIT" ? "EN CAMINO" : "SOLICITADO"}
-          </Badge>
+          <div className="flex flex-col gap-1.5">
+            <Badge 
+              variant={row.receptionStatus === "RECEIVED_TOTAL" ? "success" : (row.receptionStatus as string) === "CANCELLED" ? "danger" : row.receptionStatus === "IN_TRANSIT" ? "warning" : "info"} 
+              dot
+            >
+              {row.receptionStatus === "RECEIVED_TOTAL" ? "ENTREGADO" : (row.receptionStatus as string) === "CANCELLED" ? "CANCELADO" : row.receptionStatus === "IN_TRANSIT" ? "EN CAMINO" : "SOLICITADO"}
+            </Badge>
+            {(row.receptionStatus as string) === "CANCELLED" && row.resolutionReason && (
+              <p className="text-[10px] text-[var(--neutral-500)] italic leading-tight max-w-[120px]">
+                {row.resolutionReason}
+              </p>
+            )}
+          </div>
         ) 
       },
       { 
@@ -459,13 +476,22 @@ function PurchasesContent() {
                 <Truck size={16} />
               </button>
             )}
-            {row.paymentStatus === "POR_PAGAR" && (
+            {row.paymentStatus === "POR_PAGAR" && (row.receptionStatus as string) !== "CANCELLED" && (
               <button 
                 onClick={() => registerPayment(row.id)} 
                 className="p-2 text-[var(--brand-400)] hover:bg-[var(--brand-500)]/10 rounded-lg transition-all" 
                 title="Registrar Pago"
               >
                 <CreditCard size={16} />
+              </button>
+            )}
+            {row.receptionStatus === "PENDING" && (
+              <button 
+                onClick={() => setResolvingOrder(row)} 
+                className="p-2 text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-lg transition-all" 
+                title="Anular Orden"
+              >
+                <XCircle size={16} />
               </button>
             )}
           </div>
@@ -738,6 +764,28 @@ function PurchasesContent() {
       >
         {selectedOrder && (
           <div className="space-y-10 py-4">
+            {/* Resolution Header (If cancelled) */}
+            {(selectedOrder.receptionStatus as string) === "CANCELLED" && (
+              <div className="p-6 bg-[var(--color-danger)]/5 rounded-2xl border border-[var(--color-danger)]/20 animate-in fade-in slide-in-from-top-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-[var(--color-danger)]/10 rounded-xl flex items-center justify-center text-[var(--color-danger)] shrink-0">
+                    <XCircle size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-[11px] font-black text-[var(--color-danger)] uppercase tracking-[0.2em] mb-1">Orden de Compra Anulada</h4>
+                    <p className="text-sm text-[var(--neutral-100)] font-medium leading-relaxed italic">
+                      "{selectedOrder.resolutionReason || "Sin motivo especificado"}"
+                    </p>
+                    {selectedOrder.resolutionDate && (
+                      <p className="text-[10px] text-[var(--neutral-500)] mt-2 uppercase font-black tracking-widest">
+                        FECHA DE ANULACIÓN: {new Date(selectedOrder.resolutionDate).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Header Info Cards - More Spacious */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="p-6 bg-[var(--bg-card)] rounded-2xl border border-[var(--neutral-800)] flex items-start gap-5 shadow-sm">
@@ -829,6 +877,18 @@ function PurchasesContent() {
           </div>
         )}
       </Modal>
+
+      <ResolutionModal
+        open={!!resolvingOrder}
+        onClose={() => setResolvingOrder(null)}
+        title="Anular Orden de Compra"
+        confirmLabel="Confirmar Anulación"
+        onConfirm={async (reason) => {
+          if (resolvingOrder) {
+            await handleCancelPurchase(resolvingOrder.id, reason);
+          }
+        }}
+      />
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
