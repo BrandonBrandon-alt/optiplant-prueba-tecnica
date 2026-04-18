@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { apiClient } from "@/api/client";
+import { getSession } from "@/api/auth";
 import type { components } from "@/api/schema";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
@@ -19,11 +20,11 @@ interface NewTransferModalProps {
   currentBranchId: number | null;
   isAdmin: boolean;
   initialProductId?: string | null;
+  branches: BranchResponse[];
 }
 
-export default function NewTransferModal({ open, onClose, onSuccess, currentBranchId, isAdmin, initialProductId }: NewTransferModalProps) {
+export default function NewTransferModal({ open, onClose, onSuccess, currentBranchId, isAdmin, initialProductId, branches }: NewTransferModalProps) {
   const { showToast } = useToast();
-  const [branches, setBranches] = useState<BranchResponse[]>([]);
   const [products, setProducts] = useState<ProductResponse[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -41,14 +42,10 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
     if (open) {
       async function fetchData() {
         try {
-          const [bRes, pRes] = await Promise.all([
-            apiClient.GET("/api/branches"),
-            apiClient.GET("/api/catalog/products"),
-          ]);
-          setBranches(bRes.data ?? []);
-          setProducts(pRes.data ?? []);
+          const res = await apiClient.GET("/api/catalog/products");
+          setProducts(res.data ?? []);
         } catch (err) {
-          showToast("Error al cargar datos necesarios", "error");
+          showToast("Error al cargar productos", "error");
         }
       }
       fetchData();
@@ -110,6 +107,7 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
             },
           ],
           priority: formData.priority,
+          userId: getSession()?.id,
         },
       });
 
@@ -155,7 +153,8 @@ export default function NewTransferModal({ open, onClose, onSuccess, currentBran
             placeholder="Selecciona destino"
             value={formData.destinationBranchId}
             error={formData.destinationBranchId && formData.originBranchId === formData.destinationBranchId ? "No puede ser la misma que el origen" : undefined}
-            disabled={!isAdmin}
+            // If not admin, the destination is automatically the user's branch (Pull/Request flow)
+            disabled={!isAdmin && !!currentBranchId}
             onChange={(val) => setFormData({ ...formData, destinationBranchId: val })}
             options={branches.map(b => ({ value: b.id!.toString(), label: b.nombre! }))}
           />

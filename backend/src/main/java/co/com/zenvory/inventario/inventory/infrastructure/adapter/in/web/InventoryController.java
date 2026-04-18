@@ -25,7 +25,7 @@ public class InventoryController {
     }
 
     @GetMapping("/branches/{branchId}/products/{productId}")
-    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SELLER')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SELLER', 'OPERADOR_INVENTARIO')")
     public ResponseEntity<LocalInventory> getInventory(
             @PathVariable Long branchId, 
             @PathVariable Long productId) {
@@ -34,7 +34,7 @@ public class InventoryController {
     }
 
     @GetMapping("/branches/{branchId}")
-    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SELLER')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SELLER', 'OPERADOR_INVENTARIO')")
     public ResponseEntity<List<co.com.zenvory.inventario.inventory.infrastructure.adapter.in.web.dto.InventoryProductResponse>> getInventoryByBranch(
             @PathVariable Long branchId) {
         return ResponseEntity.ok(inventoryUseCase.getEnrichedInventoryByBranch(branchId).stream()
@@ -63,7 +63,7 @@ public class InventoryController {
     }
 
     @GetMapping("/branches/{branchId}/products/{productId}/kardex")
-    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SELLER')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SELLER', 'OPERADOR_INVENTARIO')")
     public ResponseEntity<List<InventoryMovement>> getKardex(
             @PathVariable Long branchId, 
             @PathVariable Long productId) {
@@ -72,7 +72,7 @@ public class InventoryController {
     }
 
     @PostMapping("/branches/{branchId}/products/{productId}/withdraw")
-    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'OPERADOR_INVENTARIO')")
     public ResponseEntity<Void> withdrawStock(
             @PathVariable Long branchId,
             @PathVariable Long productId,
@@ -97,7 +97,7 @@ public class InventoryController {
     }
 
     @PostMapping("/branches/{branchId}/products/{productId}/add")
-    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'OPERADOR_INVENTARIO')")
     public ResponseEntity<Void> addStock(
             @PathVariable Long branchId,
             @PathVariable Long productId,

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/transfers")
-@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'OPERADOR_INVENTARIO')")
 public class TransferController {
 
     private final TransferUseCase transferUseCase;
@@ -29,6 +29,7 @@ public class TransferController {
                 request.destinationBranchId(),
                 request.estimatedArrivalDate(),
                 request.priority() != null ? co.com.zenvory.inventario.transfer.domain.model.TransferPriority.valueOf(request.priority().toUpperCase()) : co.com.zenvory.inventario.transfer.domain.model.TransferPriority.NORMAL,
+                request.userId(),
                 request.items().stream()
                         .map(item -> new RequestTransferCommand.Detail(item.productId(), item.requestedQuantity()))
                         .toList()
@@ -36,6 +37,12 @@ public class TransferController {
 
         Transfer transfer = transferUseCase.requestTransfer(command);
         return ResponseEntity.status(HttpStatus.CREATED).body(TransferResponse.fromDomain(transfer));
+    }
+
+    @PostMapping("/{id}/approve-destination")
+    public ResponseEntity<TransferResponse> approveDestination(@PathVariable Long id) {
+        Transfer transfer = transferUseCase.approveDestination(id);
+        return ResponseEntity.ok(TransferResponse.fromDomain(transfer));
     }
 
     @PostMapping("/{id}/dispatch")
@@ -58,6 +65,7 @@ public class TransferController {
     }
 
     @PostMapping("/{id}/prepare")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<TransferResponse> prepareTransfer(
             @PathVariable Long id,
             @Valid @RequestBody TransferPrepareRequest request) {
@@ -88,24 +96,28 @@ public class TransferController {
     }
 
     @PostMapping("/{id}/resolve-shrinkage")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Void> resolveAsShrinkage(@PathVariable Long id) {
         transferUseCase.resolveAsShrinkage(id);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/resolve-resend")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Void> resolveAsResend(@PathVariable Long id) {
         transferUseCase.resolveAsResend(id);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/resolve-claim")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Void> resolveAsClaim(@PathVariable Long id) {
         transferUseCase.resolveAsClaim(id);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/cancel")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Void> cancelTransfer(
             @PathVariable Long id,
             @Valid @RequestBody ResolutionRequest request) {
@@ -114,6 +126,7 @@ public class TransferController {
     }
 
     @PostMapping("/{id}/reject")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Void> rejectTransfer(
             @PathVariable Long id,
             @Valid @RequestBody ResolutionRequest request) {
@@ -135,6 +148,7 @@ public class TransferController {
     }
 
     @GetMapping("/fulfillment-report")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<TransferFulfillmentReport> getFulfillmentReport() {
         return ResponseEntity.ok(transferUseCase.getFulfillmentReport());
     }

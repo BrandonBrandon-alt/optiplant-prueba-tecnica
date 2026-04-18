@@ -126,7 +126,7 @@ export default function AlertResolutionModal({ alert, onClose, onSuccess }: Aler
       if (activeTab === "TRANSFER") {
         if (!originBranchId) throw new Error("Debes seleccionar una sucursal de origen.");
         endpoint = `/api/v1/alerts/${alert.id}/resolve/transfer`;
-        body = { originBranchId, quantity };
+        body = { originBranchId, quantity, userId: session?.id };
       } else if (activeTab === "PURCHASE") {
         endpoint = `/api/v1/alerts/${alert.id}/resolve/purchase`;
         body = { estimatedArrival: `${arrivalDate}T12:00:00`, quantity };

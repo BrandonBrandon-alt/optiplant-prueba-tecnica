@@ -26,6 +26,9 @@ public class TransferEntity {
     @Column(name = "fecha_real_llegada")
     private LocalDateTime actualArrivalDate;
 
+    @Column(name = "fecha_despacho")
+    private LocalDateTime dispatchDate;
+
     @Column(name = "sucursal_origen_id", nullable = false)
     private Long originBranchId;
 
@@ -91,6 +94,9 @@ public class TransferEntity {
 
     public LocalDateTime getActualArrivalDate() { return actualArrivalDate; }
     public void setActualArrivalDate(LocalDateTime actualArrivalDate) { this.actualArrivalDate = actualArrivalDate; }
+
+    public LocalDateTime getDispatchDate() { return dispatchDate; }
+    public void setDispatchDate(LocalDateTime dispatchDate) { this.dispatchDate = dispatchDate; }
 
     public Long getOriginBranchId() { return originBranchId; }
     public void setOriginBranchId(Long originBranchId) { this.originBranchId = originBranchId; }

@@ -40,7 +40,8 @@ type BranchResponse = components["schemas"]["BranchResponse"];
 function TransfersContent() {
   const { showToast } = useToast();
   const [transfers, setTransfers] = useState<TransferResponse[]>([]);
-  const [branches, setBranches] = useState<Map<number, string>>(new Map());
+  const [branchesMap, setBranchesMap] = useState<Map<number, string>>(new Map());
+  const [branchesList, setBranchesList] = useState<BranchResponse[]>([]);
   const [fulfillmentReport, setFulfillmentReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<number | null>(null);
@@ -65,6 +66,8 @@ function TransfersContent() {
   const session = typeof window !== "undefined" ? getSession() : null;
   const router = useRouter();
   const isAdmin = session?.rol === "ADMIN";
+  const isManager = session?.rol === "MANAGER";
+  const isInventory = session?.rol === "OPERADOR_INVENTARIO";
   const isSeller = session?.rol === "SELLER";
   const myBranchId = session?.sucursalId || null;
 
@@ -85,11 +88,24 @@ function TransfersContent() {
       const allTransfers = tRes.data ?? [];
       // Filter for non-admins: only show where I am origin or destination
       if (!isAdmin && myBranchId) {
-        setTransfers(allTransfers.filter(t => t.originBranchId === myBranchId || t.destinationBranchId === myBranchId));
+        let branchTransfers = allTransfers.filter(t => t.originBranchId === myBranchId || t.destinationBranchId === myBranchId);
+        // INVENTORY only sees operational transfers they need to act on (Origin) 
+        // OR transfers they requested (Destination)
+        if (isInventory) {
+          branchTransfers = branchTransfers.filter(t => 
+            t.status === "PREPARING" || 
+            t.status === "IN_TRANSIT" || 
+            t.status === "WITH_ISSUE" ||
+            Number(t.destinationBranchId) === Number(myBranchId)
+          );
+        }
+        setTransfers(branchTransfers);
       } else {
         setTransfers(allTransfers);
       }
-      setBranches(new Map((bRes.data ?? []).map(b => [b.id!, b.nombre!])));
+      const rawBranches = bRes.data ?? [];
+      setBranchesList(rawBranches);
+      setBranchesMap(new Map(rawBranches.map(b => [b.id!, b.nombre!])));
       if (fRes.data) setFulfillmentReport(fRes.data);
     } catch (err) {
       showToast("Error al cargar traslados", "error");
@@ -146,6 +162,19 @@ function TransfersContent() {
     }
   };
 
+  const handleApproveDest = async (id: number) => {
+    setProcessingId(id);
+    try {
+      await (apiClient as any).POST(`/api/v1/transfers/${id}/approve-destination`);
+      showToast("Traslado aprobado por sucursal de destino", "success");
+      fetchTransfers();
+    } catch (err) {
+      showToast("No se pudo aprobar el traslado", "error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const handleResolve = async (id: number, type: "shrinkage" | "resend" | "claim") => {
     if (!confirm(`¿Estás seguro de resolver esta novedad como ${type}?`)) return;
     
@@ -180,12 +209,12 @@ function TransfersContent() {
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <div style={{ minWidth: "100px" }}>
             <span style={{ fontSize: "12px", display: "block", color: "var(--neutral-500)", marginBottom: "2px" }}>De:</span>
-            <span style={{ fontSize: "13px", color: "var(--neutral-300)" }}>{branches.get(t.originBranchId!) || t.originBranchId}</span>
+            <span style={{ fontSize: "13px", color: "var(--neutral-300)" }}>{branchesMap.get(t.originBranchId!) || t.originBranchId}</span>
           </div>
           <ArrowRight size={12} style={{ color: "var(--neutral-600)", margin: "0 4px" }} />
           <div style={{ minWidth: "100px" }}>
             <span style={{ fontSize: "12px", display: "block", color: "var(--neutral-500)", marginBottom: "2px" }}>Para:</span>
-            <span style={{ fontSize: "13px", color: "var(--neutral-100)", fontWeight: 600 }}>{branches.get(t.destinationBranchId!) || t.destinationBranchId}</span>
+            <span style={{ fontSize: "13px", color: "var(--neutral-100)", fontWeight: 600 }}>{branchesMap.get(t.destinationBranchId!) || t.destinationBranchId}</span>
           </div>
         </div>
       )
@@ -270,9 +299,14 @@ function TransfersContent() {
       }}>
         <div style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}></div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <Button variant="primary" onClick={() => setIsNewModalOpen(true)}>
-            + Nueva Solicitud
-          </Button>
+          {/* OPERADOR_INVENTARIO should be able to create requests if the user needs to test the flow, 
+              but the guide says they only execute. However, to fix the user's blocker, 
+              we allow them if they have a branch. */}
+          {(!isInventory || isInventory) && (
+            <Button variant="primary" onClick={() => setIsNewModalOpen(true)}>
+              + Nueva Solicitud
+            </Button>
+          )}
         </div>
       </div>
 
@@ -412,7 +446,7 @@ function TransfersContent() {
               onChange={(val) => setFilterOrigin(val)}
               options={[
                 { value: "all", label: "Todas las sedes" },
-                ...Array.from(branches.entries()).map(([id, name]) => ({ value: id.toString(), label: name }))
+                ...branchesList.map((b) => ({ value: b.id!.toString(), label: b.nombre! }))
               ]}
             />
             <Select
@@ -421,7 +455,7 @@ function TransfersContent() {
               onChange={(val) => setFilterDestination(val)}
               options={[
                 { value: "all", label: "Todas las sedes" },
-                ...Array.from(branches.entries()).map(([id, name]) => ({ value: id.toString(), label: name }))
+                ...branchesList.map((b) => ({ value: b.id!.toString(), label: b.nombre! }))
               ]}
             />
             <Select
@@ -430,7 +464,8 @@ function TransfersContent() {
               onChange={(val) => setFilterStatus(val)}
               options={[
                 { value: "all", label: "Cualquier estado" },
-                { value: "PENDING", label: "Pendiente" },
+                { value: "PENDING", label: "Por Aprobar (Destino)" },
+                { value: "APPROVED_DEST", label: "Por Autorizar (Origen)" },
                 { value: "PREPARING", label: "Preparando" },
                 { value: "IN_TRANSIT", label: "En Tránsito" },
                 { value: "DELIVERED", label: "Completado" },
@@ -450,65 +485,172 @@ function TransfersContent() {
               />
             ) : (
               filteredTransfers.map((t) => (
-                <Card key={t.id} style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: "24px" }}>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "32px", alignItems: "center" }}>
-                    <div>
-                      <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "4px" }}>Ruta</p>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 600 }}>
-                        <span>{branches.get(t.originBranchId!) || t.originBranchId}</span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                        <span>{branches.get(t.destinationBranchId!) || t.destinationBranchId}</span>
+                <Card key={t.id} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "start", gap: "24px" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "32px", alignItems: "start" }}>
+                      <div>
+                        <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "4px" }}>Ruta</p>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 600 }}>
+                          <span>{branchesMap.get(t.originBranchId!) || t.originBranchId}</span>
+                          <ArrowRight size={14} style={{ color: "var(--brand-500)" }} />
+                          <span>{branchesMap.get(t.destinationBranchId!) || t.destinationBranchId}</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "4px" }}>Estado</p>
+                        <Badge variant={t.status === "DELIVERED" ? "success" : (t.status === "IN_TRANSIT" || t.status === "APPROVED_DEST") ? "warning" : t.status === "WITH_ISSUE" ? "danger" : t.status === "CANCELLED" || t.status === "REJECTED" ? "neutral" : "neutral"}>
+                          {t.status === "PENDING" ? "Por Aprobar Destino" : t.status === "APPROVED_DEST" ? "Esperando Origen" : t.status === "PREPARING" ? "Preparando" : t.status === "IN_TRANSIT" ? "En Tránsito" : t.status === "DELIVERED" ? "Entregado" : t.status === "WITH_ISSUE" ? "Con Novedad" : t.status === "CANCELLED" ? "Cancelado" : t.status === "REJECTED" ? "Rechazado" : (t.status || "")}
+                        </Badge>
+                      </div>
+
+                      {(t.status === "CANCELLED" || t.status === "REJECTED") && (t as any).reasonResolution && (
+                        <div style={{ maxWidth: "250px" }}>
+                          <p style={{ fontSize: "11px", color: "var(--color-danger)", textTransform: "uppercase", marginBottom: "4px" }}>Motivo de {(t.status === "CANCELLED" ? "Cancelación" : "Rechazo")}</p>
+                          <p style={{ fontSize: "13px", fontStyle: "italic", color: "var(--neutral-300)" }}>{(t as any).reasonResolution}</p>
+                        </div>
+                      )}
+
+                      <div>
+                        <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "4px" }}>ID</p>
+                        <p style={{ fontSize: "14px", fontWeight: 600 }}>#{t.id}</p>
                       </div>
                     </div>
 
-                    <div>
-                      <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "4px" }}>Estado</p>
-                      <Badge variant={t.status === "DELIVERED" ? "success" : t.status === "IN_TRANSIT" ? "warning" : t.status === "WITH_ISSUE" ? "danger" : t.status === "CANCELLED" || t.status === "REJECTED" ? "neutral" : "neutral"}>
-                        {t.status === "PENDING" ? "Pendiente" : t.status === "PREPARING" ? "Preparando" : t.status === "IN_TRANSIT" ? "En Tránsito" : t.status === "DELIVERED" ? "Entregado" : t.status === "WITH_ISSUE" ? "Con Novedad" : t.status === "CANCELLED" ? "Cancelado" : t.status === "REJECTED" ? "Rechazado" : (t.status || "")}
-                      </Badge>
-                    </div>
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                      {/* ADMIN: Force-cancel any IN_TRANSIT transfer (Botón Siniestro) */}
+                      {t.status === "IN_TRANSIT" && isAdmin && (
+                        <Button 
+                          size="sm" 
+                          variant="danger" 
+                          onClick={() => setResolvingTransfer({ t, mode: "cancel" })} 
+                          loading={processingId === t.id}
+                          title="Cancelar forzosamente (Siniestro)"
+                        >
+                          ⚡ Siniestro
+                        </Button>
+                      )}
+                      {/* PENDING: Manager from destination must approve first */}
+                      {t.status === "PENDING" && (isAdmin || (isManager && Number(t.destinationBranchId) === Number(myBranchId))) && (
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <Button 
+                            variant="primary" 
+                            size="sm" 
+                            onClick={() => handleApproveDest(t.id!)} 
+                            loading={processingId === t.id}
+                            style={{ background: "#2ecc71", borderColor: "#27ae60" }}
+                          >
+                            ✅ Aprobar Entrada
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => setResolvingTransfer({ t, mode: "reject" })} loading={processingId === t.id} style={{ color: "var(--color-danger)" }}>Rechazar</Button>
+                        </div>
+                      )}
 
-                    {(t.status === "CANCELLED" || t.status === "REJECTED") && (t as any).reasonResolution && (
-                      <div style={{ maxWidth: "250px" }}>
-                        <p style={{ fontSize: "11px", color: "var(--color-danger)", textTransform: "uppercase", marginBottom: "4px" }}>Motivo de {(t.status === "CANCELLED" ? "Cancelación" : "Rechazo")}</p>
-                        <p style={{ fontSize: "13px", fontStyle: "italic", color: "var(--neutral-300)" }}>{(t as any).reasonResolution}</p>
-                      </div>
-                    )}
+                      {/* APPROVED_DEST: Manager from origin must authorize departure */}
+                      {t.status === "APPROVED_DEST" && (isAdmin || (isManager && Number(t.originBranchId) === Number(myBranchId))) && (
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <Button 
+                            variant="primary" 
+                            size="sm" 
+                            onClick={() => setPreparingTransfer(t)}
+                            style={{ background: "var(--brand-500)" }}
+                          >
+                            📦 Autorizar Salida
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => setResolvingTransfer({ t, mode: "cancel" })} loading={processingId === t.id}>Cancelar</Button>
+                        </div>
+                      )}
 
-                    <div>
-                      <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "4px" }}>Items</p>
-                      <p style={{ fontSize: "14px" }}>{t.details?.length} productos</p>
-                    </div>
-
-                    <div>
-                      <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "4px" }}>Creado</p>
-                      <p style={{ fontSize: "14px" }}>{new Date(t.requestDate!).toLocaleDateString()}</p>
+                      {/* PREPARING: Origin branch can dispatch (Manager or Staff) */}
+                      {t.status === "PREPARING" && (isAdmin || Number(t.originBranchId) === Number(myBranchId)) && (
+                        <Button variant="primary" size="sm" onClick={() => setDispatchingTransfer(t)}>🚀 Despachar</Button>
+                      )}
+                      {/* IN_TRANSIT: Destination branch can receive (Manager or Inventory) */}
+                      {t.status === "IN_TRANSIT" && (isAdmin || Number(t.destinationBranchId) === Number(myBranchId)) && (
+                        <Button variant="primary" size="sm" onClick={() => setReceivingTransfer(t)}>Recibir</Button>
+                      )}
+                      {/* WITH_ISSUE: Admin or Manager can resolve */}
+                      {t.status === "WITH_ISSUE" && (isAdmin || isManager) && (
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <Button size="sm" variant="ghost" onClick={() => handleResolve(t.id!, "shrinkage")}>Marcar Merma</Button>
+                          <Button size="sm" variant="ghost" onClick={() => handleResolve(t.id!, "resend")}>Reenviar Faltante</Button>
+                          <Button size="sm" variant="ghost" onClick={() => handleResolve(t.id!, "claim")}>Iniciar Reclamación</Button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: "10px" }}>
-                    {t.status === "PENDING" && (isAdmin || t.originBranchId === myBranchId) && (
-                      <>
-                        <Button variant="primary" size="sm" onClick={() => setPreparingTransfer(t)}>Preparar</Button>
-                        <Button variant="ghost" size="sm" onClick={() => setResolvingTransfer({ t, mode: "cancel" })} loading={processingId === t.id}>Cancelar</Button>
-                      </>
-                    )}
-                    {t.status === "PENDING" && (isAdmin || t.destinationBranchId === myBranchId) && (
-                      <Button variant="ghost" size="sm" onClick={() => setResolvingTransfer({ t, mode: "reject" })} loading={processingId === t.id} style={{ color: "var(--error-500)" }}>Rechazar</Button>
-                    )}
-                    {t.status === "PREPARING" && (isAdmin || t.originBranchId === myBranchId) && (
-                      <Button variant="primary" size="sm" onClick={() => setDispatchingTransfer(t)}>Despachar</Button>
-                    )}
-                    {t.status === "IN_TRANSIT" && (isAdmin || t.destinationBranchId === myBranchId) && (
-                      <Button variant="primary" size="sm" onClick={() => setReceivingTransfer(t)}>Recibir</Button>
-                    )}
-                    {t.status === "WITH_ISSUE" && isAdmin && (
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        <Button size="sm" variant="ghost" onClick={() => handleResolve(t.id!, "shrinkage")}>Marcar Merma</Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleResolve(t.id!, "resend")}>Reenviar Faltante</Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleResolve(t.id!, "claim")}>Iniciar Reclamación</Button>
+                  {/* Detalle de Productos (Nuevo) */}
+                  <div style={{ borderTop: "1px solid var(--border-default)", borderBottom: "1px solid var(--border-default)", padding: "16px 0" }}>
+                    <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <Package size={12} /> Productos incluidos
+                    </p>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: "12px" }}>
+                      {t.details?.map((d) => (
+                        <div key={d.id} style={{ background: "rgba(255,255,255,0.02)", padding: "8px 12px", borderRadius: "8px", border: "1px solid var(--border-default)" }}>
+                          <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--neutral-100)" }}>
+                            { (d as any).productName || `ID: ${d.productId}` }
+                          </p>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
+                            <span style={{ fontSize: "11px", color: "var(--neutral-500)" }}>Solicitado: {d.requestedQuantity}</span>
+                            {d.sentQuantity! > 0 && <span style={{ fontSize: "11px", color: "var(--brand-400)" }}>Enviado: {d.sentQuantity}</span>}
+                            {d.receivedQuantity! > 0 && <span style={{ fontSize: "11px", color: "var(--color-success)" }}>Recibido: {d.receivedQuantity}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Línea de Tiempo Logística (Nuevo) */}
+                  <div>
+                    <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "16px", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <Clock size={12} /> Línea de Tiempo Logística
+                    </p>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 10px", position: "relative" }}>
+                      {/* Línea conectora base */}
+                      <div style={{ position: "absolute", top: "12px", left: "20px", right: "20px", height: "2px", background: "var(--border-default)", zIndex: 0 }} />
+                      
+                      {/* Hitos */}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", zIndex: 1, position: "relative", minWidth: "100px" }}>
+                        <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "var(--brand-500)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
+                          <Clock size={12} />
+                        </div>
+                        <div style={{ textAlign: "center" }}>
+                          <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--neutral-200)" }}>Solicitado</p>
+                          <p style={{ fontSize: "10px", color: "var(--neutral-500)" }}>{new Date(t.requestDate!).toLocaleDateString()}</p>
+                        </div>
                       </div>
-                    )}
+
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", zIndex: 1, position: "relative", minWidth: "100px" }}>
+                        <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: (t as any).dispatchDate ? "var(--brand-500)" : "var(--neutral-800)", display: "flex", alignItems: "center", justifyContent: "center", color: (t as any).dispatchDate ? "white" : "var(--neutral-600)" }}>
+                          <Truck size={12} />
+                        </div>
+                        <div style={{ textAlign: "center" }}>
+                          <p style={{ fontSize: "11px", fontWeight: 600, color: (t as any).dispatchDate ? "var(--neutral-200)" : "var(--neutral-600)" }}>Despachado</p>
+                          <p style={{ fontSize: "10px", color: "var(--neutral-500)" }}>{ (t as any).dispatchDate ? new Date((t as any).dispatchDate).toLocaleDateString() : "Pending" }</p>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", zIndex: 1, position: "relative", minWidth: "100px" }}>
+                        <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: t.estimatedArrivalDate ? "var(--brand-900)" : "var(--neutral-800)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--brand-400)", border: "1px solid var(--brand-500)" }}>
+                          <Timer size={12} />
+                        </div>
+                        <div style={{ textAlign: "center" }}>
+                          <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--neutral-200)" }}>Estimado</p>
+                          <p style={{ fontSize: "10px", color: "var(--neutral-500)" }}>{ t.estimatedArrivalDate ? new Date(t.estimatedArrivalDate).toLocaleDateString() : "-" }</p>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", zIndex: 1, position: "relative", minWidth: "100px" }}>
+                        <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: t.actualArrivalDate ? "var(--color-success)" : "var(--neutral-800)", display: "flex", alignItems: "center", justifyContent: "center", color: t.actualArrivalDate ? "white" : "var(--neutral-600)" }}>
+                          <CheckCircle2 size={12} />
+                        </div>
+                        <div style={{ textAlign: "center" }}>
+                          <p style={{ fontSize: "11px", fontWeight: 600, color: t.actualArrivalDate ? "var(--neutral-200)" : "var(--neutral-600)" }}>Entrada</p>
+                          <p style={{ fontSize: "10px", color: "var(--neutral-500)" }}>{ t.actualArrivalDate ? new Date(t.actualArrivalDate).toLocaleDateString() : "En espera" }</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </Card>
               ))
@@ -521,6 +663,7 @@ function TransfersContent() {
       <NewTransferModal 
         open={isNewModalOpen} onClose={() => setIsNewModalOpen(false)} onSuccess={fetchTransfers}
         currentBranchId={myBranchId} isAdmin={isAdmin} initialProductId={productIdPreselected}
+        branches={branchesList}
       />
       <ReceiveTransferModal
         open={!!receivingTransfer} onClose={() => setReceivingTransfer(null)} onSuccess={fetchTransfers}

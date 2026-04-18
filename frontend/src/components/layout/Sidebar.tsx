@@ -239,17 +239,22 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const isAdmin = session?.rol === "ADMIN";
   const isManager = session?.rol === "MANAGER";
   const isSeller = session?.rol === "SELLER";
+  const isInventory = session?.rol === "OPERADOR_INVENTARIO";
 
   // Definir qué roles ven qué items base
   const visibleNavItems = navItems.filter(item => {
-    if (isSeller) {
-      return item.label === "Terminal POS" || item.label === "Inventario";
-    }
     if (isAdmin) {
-      // Admin no necesita el POS Terminal, su rol es de gestión global
       return item.label !== "Terminal POS";
     }
-    return true; // Manager ve todos los navItems base
+    if (isSeller) {
+      // SELLER: POS as main screen + read-only inventory + own sales history
+      return item.label === "Terminal POS" || item.label === "Inventario" || item.label === "Historial Ventas";
+    }
+    if (isInventory) {
+      // OPERADOR_INVENTARIO: Panel + physical inventory + transfer execution
+      return item.label === "Panel" || item.label === "Inventario" || item.label === "Traslados";
+    }
+    return true; // Manager sees all base navItems
   });
 
   const NavLink = ({ href, label, icon }: { href: string; label: string; icon: React.ReactNode }) => {

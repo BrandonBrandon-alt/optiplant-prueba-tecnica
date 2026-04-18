@@ -58,6 +58,7 @@ public class TransferPersistenceAdapter implements TransferRepositoryPort {
         entity.setPriority(domain.getPriority() != null ? domain.getPriority().name() : null);
         entity.setShippingCost(domain.getShippingCost());
         entity.setTrackingNumber(domain.getTrackingNumber());
+        entity.setDispatchDate(domain.getDispatchDate());
 
         if (domain.getDetails() != null) {
             for (TransferDetail detail : domain.getDetails()) {
@@ -68,6 +69,7 @@ public class TransferPersistenceAdapter implements TransferRepositoryPort {
                 detailEntity.setSentQuantity(detail.getSentQuantity());
                 detailEntity.setReceivedQuantity(detail.getReceivedQuantity());
                 detailEntity.setMissingQuantity(detail.getMissingQuantity());
+                detailEntity.setProductName(detail.getProductName());
 
                 entity.addDetail(detailEntity);
             }
@@ -89,6 +91,7 @@ public class TransferPersistenceAdapter implements TransferRepositoryPort {
                 entity.getDetails().stream().map(d -> new TransferDetail(
                         d.getId(),
                         d.getProductId(),
+                        d.getProductName(),
                         d.getRequestedQuantity(),
                         d.getSentQuantity(),
                         d.getReceivedQuantity(),
@@ -101,6 +104,7 @@ public class TransferPersistenceAdapter implements TransferRepositoryPort {
                 entity.getReasonResolution(),
                 entity.getResueltoPorId(),
                 entity.getFechaResolucion(),
+                entity.getDispatchDate(),
                 entity.getVersion()
         );
     }

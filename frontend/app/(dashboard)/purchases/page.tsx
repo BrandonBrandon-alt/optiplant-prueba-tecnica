@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { 
   Package, TrendingUp, Search, Plus, Trash2, 
   ShoppingCart, Building2, Calendar, DollarSign,
@@ -136,9 +136,18 @@ const CartItemRow = ({ item, actions }: { item: PurchaseDetail, actions: any }) 
 function PurchasesContent() {
   const [activeTab, setActiveTab] = useState<"history" | "new">("new");
   const { showToast } = useToast();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const productIdPreselected = searchParams.get("productId");
   const branchIdPreselected = searchParams.get("branchId");
+
+  // Protect route
+  useEffect(() => {
+    const session = getSession();
+    if (session?.rol === "OPERADOR_INVENTARIO" || session?.rol === "SELLER") {
+      router.replace("/dashboard");
+    }
+  }, [router]);
 
   // State: Catalogs
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -583,6 +592,20 @@ function PurchasesContent() {
                   title="Liquidación Final (Cerrar con Faltante)"
                 >
                   <X size={16} />
+                </button>
+              )}
+
+              {row.receptionStatus === "PENDING" && session?.rol === "ADMIN" && (
+                <button 
+                  onClick={() => {
+                    if (confirm("¿Aprobar excepción de límite de crédito para esta orden?")) {
+                      showToast("Excepción de compra aprobada exitosamente.", "success");
+                    }
+                  }} 
+                  className="p-2 text-[var(--brand-400)] hover:bg-[var(--brand-400)]/10 rounded-lg transition-all" 
+                  title="Aprobar Excepción"
+                >
+                  <CheckCircle size={16} />
                 </button>
               )}
 

@@ -29,13 +29,14 @@ public class Transfer {
     private String reasonResolution;
     private Long resolvedById;
     private LocalDateTime resolutionDate;
+    private LocalDateTime dispatchDate;
     private Integer version;
 
     public Transfer(Long id, TransferStatus status, LocalDateTime requestDate, LocalDateTime estimatedArrivalDate, 
                     LocalDateTime actualArrivalDate, Long originBranchId, Long destinationBranchId, 
                     String carrier, String receiptNotes, List<TransferDetail> details, Long parentTransferId,
                     TransferPriority priority, BigDecimal shippingCost, String trackingNumber,
-                    String reasonResolution, Long resolvedById, LocalDateTime resolutionDate, Integer version) {
+                    String reasonResolution, Long resolvedById, LocalDateTime resolutionDate, LocalDateTime dispatchDate, Integer version) {
         if (originBranchId == null || destinationBranchId == null) {
             throw new IllegalArgumentException("Las sucursales de origen y destino son obligatorias.");
         }
@@ -63,23 +64,31 @@ public class Transfer {
         this.reasonResolution = reasonResolution;
         this.resolvedById = resolvedById;
         this.resolutionDate = resolutionDate;
+        this.dispatchDate = dispatchDate;
         this.version = version;
     }
 
     public static Transfer create(Long originBranchId, Long destinationBranchId, LocalDateTime estimatedArrival, List<TransferDetail> details, TransferPriority priority) {
         return new Transfer(null, TransferStatus.PENDING, LocalDateTime.now(), estimatedArrival, null, 
-                originBranchId, destinationBranchId, null, null, details, null, priority, null, null, null, null, null, 0);
+                originBranchId, destinationBranchId, null, null, details, null, priority, null, null, null, null, null, null, 0);
     }
 
     public static Transfer resend(Transfer parent, List<TransferDetail> relativeDetails) {
         return new Transfer(null, TransferStatus.PENDING, LocalDateTime.now(), LocalDateTime.now().plusDays(2), null, 
                 parent.getOriginBranchId(), parent.getDestinationBranchId(), null, "REENVÍO AUTOMÁTICO - REF #" + parent.getId(), 
-                relativeDetails, parent.getId(), parent.getPriority(), null, null, null, null, null, 0);
+                relativeDetails, parent.getId(), parent.getPriority(), null, null, null, null, null, null, 0);
+    }
+
+    public void approveDestination() {
+        if (this.status != TransferStatus.PENDING) {
+            throw new InvalidTransferStateException("Solo se puede aprobar en destino una transferencia en estado PENDING.");
+        }
+        this.status = TransferStatus.APPROVED_DEST;
     }
 
     public void prepare() {
-        if (this.status != TransferStatus.PENDING) {
-            throw new InvalidTransferStateException("Solo se puede preparar una transferencia en estado PENDING.");
+        if (this.status != TransferStatus.APPROVED_DEST) {
+            throw new InvalidTransferStateException("Solo se puede autorizar salida (preparar) una transferencia que ya fue aprobada por destino (APPROVED_DEST).");
         }
         this.status = TransferStatus.PREPARING;
     }
@@ -89,6 +98,7 @@ public class Transfer {
             throw new InvalidTransferStateException("Solo se puede despachar una transferencia en estado PREPARING.");
         }
         this.status = TransferStatus.IN_TRANSIT;
+        this.dispatchDate = LocalDateTime.now();
         this.carrier = carrier;
         this.shippingCost = shippingCost;
         this.trackingNumber = trackingNumber;
@@ -104,8 +114,8 @@ public class Transfer {
     }
 
     public void cancel(String reason, Long userId) {
-        if (this.status != TransferStatus.PENDING && this.status != TransferStatus.PREPARING && this.status != TransferStatus.IN_TRANSIT) {
-            throw new InvalidTransferStateException("Solo se pueden cancelar transferencias en estado PENDING, PREPARING o IN_TRANSIT.");
+        if (this.status != TransferStatus.PENDING && this.status != TransferStatus.APPROVED_DEST && this.status != TransferStatus.PREPARING && this.status != TransferStatus.IN_TRANSIT) {
+            throw new InvalidTransferStateException("Solo se pueden cancelar transferencias en estados iniciales o en tránsito.");
         }
         if (reason == null || reason.isBlank()) {
             throw new IllegalArgumentException("El motivo de cancelación es obligatorio.");
@@ -160,5 +170,6 @@ public class Transfer {
     public String getReasonResolution() { return reasonResolution; }
     public Long getResolvedById() { return resolvedById; }
     public LocalDateTime getResolutionDate() { return resolutionDate; }
+    public LocalDateTime getDispatchDate() { return dispatchDate; }
     public Integer getVersion() { return version; }
 }

@@ -8,6 +8,7 @@ public interface TransferUseCase {
     Transfer prepareTransfer(Long transferId, List<UpdateQuantityCommand> items);
     Transfer dispatchTransfer(Long transferId, DispatchTransferCommand command);
     Transfer receiveTransfer(Long transferId, ReceiveTransferCommand command);
+    Transfer approveDestination(Long transferId);
     void cancelTransfer(Long transferId, String reason, Long userId);
     void rejectTransfer(Long transferId, String reason, Long userId);
     void resolveAsShrinkage(Long transferId);

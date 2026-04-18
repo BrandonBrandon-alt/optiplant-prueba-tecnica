@@ -8,6 +8,7 @@ public record RequestTransferCommand(
         Long destinationBranchId,
         LocalDateTime estimatedArrivalDate,
         co.com.zenvory.inventario.transfer.domain.model.TransferPriority priority,
+        Long userId,
         List<Detail> items
 ) {
     public record Detail(

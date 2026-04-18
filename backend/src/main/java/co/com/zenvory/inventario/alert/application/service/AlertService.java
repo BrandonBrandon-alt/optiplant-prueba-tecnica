@@ -157,7 +157,7 @@ public class AlertService implements AlertUseCase {
 
     @Override
     @Transactional
-    public void resolveViaTransfer(Long alertId, Long originBranchId, Integer quantity) {
+    public void resolveViaTransfer(Long alertId, Long originBranchId, Integer quantity, Long userId) {
         StockAlert alert = findAlert(alertId);
         
         RequestTransferCommand cmd = new RequestTransferCommand(
@@ -165,6 +165,7 @@ public class AlertService implements AlertUseCase {
                 alert.getBranchId(),
                 LocalDateTime.now().plusDays(2),
                 co.com.zenvory.inventario.transfer.domain.model.TransferPriority.HIGH,
+                userId,
                 List.of(new RequestTransferCommand.Detail(alert.getProductId(), quantity))
         );
         

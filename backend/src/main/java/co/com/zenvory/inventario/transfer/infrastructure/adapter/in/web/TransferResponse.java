@@ -11,6 +11,7 @@ public record TransferResponse(
         LocalDateTime requestDate,
         LocalDateTime estimatedArrivalDate,
         LocalDateTime actualArrivalDate,
+        LocalDateTime dispatchDate,
         Long originBranchId,
         Long destinationBranchId,
         String carrier,
@@ -25,6 +26,7 @@ public record TransferResponse(
     public record TransferDetailResponse(
             Long id,
             Long productId,
+            String productName,
             Integer requestedQuantity,
             Integer sentQuantity,
             Integer receivedQuantity,
@@ -38,6 +40,7 @@ public record TransferResponse(
                 transfer.getRequestDate(),
                 transfer.getEstimatedArrivalDate(),
                 transfer.getActualArrivalDate(),
+                transfer.getDispatchDate(),
                 transfer.getOriginBranchId(),
                 transfer.getDestinationBranchId(),
                 transfer.getCarrier(),
@@ -50,6 +53,7 @@ public record TransferResponse(
                 transfer.getDetails().stream().map(d -> new TransferDetailResponse(
                         d.getId(),
                         d.getProductId(),
+                        d.getProductName(),
                         d.getRequestedQuantity(),
                         d.getSentQuantity(),
                         d.getReceivedQuantity(),

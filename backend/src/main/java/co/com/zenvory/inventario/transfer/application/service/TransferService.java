@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import co.com.zenvory.inventario.auth.application.port.out.UserRepositoryPort;
+import co.com.zenvory.inventario.auth.domain.model.User;
 
 @Service
 public class TransferService implements TransferUseCase {
@@ -27,22 +29,28 @@ public class TransferService implements TransferUseCase {
     private final InventoryUseCase inventoryUseCase;
     private final ProductUseCase productUseCase;
     private final AlertUseCase alertUseCase;
+    private final UserRepositoryPort userRepositoryPort;
 
     public TransferService(TransferRepositoryPort transferRepositoryPort, 
                            InventoryUseCase inventoryUseCase, 
                            ProductUseCase productUseCase,
-                           @Lazy AlertUseCase alertUseCase) {
+                           @Lazy AlertUseCase alertUseCase,
+                           UserRepositoryPort userRepositoryPort) {
         this.transferRepositoryPort = transferRepositoryPort;
         this.inventoryUseCase = inventoryUseCase;
         this.productUseCase = productUseCase;
         this.alertUseCase = alertUseCase;
+        this.userRepositoryPort = userRepositoryPort;
     }
 
     @Override
     @Transactional
     public Transfer requestTransfer(RequestTransferCommand command) {
         List<TransferDetail> details = command.items().stream()
-                .map(item -> TransferDetail.create(item.productId(), item.requestedQuantity()))
+                .map(item -> {
+                    String productName = productUseCase.getProductById(item.productId()).getName();
+                    return TransferDetail.create(item.productId(), productName, item.requestedQuantity());
+                })
                 .toList();
 
         Transfer transfer = Transfer.create(
@@ -50,8 +58,16 @@ public class TransferService implements TransferUseCase {
                 command.destinationBranchId(),
                 command.estimatedArrivalDate(),
                 details,
-                co.com.zenvory.inventario.transfer.domain.model.TransferPriority.NORMAL // Setting default for now until command is updated
+                command.priority() != null ? command.priority() : co.com.zenvory.inventario.transfer.domain.model.TransferPriority.NORMAL
         );
+
+        // SENIOR DIRECTIVE: Auto-Approval for Managers
+        User user = userRepositoryPort.findById(command.userId())
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        
+        if (user.getRole() != null && "MANAGER".equals(user.getRole().getNombre())) {
+            transfer.approveDestination();
+        }
 
         // REGLA DE NEGOCIO: Reservar stock en la sucursal de origen
         for (TransferDetail detail : details) {
@@ -62,6 +78,14 @@ public class TransferService implements TransferUseCase {
             );
         }
 
+        return transferRepositoryPort.save(transfer);
+    }
+
+    @Override
+    @Transactional
+    public Transfer approveDestination(Long id) {
+        Transfer transfer = getTransferById(id);
+        transfer.approveDestination();
         return transferRepositoryPort.save(transfer);
     }
 
@@ -267,7 +291,7 @@ public class TransferService implements TransferUseCase {
         // Crear nuevo traslado para los faltantes
         List<TransferDetail> relativeDetails = transfer.getDetails().stream()
                 .filter(d -> d.getMissingQuantity() > 0)
-                .map(d -> TransferDetail.create(d.getProductId(), d.getMissingQuantity()))
+                .map(d -> TransferDetail.create(d.getProductId(), d.getProductName(), d.getMissingQuantity()))
                 .toList();
         
         if (!relativeDetails.isEmpty()) {
