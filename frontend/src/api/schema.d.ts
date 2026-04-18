@@ -820,6 +820,8 @@ export interface components {
             nombre: string;
             direccion: string;
             telefono?: string;
+            /** Format: int64 */
+            managerId?: number;
         };
         BranchResponse: {
             /** Format: int64 */
@@ -828,6 +830,8 @@ export interface components {
             direccion?: string;
             telefono?: string;
             activa?: boolean;
+            /** Format: int64 */
+            managerId?: number;
         };
         TransferDetailRequest: {
             /** Format: int64 */

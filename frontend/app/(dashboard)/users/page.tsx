@@ -144,7 +144,10 @@ function CreateUserModal({ open, onClose, roles, branches, onCreated }: {
                         label="Sucursal asignada"
                         value={values.sucursalId || ""}
                         onChange={val => setValues({...values, sucursalId: Number(val)})}
-                        options={branches.map(b => ({ value: b.id!, label: b.nombre! }))}
+                        options={branches
+                          .filter(b => b.activa)
+                          .map(b => ({ value: b.id!, label: b.nombre! }))
+                        }
                         icon={<Building size={15} />}
                         placeholder="Seleccionar sede..."
                     />
@@ -283,7 +286,10 @@ function EditUserModal({ open, onClose, user, roles, branches, onUpdated }: {
                         label="Sucursal asignada"
                         value={values.sucursalId || ""}
                         onChange={val => setValues({...values, sucursalId: Number(val)})}
-                        options={branches.map(b => ({ value: b.id!, label: b.nombre! }))}
+                        options={branches
+                          .filter(b => b.activa || b.id === values.sucursalId)
+                          .map(b => ({ value: b.id!, label: b.nombre! }))
+                        }
                         icon={<Building size={15} />}
                         placeholder="Seleccionar sede..."
                     />

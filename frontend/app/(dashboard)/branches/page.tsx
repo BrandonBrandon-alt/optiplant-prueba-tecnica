@@ -15,6 +15,8 @@ import Button     from "@/components/ui/Button";
 import Input      from "@/components/ui/Input";
 import DataTable, { Column } from "@/components/ui/DataTable";
 import SearchFilter from "@/components/ui/SearchFilter";
+import Select from "@/components/ui/Select";
+import { UserCheck } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────
 type BranchResponse = components["schemas"]["BranchResponse"];
@@ -40,15 +42,16 @@ function CreateBranchModal({
   onClose: () => void;
   onCreated: (b: BranchResponse) => void;
 }) {
+  const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
-  const [values, setValues]   = useState<Partial<BranchRequest>>({ nombre: "", direccion: "", telefono: "" });
+  const [values, setValues]   = useState<Partial<BranchRequest>>({ nombre: "", direccion: "", telefono: "", managerId: undefined });
   const [errors, setErrors]   = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
-      setValues({ nombre: "", direccion: "", telefono: "" });
+      setValues({ nombre: "", direccion: "", telefono: "", managerId: undefined });
       setErrors({});
       setTouched({});
       setServerError(null);
@@ -80,6 +83,7 @@ function CreateBranchModal({
           nombre:    values.nombre!,
           direccion: values.direccion!,
           telefono:  values.telefono || undefined,
+          managerId: values.managerId || undefined,
         },
       });
 
@@ -94,7 +98,7 @@ function CreateBranchModal({
     });
   };
 
-  const { showToast } = useToast();
+
 
 
   return (
@@ -165,8 +169,9 @@ function EditBranchModal({
   onClose: () => void;
   onUpdated: (b: BranchResponse) => void;
 }) {
+  const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
-  const [values, setValues]   = useState<Partial<BranchRequest>>({ nombre: "", direccion: "", telefono: "" });
+  const [values, setValues]   = useState<Partial<BranchRequest>>({ nombre: "", direccion: "", telefono: "", managerId: undefined });
   const [errors, setErrors]   = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [serverError, setServerError] = useState<string | null>(null);
@@ -177,6 +182,7 @@ function EditBranchModal({
         nombre:    branch.nombre,
         direccion: branch.direccion,
         telefono:  branch.telefono || "",
+        managerId: branch.managerId || undefined,
       });
       setErrors({});
       setTouched({});
@@ -212,6 +218,7 @@ function EditBranchModal({
           nombre:    values.nombre!,
           direccion: values.direccion!,
           telefono:  values.telefono || undefined,
+          managerId: values.managerId || undefined,
         },
       });
 
@@ -226,7 +233,7 @@ function EditBranchModal({
     });
   };
 
-  const { showToast } = useToast();
+
 
 
   return (
