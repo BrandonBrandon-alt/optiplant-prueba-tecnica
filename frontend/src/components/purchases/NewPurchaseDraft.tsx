@@ -1,4 +1,5 @@
 import React from "react";
+import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
@@ -14,34 +15,39 @@ const formatCurrency = (amount: number) => {
 };
 
 const ProductCard = ({ product, onAdd }: { product: any; onAdd: (p: any) => void }) => (
-  <div 
+  <Card
     onClick={() => onAdd(product)}
-    className="group bg-[var(--bg-card)] border border-[var(--neutral-700)] hover:border-[var(--brand-500)] shadow-md hover:shadow-[0_10px_40px_rgba(0,0,0,0.4)] rounded-[1.5rem] p-6 cursor-pointer flex flex-col justify-between h-full transition-all duration-300 relative overflow-hidden"
+    className="p-5 cursor-pointer transition-all border-[var(--neutral-700)] bg-[var(--bg-card)] shadow-md hover:border-[var(--brand-500)] hover:shadow-[0_10px_40px_rgba(0,0,0,0.4)] group relative overflow-hidden"
   >
+    {/* Hover action badge */}
     <div className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
       <div className="bg-[var(--brand-500)] text-[var(--neutral-50)] p-1 rounded-bl-lg shadow-lg">
         <Plus className="h-4 w-4" />
       </div>
     </div>
-    
-    <div>
-      <span className="text-[10px] font-mono text-[var(--neutral-500)] font-black tracking-[0.2em] uppercase">{product.sku}</span>
-      <h3 className="text-base font-black text-[var(--neutral-100)] mt-1 group-hover:text-[var(--brand-400)] transition-colors leading-tight uppercase tracking-tight line-clamp-2 min-h-[3rem]">
-        {product.nombre}
-      </h3>
+
+    {/* Header: SKU chip */}
+    <div className="flex justify-between items-start mb-4">
+      <span className="text-[11px] font-mono text-[var(--neutral-400)] bg-[var(--bg-surface)] px-2 py-0.5 rounded border border-[var(--neutral-800)]">
+        {product.sku}
+      </span>
     </div>
-    
+
+    {/* Product name */}
+    <h3 className="font-bold text-[var(--neutral-100)] group-hover:text-[var(--brand-400)] transition-colors line-clamp-2 min-h-[3rem] text-lg uppercase tracking-tight">
+      {product.nombre}
+    </h3>
+
+    {/* Price */}
     <div className="mt-6 flex items-baseline justify-between">
       <div className="flex flex-col">
-        <p className="text-[10px] text-[var(--neutral-500)] uppercase font-black tracking-tighter mb-1">Costo ERP</p>
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-black text-[var(--neutral-50)]">
-            {formatCurrency(product.costoPromedio || 0)}
-          </span>
-        </div>
+        <p className="text-[10px] text-[var(--neutral-500)] uppercase font-black tracking-tighter">Costo ERP</p>
+        <span className="text-xl font-black text-[var(--neutral-50)]">
+          {formatCurrency(product.costoPromedio || 0)}
+        </span>
       </div>
     </div>
-  </div>
+  </Card>
 );
 
 const CartItemRow = ({ item, actions }: { item: any, actions: any }) => (

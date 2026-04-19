@@ -1,6 +1,8 @@
+"use client";
 import { useEffect, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { MapPin } from "lucide-react";
+import { MapPin, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 import Logo from "@/components/ui/Logo";
 import { logout, getSession, type AuthSession } from "@/api/auth";
 import { apiClient } from "@/api/client";
@@ -199,6 +201,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const scrollRef = useRef<HTMLElement>(null);
   const [alertCount, setAlertCount] = useState(0);
   const [branchName, setBranchName] = useState<string | null>(null);
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme !== "light";
 
   useEffect(() => {
     setSession(getSession());
@@ -484,7 +488,67 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       </nav>
 
       {/* Profile & Logout */}
-      <div style={{ padding: "16px 12px 12px", borderTop: "1px solid var(--border-default)", marginTop: "8px" }}>
+        <div style={{ padding: "16px 12px 12px", borderTop: "1px solid var(--border-default)", marginTop: "8px" }}>
+          {/* Theme Toggle */}
+          <button
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            title={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "10px",
+              padding: "9px 10px",
+              borderRadius: "var(--radius-md)",
+              fontSize: "13px",
+              color: "var(--neutral-400)",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-default)",
+              cursor: "pointer",
+              fontFamily: "var(--font-sans)",
+              marginBottom: "8px",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.color = "var(--neutral-100)";
+              e.currentTarget.style.borderColor = "var(--brand-500)";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.color = "var(--neutral-400)";
+              e.currentTarget.style.borderColor = "var(--border-default)";
+            }}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              {isDark
+                ? <Sun size={15} style={{ color: "var(--brand-400)" }} />
+                : <Moon size={15} style={{ color: "var(--brand-400)" }} />
+              }
+              {isDark ? "Modo Claro" : "Modo Oscuro"}
+            </span>
+            {/* Toggle pill */}
+            <div style={{
+              width: "34px",
+              height: "18px",
+              borderRadius: "9px",
+              background: isDark ? "var(--neutral-700)" : "var(--brand-500)",
+              position: "relative",
+              transition: "background 0.25s ease",
+              flexShrink: 0,
+            }}>
+              <div style={{
+                position: "absolute",
+                top: "2px",
+                left: isDark ? "2px" : "16px",
+                width: "14px",
+                height: "14px",
+                borderRadius: "50%",
+                background: "white",
+                transition: "left 0.25s ease",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+              }} />
+            </div>
+          </button>
         {session && (
           <div style={{ 
             display: "flex", 
