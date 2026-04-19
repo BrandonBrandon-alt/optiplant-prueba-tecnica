@@ -91,7 +91,7 @@ export default function Select({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            boxShadow: isOpen ? "0 0 0 3px rgba(217,99,79,0.12)" : "var(--shadow-sm)",
+            boxShadow: isOpen ? "0 0 0 3px rgba(217,99,79,0.22)" : "var(--shadow-sm)",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
