@@ -20,6 +20,8 @@ import EmptyState from "@/components/ui/EmptyState";
 import Modal from "@/components/ui/Modal";
 import QuantitySelector from "@/components/ui/QuantitySelector";
 import ResolutionModal from "@/components/ui/ResolutionModal";
+import PurchasesHistoryTab from "@/components/purchases/PurchasesHistoryTab";
+import NewPurchaseDraft from "@/components/purchases/NewPurchaseDraft";
 import { apiClient } from "@/api/client";
 import { useToast } from "@/context/ToastContext";
 import { getSession } from "@/api/auth";
@@ -37,99 +39,8 @@ interface PurchaseOrder { id: number; supplierId: number; branchId: number; requ
 interface CppImpact { productId: number; productName: string; oldCpp: number; newCpp: number; quantityReceived: number; }
 interface ReceiveOrderResult { orderId: number; status: string; impacts: CppImpact[]; }
 
-// ── UI Sub-Components (Clean & Minimalist) ─────────────────
-
-// Removed local QuantityControl in favor of centralized QuantitySelector
-
-const ProductCard = ({ product, onAdd }: { product: Product; onAdd: (p: Product) => void }) => (
-  <div 
-    onClick={() => onAdd(product)}
-    className="group bg-[var(--bg-card)] border border-[var(--neutral-700)] hover:border-[var(--brand-500)] shadow-md hover:shadow-[0_10px_40px_rgba(0,0,0,0.4)] rounded-[1.5rem] p-6 cursor-pointer flex flex-col justify-between h-full transition-all duration-300 relative overflow-hidden"
-  >
-    <div className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-      <div className="bg-[var(--brand-500)] text-[var(--neutral-50)] p-1 rounded-bl-lg shadow-lg">
-        <Plus className="h-4 w-4" />
-      </div>
-    </div>
-    
-    <div>
-      <span className="text-[10px] font-mono text-[var(--neutral-500)] font-black tracking-[0.2em] uppercase">{product.sku}</span>
-      <h3 className="text-base font-black text-[var(--neutral-100)] mt-1 group-hover:text-[var(--brand-400)] transition-colors leading-tight uppercase tracking-tight line-clamp-2 min-h-[3rem]">
-        {product.nombre}
-      </h3>
-    </div>
-    
-    <div className="mt-6 flex items-baseline justify-between">
-      <div className="flex flex-col">
-        <p className="text-[10px] text-[var(--neutral-500)] uppercase font-black tracking-tighter mb-1">Costo ERP</p>
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-black text-[var(--neutral-50)]">
-            {formatCurrency(product.costoPromedio || 0)}
-          </span>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-const CartItemRow = ({ item, actions }: { item: PurchaseDetail, actions: any }) => (
-  <div className="p-4 bg-[var(--bg-card)] border border-[var(--neutral-800)] rounded-2xl flex flex-col gap-3 transition-all animate-in fade-in slide-in-from-right-2">
-    <div className="flex justify-between items-start gap-3">
-      <div className="flex-1">
-        <h4 className="text-[13px] font-black text-[var(--neutral-50)] leading-tight uppercase tracking-tight">{item.nombre}</h4>
-        <span className="text-[10px] font-mono text-[var(--brand-400)] font-bold tracking-tight uppercase">{item.sku}</span>
-      </div>
-      <div className="text-right">
-        <p className="text-[14px] font-black text-[var(--neutral-50)]">{formatCurrency((Number(item.unitPrice) || 0) * item.quantity)}</p>
-      </div>
-    </div>
-
-    <div className="flex items-center gap-3">
-      <div className="w-32">
-        <QuantitySelector 
-          value={item.quantity} 
-          onIncrease={() => actions.updateQuantity(item.productId, 1)} 
-          onDecrease={() => actions.updateQuantity(item.productId, -1)} 
-          onChange={(val: number) => actions.setQuantity(item.productId, val)}
-        />
-      </div>
-      
-      <div className="flex-1 flex items-center bg-[var(--bg-surface)] border border-[var(--neutral-800)] rounded-xl px-2 h-9">
-        <DollarSign size={12} className="text-[var(--brand-400)] mr-1" />
-        <input 
-          type="number" step="0.01" value={item.unitPrice} 
-          onChange={(e) => actions.setUnitPrice(item.productId, e.target.value === "" ? "" : (parseFloat(e.target.value) || 0))}
-          placeholder="0"
-          className="flex-1 bg-transparent border-none text-[var(--neutral-100)] text-[12px] font-black focus:outline-none text-right"
-        />
-      </div>
-
-      <div className="w-16 flex items-center bg-[var(--bg-surface)] border border-[var(--neutral-800)] rounded-xl px-2 h-9">
-        <Percent size={10} className="text-[var(--brand-400)] mr-1" />
-        <input 
-          type="number" min="0" max="100" step="0.5" value={item.discountPct} 
-          onChange={(e) => actions.setDiscount(item.productId, e.target.value === "" ? "" : (parseFloat(e.target.value) || 0))}
-          placeholder="0"
-          className={`w-full bg-transparent border-none text-[12px] font-black focus:outline-none text-center ${(Number(item.discountPct) || 0) > 0 ? 'text-[var(--brand-400)]' : 'text-[var(--neutral-500)]'}`}
-        />
-      </div>
-
-      <button 
-        onClick={() => actions.removeFromCart(item.productId)}
-        className="w-9 h-9 flex items-center justify-center text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-xl transition-all"
-      >
-        <Trash2 size={16} />
-      </button>
-    </div>
-
-    {(Number(item.discountPct) || 0) > 0 && (
-      <div className="flex justify-between items-center px-3 py-1.5 bg-[var(--color-success)]/10 rounded-lg border border-dashed border-[var(--color-success)]/30">
-        <span className="text-[9px] text-[var(--color-success)] font-black uppercase tracking-widest">Ahorro ({(Number(item.discountPct) || 0)}%)</span>
-        <span className="text-[9px] text-[var(--color-success)] font-black">-{formatCurrency(item.quantity * (Number(item.unitPrice) || 0) * ((Number(item.discountPct) || 0) / 100))}</span>
-      </div>
-    )}
-  </div>
-);
+// ── UI Sub-Components ────────────────────────────────────────
+// Moved to modular components.
 
 // ── Main Page Component ──────────────────────────────────────
 
@@ -512,391 +423,50 @@ function PurchasesContent() {
 
   // ── Views ──────────────────────────────────────────────────
 
-  const renderHistory = () => {
-    const columns = [
-      { 
-        key: "id", 
-        label: "ID", 
-        render: (row: PurchaseOrder) => <span className="font-mono text-[var(--brand-400)] font-bold">#{String(row.id).padStart(5, '0')}</span> 
-      },
-      { 
-        key: "requestDate", 
-        label: "Fecha Emisión", 
-        render: (row: PurchaseOrder) => (
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-2 text-[var(--neutral-300)] font-bold">
-              <Calendar size={12} className="text-[var(--neutral-500)]" /> 
-              {new Date(row.requestDate).toLocaleDateString()}
-            </div>
-            <div className="flex items-center gap-2 text-[10px] text-[var(--neutral-500)] font-mono ml-5">
-              <Clock size={10} />
-              {new Date(row.requestDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </div>
-          </div>
-        )
-      },
-      { 
-        key: "details", 
-        label: "Mercancía", 
-        render: (row: PurchaseOrder) => (
-          <div className="flex flex-col gap-1 max-w-[220px]">
-            {row.details && row.details.length > 0 ? (
-              row.details.slice(0, 2).map((detail, idx) => {
-                const prod = products.find(p => p.id === detail.productId);
-                return (
-                  <div key={idx} className="flex items-center gap-2 bg-[var(--bg-surface)] px-2 py-1 rounded-lg border border-[var(--neutral-800)]/50 group hover:border-[var(--brand-500)]/30 transition-colors">
-                    <span className="text-[10px] font-black text-[var(--brand-400)]">{detail.quantity}x</span>
-                    <span className="text-[11px] font-bold text-[var(--neutral-300)] truncate uppercase tracking-tight">
-                      {prod?.nombre || `Prod #${detail.productId}`}
-                    </span>
-                  </div>
-                );
-              })
-            ) : (
-              <span className="text-[10px] text-[var(--neutral-600)] uppercase font-black tracking-widest">Sin detalles</span>
-            )}
-            {row.details && row.details.length > 2 && (
-              <span className="text-[9px] font-black text-[var(--neutral-500)] uppercase tracking-[0.2em] ml-2">
-                + {row.details.length - 2} ítem(s) más
-              </span>
-            )}
-          </div>
-        ) 
-      },
-      { 
-        key: "supplierId", 
-        label: "Socio Comercial", 
-        render: (row: PurchaseOrder) => <span className="font-semibold text-[var(--neutral-100)]">{suppliers.find(s => s.id === row.supplierId)?.nombre || "Desconocido"}</span> 
-      },
-      { 
-        key: "branchId", 
-        label: "Sucursal", 
-        render: (row: PurchaseOrder) => (
-          <div className="flex items-center gap-2">
-            <Building2 size={14} className="text-[var(--neutral-500)]" />
-            <span className="font-bold text-[var(--neutral-100)] uppercase tracking-tight text-[11px]">
-              {branches.find(b => b.id === row.branchId)?.nombre || `Sucursal #${row.branchId}`}
-            </span>
-          </div>
-        )
-      },
-      { 
-        key: "total", 
-        label: "Monto Total", 
-        render: (row: PurchaseOrder) => <span className="font-black text-[var(--neutral-50)]">{formatCurrency(row.total)}</span> 
-      },
-      { 
-        key: "receptionStatus", 
-        label: "Logística", 
-        render: (row: PurchaseOrder) => (
-          <div className="flex flex-col gap-1.5">
-            <Badge 
-              variant={row.receptionStatus === "RECEIVED_TOTAL" ? "success" : (row.receptionStatus as string) === "CANCELLED" ? "danger" : row.receptionStatus === "IN_TRANSIT" ? "warning" : row.receptionStatus === "AWAITING_APPROVAL" ? "neutral" : "info"} 
-              dot
-            >
-              {row.receptionStatus === "RECEIVED_TOTAL" ? "ENTREGADO" : (row.receptionStatus as string) === "CANCELLED" ? "CANCELADO" : row.receptionStatus === "IN_TRANSIT" ? "EN CAMINO" : row.receptionStatus === "AWAITING_APPROVAL" ? "SOLICITADO" : "APROBADO"}
-            </Badge>
-            {(row.receptionStatus as string) === "CANCELLED" && row.reasonResolution && (
-              <p className="text-[10px] text-[var(--neutral-500)] italic leading-tight max-w-[120px]">
-                {row.reasonResolution}
-              </p>
-            )}
-          </div>
-        ) 
-      },
-      { 
-        key: "paymentStatus", 
-        label: "Finanzas", 
-        render: (row: PurchaseOrder) => (
-          <Badge variant={row.paymentStatus === "PAGADO" ? "success" : "danger"}>
-            {row.paymentStatus === "PAGADO" ? "PAGADO" : "DEUDA ACTIVA"}
-          </Badge>
-        ) 
-      },
-      { 
-        key: "actions", 
-        label: "", 
-        render: (row: PurchaseOrder) => {
-          const session = getSession();
-          const isAdmin = session?.rol === "ADMIN";
-          const isManager = session?.rol === "MANAGER";
-          
-          return (
-            <div className="flex justify-end gap-2">
-              <button onClick={() => openOrderDetail(row)} className="p-2 text-[var(--neutral-400)] hover:text-[var(--neutral-50)] hover:bg-[var(--bg-hover)] rounded-lg transition-all" title="Ver Detalle">
-                <Eye size={16} />
-              </button>
-              
-              {row.receptionStatus !== "RECEIVED_TOTAL" && 
-               row.receptionStatus !== "CANCELLED" && 
-               row.receptionStatus !== "AWAITING_APPROVAL" && (
-                <button 
-                  onClick={() => receiveOrder(row.id)} 
-                  className="p-2 text-[var(--color-success)] hover:bg-[var(--color-success)]/10 rounded-lg transition-all" 
-                  title={row.receptionStatus === "RECEIVED_PARTIAL" ? "Recibir Restante" : "Confirmar Recepción"}
-                >
-                  <Truck size={16} />
-                </button>
-              )}
-
-              {row.receptionStatus === "RECEIVED_PARTIAL" && isManager && (
-                <button 
-                  onClick={() => handleCloseShortfall(row.id)} 
-                  className="p-2 text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-lg transition-all" 
-                  title="Liquidación Final (Cerrar con Faltante)"
-                >
-                  <X size={16} />
-                </button>
-              )}
-
-              {row.receptionStatus === "AWAITING_APPROVAL" && (isAdmin || isManager) && (
-                <button 
-                  onClick={() => handleApproveOrder(row.id)} 
-                  className="p-2 text-[var(--color-success)] hover:bg-[var(--color-success)]/10 rounded-lg transition-all" 
-                  title="Aprobar Solicitud"
-                >
-                  <CheckCircle size={16} />
-                </button>
-              )}
-
-              {row.receptionStatus === "PENDING" && session?.rol === "ADMIN" && (
-                <button 
-                  onClick={() => {
-                    if (confirm("¿Aprobar excepción de límite de crédito para esta orden?")) {
-                      showToast("Excepción de compra aprobada exitosamente.", "success");
-                    }
-                  }} 
-                  className="p-2 text-[var(--brand-400)] hover:bg-[var(--brand-400)]/10 rounded-lg transition-all" 
-                  title="Aprobar Excepción"
-                >
-                  <TrendingUp size={16} />
-                </button>
-              )}
-
-              {row.paymentStatus === "POR_PAGAR" && row.receptionStatus !== "CANCELLED" && (
-                <button 
-                  onClick={() => registerPayment(row.id)} 
-                  className="p-2 text-[var(--brand-400)] hover:bg-[var(--brand-500)]/10 rounded-lg transition-all" 
-                  title="Registrar Pago"
-                >
-                  <CreditCard size={16} />
-                </button>
-              )}
-
-              {(row.receptionStatus === "PENDING" || row.receptionStatus === "AWAITING_APPROVAL") && (
-                <button 
-                  onClick={() => setResolvingOrder(row)} 
-                  className="p-2 text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-lg transition-all" 
-                  title="Anular Orden"
-                >
-                  <XCircle size={16} />
-                </button>
-              )}
-            </div>
-          );
-        }
-      }
-    ];
-
-    return (
-      <div className="space-y-6 animate-in fade-in duration-300">
-        <div className="flex flex-wrap items-center gap-4 bg-[var(--bg-surface)] p-6 rounded-[1.5rem] border border-[var(--neutral-800)] shadow-sm">
-          <div className="w-full md:w-64">
-            <Select 
-              label="Filtrar por Proveedor" 
-              value={filterSupplierId} 
-              onChange={setFilterSupplierId} 
-              options={[{ value: "", label: "Todos los proveedores" }, ...suppliers.map(s => ({ value: String(s.id), label: s.nombre }))]} 
-              icon={<Building2 size={14} />} 
-              className="bg-[var(--bg-base)] border-[var(--neutral-800)]/50"
-            />
-          </div>
-          <div className="w-full md:w-64">
-            <Select 
-              label="Filtrar por Producto" 
-              value={filterProductId} 
-              onChange={setFilterProductId} 
-              options={[{ value: "", label: "Todos los productos" }, ...products.map(p => ({ value: String(p.id), label: p.nombre }))]} 
-              icon={<Package size={14} />} 
-              className="bg-[var(--bg-base)] border-[var(--neutral-800)]/50"
-            />
-          </div>
-          {(filterSupplierId || filterProductId) && (
-            <button onClick={() => { setFilterSupplierId(""); setFilterProductId(""); }} className="flex items-center gap-2 text-xs font-bold text-[var(--brand-400)] hover:text-[var(--brand-300)] transition-colors h-10 mt-6 px-4 rounded-xl hover:bg-[var(--brand-500)]/5">
-              <X size={14} /> REINICIAR BUSQUEDA
-            </button>
-          )}
-        </div>
-
-        <Card title={`Kardex de Adquisiciones (${filteredOrders.length})`} className="shadow-2xl border-[var(--neutral-800)] bg-[var(--bg-card)] overflow-hidden rounded-[2rem]">
-          <DataTable 
-            itemsPerPage={25}
-            columns={columns.map(col => ({ ...col, header: col.label }))} 
-            data={filteredOrders} 
-            isLoading={isLoadingOrders}
-            emptyState={{
-              title: "Registros no encontrados",
-              description: "Ajusta los filtros o términos de búsqueda para encontrar lo que necesitas.",
-              icon: <Package size={48} className="text-[var(--neutral-700)]" />
-            }}
-          />
-        </Card>
-      </div>
-    );
-  };
+  const renderHistory = () => (
+    <PurchasesHistoryTab 
+      filteredOrders={filteredOrders}
+      isLoadingOrders={isLoadingOrders}
+      filterSupplierId={filterSupplierId}
+      setFilterSupplierId={setFilterSupplierId}
+      filterProductId={filterProductId}
+      setFilterProductId={setFilterProductId}
+      suppliers={suppliers}
+      products={products}
+      branches={branches}
+      formatCurrency={formatCurrency}
+      session={session}
+      openOrderDetail={openOrderDetail}
+      receiveOrder={receiveOrder}
+      handleCloseShortfall={handleCloseShortfall}
+      handleApproveOrder={handleApproveOrder}
+      registerPayment={registerPayment}
+      setResolvingOrder={setResolvingOrder}
+      showToast={showToast}
+    />
+  );
 
   const renderNewOrder = () => (
-    <main className="flex gap-8 flex-col lg:flex-row h-[82vh] animate-in fade-in zoom-in-95 duration-300 mt-8">
-      
-      {/* ── PANEL IZQUIERDO: CATÁLOGO ───────────────── */}
-      <div className="flex flex-[3] flex-col gap-5 min-w-0 bg-[var(--bg-surface)] border border-[var(--neutral-800)] rounded-3xl p-8 shadow-2xl overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-2xl font-black text-[var(--neutral-50)] tracking-tight uppercase leading-none">Catálogo de Abastecimiento</h3>
-            <p className="text-[10px] text-[var(--neutral-500)] font-black uppercase tracking-[0.2em] mt-2">Selección estratégica de insumos</p>
-          </div>
-          
-          <div className="w-full md:w-72">
-            <Input 
-              icon={<Search className="h-4 w-4 text-[var(--brand-500)]" />} 
-              placeholder="Filtro rápido..." 
-              value={searchTerm} 
-              onChange={(e: any) => setSearchTerm(e.target.value)} 
-              className="bg-[var(--bg-base)] border-[var(--neutral-800)]" 
-            />
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-6">
-            {filteredProducts.map(p => <ProductCard key={p.id} product={p} onAdd={cartActions.addToCart} />)}
-          </div>
-          {filteredProducts.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center py-20 opacity-30">
-              <Package size={64} strokeWidth={1} className="mb-4 text-[var(--neutral-500)]" />
-              <p className="text-sm font-bold uppercase tracking-widest text-[var(--neutral-400)]">Sin resultados en catálogo</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── PANEL DERECHO: CHECKOUT ───────────────── */}
-      <div className="flex w-full lg:w-[480px] flex-col rounded-3xl border border-[var(--neutral-800)] bg-[var(--bg-surface)] shadow-2xl overflow-hidden relative">
-        
-        {/* Checkout Header */}
-        <div className="flex flex-col gap-4 border-b border-[var(--neutral-800)] px-6 py-5 bg-[var(--bg-card)]/50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-[var(--brand-500)]/10 p-2.5 rounded-xl border border-[var(--brand-500)]/20">
-                <ShoppingCart className="h-5 w-5 text-[var(--brand-500)]" />
-              </div>
-              <div>
-                <h2 className="font-black text-[var(--neutral-50)] text-base tracking-tight uppercase">Borrador de Negociación</h2>
-                {cart.length > 0 && (
-                  <button 
-                    className="text-[10px] font-black text-[var(--neutral-500)] hover:text-[var(--color-danger)] transition-colors uppercase tracking-widest" 
-                    onClick={cartActions.clearCart}
-                  >
-                    Descartar Todo
-                  </button>
-                )}
-              </div>
-            </div>
-            <Badge variant="neutral">{cart.length} ítems</Badge>
-          </div>
-          
-          <div className="space-y-3">
-            <Select 
-              label="Entidad Proveedora"
-              value={supplierId} 
-              onChange={(val) => { 
-                if (cart.length === 0 || confirm("Cambiar de proveedor vaciará el carrito. ¿Confirmas?")) { 
-                  if (cart.length > 0) setCart([]); 
-                  setSupplierId(val); 
-                } 
-              }} 
-              options={[{ value: "", label: "Seleccionar Proveedor" }, ...suppliers.map(s => ({ value: String(s.id), label: s.nombre }))]} 
-              className="bg-[var(--bg-base)]/50 border-[var(--neutral-800)]/50" 
-              icon={<Building2 size={14} />}
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <Select 
-                label="Sucursal Destino"
-                value={branchId} 
-                onChange={setBranchId} 
-                options={[...branches.map(b => ({ value: String(b.id), label: b.nombre }))]} 
-                className="bg-[var(--bg-base)]/50 border-[var(--neutral-800)]/50"
-                icon={<Warehouse size={14} />}
-                disabled={session?.rol === "OPERADOR_INVENTARIO" || session?.rol === "MANAGER"}
-              />
-              <Input 
-                label="ETA Estimada"
-                type="date" 
-                value={estimatedArrival} 
-                onChange={(e: any) => setEstimatedArrival(e.target.value)} 
-                icon={<Calendar size={14} className="text-[var(--neutral-500)]" />} 
-                className="bg-[var(--bg-base)]/50 border-[var(--neutral-800)]/50" 
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Cart Items List */}
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 custom-scrollbar bg-[var(--bg-base)]/10">
-          {cart.length > 0 ? (
-            cart.map(item => <CartItemRow key={item.productId} item={item} actions={cartActions} />)
-          ) : (
-            <div className="h-full flex flex-col items-center justify-center py-10 opacity-20">
-              <div className="w-16 h-16 rounded-full border-2 border-dashed border-[var(--neutral-700)] flex items-center justify-center mb-4">
-                <Plus size={24} />
-              </div>
-              <p className="text-[10px] font-black uppercase tracking-[3px] text-center w-2/3">Añade ítems para iniciar la cotización</p>
-            </div>
-          )}
-        </div>
-
-        {/* Sticky Financials */}
-        <div className="border-t border-[var(--neutral-800)] bg-[var(--bg-card)]/95 p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4 pb-2">
-            <Input 
-              label="Días de Crédito"
-              type="number"
-              value={paymentDueDays}
-              onChange={(e: any) => setPaymentDueDays(e.target.value)}
-              icon={<Clock size={14} />}
-              className="bg-[var(--bg-surface)]/50"
-              placeholder="0"
-            />
-            <div className="text-right flex flex-col justify-end">
-                <span className="text-[10px] text-[var(--neutral-500)] uppercase font-black tracking-widest mb-1">Ahorro Aplicado</span>
-                <span className="text-sm font-black text-[var(--color-success)]">-{formatCurrency(cart.reduce((acc, curr) => acc + (curr.quantity * (Number(curr.unitPrice) || 0) * ((Number(curr.discountPct) || 0) / 100)), 0))}</span>
-            </div>
-          </div>
-
-          <div 
-            className="flex justify-between text-2xl font-black text-[var(--neutral-50)] pt-5 border-t border-[var(--neutral-800)]"
-            style={{ borderTopStyle: "dashed" }}
-          >
-            <span className="tracking-tighter uppercase">Inversión Final</span>
-            <span style={{ 
-              color: "var(--brand-400)", 
-              textShadow: "0 0 20px var(--brand-glow)" 
-            }}>
-              {formatCurrency(financialSummary)}
-            </span>
-          </div>
-          
-          <Button 
-            className="w-full h-14 text-sm font-black uppercase tracking-[0.2em] rounded-2xl bg-[var(--brand-600)] hover:bg-[var(--brand-500)] shadow-[0_15px_30px_rgba(217,99,79,0.3)] transition-all active:scale-[0.98]"
-            onClick={handleSubmitOrder} 
-            loading={isSubmitting}
-            disabled={cart.length === 0}
-          >
-            {isSubmitting ? <Spinner size={20} /> : <div className="flex items-center gap-3"><ArrowRight className="h-5 w-5" /> <span>Sincronizar con ERP</span></div>}
-          </Button>
-        </div>
-      </div>
-    </main>
+    <NewPurchaseDraft 
+      filteredProducts={filteredProducts}
+      searchTerm={searchTerm}
+      setSearchTerm={setSearchTerm}
+      cartActions={cartActions}
+      cart={cart}
+      supplierId={supplierId}
+      setSupplierId={setSupplierId}
+      branchId={branchId}
+      setBranchId={setBranchId}
+      estimatedArrival={estimatedArrival}
+      setEstimatedArrival={setEstimatedArrival}
+      paymentDueDays={paymentDueDays}
+      setPaymentDueDays={setPaymentDueDays}
+      isSubmitting={isSubmitting}
+      handleSubmitOrder={handleSubmitOrder}
+      financialSummary={financialSummary}
+      suppliers={suppliers}
+      branches={branches}
+    />
   );
 
   return (
