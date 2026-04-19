@@ -410,4 +410,106 @@ public class TransferService implements TransferUseCase {
             averageDelayHours
         );
     }
+
+    @Override
+    public co.com.zenvory.inventario.transfer.infrastructure.adapter.in.web.LogisticsAnalyticsResponse getLogisticsAnalytics() {
+        List<Transfer> transfers = transferRepositoryPort.findAll();
+        
+        long totalTransfers = transfers.size();
+        
+        List<Transfer> relevant = transfers.stream()
+            .filter(t -> t.getStatus() == TransferStatus.DELIVERED || t.getStatus() == TransferStatus.IN_TRANSIT)
+            .toList();
+            
+        long delayedCount = 0;
+        double globalDelayHours = 0.0;
+        long onTimeCount = 0;
+        long completedCount = 0;
+        
+        java.util.Map<String, co.com.zenvory.inventario.transfer.infrastructure.adapter.in.web.LogisticsAnalyticsResponse.RouteMetrics> routeMap = new java.util.HashMap<>();
+        
+        for (Transfer t : relevant) {
+            String routeKey = t.getOriginBranchId() + "-" + t.getDestinationBranchId();
+            
+            boolean isDelayed = false;
+            double delayHours = 0.0;
+            
+            if (t.getEstimatedArrivalDate() != null) {
+                java.time.LocalDateTime compareDate = t.getStatus() == TransferStatus.DELIVERED ? t.getActualArrivalDate() : java.time.LocalDateTime.now();
+                if (compareDate != null && compareDate.isAfter(t.getEstimatedArrivalDate())) {
+                    isDelayed = true;
+                    delayHours = java.time.Duration.between(t.getEstimatedArrivalDate(), compareDate).toMinutes() / 60.0;
+                }
+            }
+            
+            if (t.getStatus() == TransferStatus.DELIVERED) {
+                completedCount++;
+                if (isDelayed) {
+                    delayedCount++;
+                    globalDelayHours += delayHours;
+                } else {
+                    onTimeCount++;
+                }
+            }
+            
+            final boolean routeItemDelayed = isDelayed;
+            final double routeItemDelayHours = delayHours;
+            
+            routeMap.compute(routeKey, (key, existing) -> {
+                long rTotal = existing == null ? 1 : existing.totalTransfers() + 1;
+                long rOnTime = existing == null ? 
+                        (t.getStatus() == TransferStatus.DELIVERED && !routeItemDelayed ? 1 : 0) : 
+                        existing.onTimeTransfers() + (t.getStatus() == TransferStatus.DELIVERED && !routeItemDelayed ? 1 : 0);
+                long rDelayed = existing == null ? 
+                        (routeItemDelayed ? 1 : 0) : 
+                        existing.delayedTransfers() + (routeItemDelayed ? 1 : 0);
+                        
+                double currentTotalDelay = existing == null ? 0 : existing.averageDelayHours() * existing.delayedTransfers();
+                double rTotalDelayHours = currentTotalDelay + routeItemDelayHours;
+                        
+                double rAverageDelayHours = rDelayed > 0 ? rTotalDelayHours / rDelayed : 0.0;
+                
+                BigDecimal rCost = existing == null ? 
+                        (t.getShippingCost() != null ? t.getShippingCost() : BigDecimal.ZERO) : 
+                        existing.totalShippingCost().add(t.getShippingCost() != null ? t.getShippingCost() : BigDecimal.ZERO);
+                        
+                long rUrgent = existing == null ? 
+                        (t.getPriority() != null && "HIGH".equals(t.getPriority().name()) ? 1 : 0) : 
+                        existing.urgentCount() + (t.getPriority() != null && "HIGH".equals(t.getPriority().name()) ? 1 : 0);
+                        
+                return new co.com.zenvory.inventario.transfer.infrastructure.adapter.in.web.LogisticsAnalyticsResponse.RouteMetrics(
+                        t.getOriginBranchId(),
+                        t.getDestinationBranchId(),
+                        rTotal,
+                        rOnTime,
+                        rDelayed,
+                        rAverageDelayHours,
+                        rCost,
+                        rUrgent
+                );
+            });
+        }
+        
+        double onTimePercentage = completedCount > 0 ? ((double) onTimeCount / completedCount) * 100.0 : 0.0;
+        double avgDelayHours = delayedCount > 0 ? globalDelayHours / delayedCount : 0.0;
+        
+        co.com.zenvory.inventario.transfer.infrastructure.adapter.in.web.LogisticsAnalyticsResponse.GlobalMetrics globals = 
+            new co.com.zenvory.inventario.transfer.infrastructure.adapter.in.web.LogisticsAnalyticsResponse.GlobalMetrics(
+                totalTransfers,
+                onTimePercentage,
+                delayedCount,
+                avgDelayHours
+        );
+        
+        List<co.com.zenvory.inventario.transfer.infrastructure.adapter.in.web.LogisticsAnalyticsResponse.RouteMetrics> sortedRoutes = 
+            routeMap.values().stream()
+                .sorted((r1, r2) -> Long.compare(r2.totalTransfers(), r1.totalTransfers()))
+                .limit(10)
+                .toList();
+                
+        return new co.com.zenvory.inventario.transfer.infrastructure.adapter.in.web.LogisticsAnalyticsResponse(
+            globals,
+            sortedRoutes
+        );
+    }
 }

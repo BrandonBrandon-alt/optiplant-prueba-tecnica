@@ -38,9 +38,9 @@ const EXTERNAL_MOTIVES: Record<string, { label: string, path: string, descriptio
     icon: <ShoppingCart size={24} />
   },
   DEVOLUCION: {
-    label: "Consultar con Manager",
-    path: "/dashboard",
-    description: "Las devoluciones de clientes deben ser procesadas exclusivamente por un Manager desde el historial de ventas para validar el reembolso y la integridad del producto.",
+    label: "Ir a Historial de Ventas",
+    path: "/sales/history",
+    description: "Las devoluciones de clientes deben ser procesadas desde el historial de ventas para vincular correctamente el producto con la factura y validar el reembolso.",
     icon: <RotateCcw size={24} />
   },
   TRASLADO: {
@@ -481,37 +481,41 @@ export default function InventoryPage() {
                     align: "right",
                     render: (p) => (
                       <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="primary"
-                          size="sm"
-                          onClick={() => {
-                            setAdjustingProduct(p);
-                            setAdjustData({ 
-                              type: "INGRESO", 
-                              quantity: "", 
-                              reason: "", 
-                              unitCost: p.costoPromedio ?? "",
-                              observations: "",
-                              subReason: "",
-                              unitId: null
-                            });
-                          }}
-                        >
-                          Acciones
-                        </Button>
-                        <Button 
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const inv = inventoryMap.get(p.id!);
-                            if (inv) {
-                                setConfigProduct({ p, inv });
-                                setMinStockValue(inv.stockMinimo ?? 0);
-                            }
-                          }}
-                        >
-                          Ajustar stock minimo
-                        </Button>
+                        {canEdit && (
+                          <>
+                            <Button 
+                              variant="primary"
+                              size="sm"
+                              onClick={() => {
+                                setAdjustingProduct(p);
+                                setAdjustData({ 
+                                  type: "INGRESO", 
+                                  quantity: "", 
+                                  reason: "", 
+                                  unitCost: p.costoPromedio ?? "",
+                                  observations: "",
+                                  subReason: "",
+                                  unitId: null
+                                });
+                              }}
+                            >
+                              Acciones
+                            </Button>
+                            <Button 
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const inv = inventoryMap.get(p.id!);
+                                if (inv) {
+                                    setConfigProduct({ p, inv });
+                                    setMinStockValue(inv.stockMinimo ?? 0);
+                                }
+                              }}
+                            >
+                              Ajustar stock minimo
+                            </Button>
+                          </>
+                        )}
                       </div>
                     )
                   }

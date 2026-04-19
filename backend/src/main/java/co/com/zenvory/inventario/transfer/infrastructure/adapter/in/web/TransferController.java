@@ -166,4 +166,10 @@ public class TransferController {
     public ResponseEntity<TransferFulfillmentReport> getFulfillmentReport() {
         return ResponseEntity.ok(transferUseCase.getFulfillmentReport());
     }
+
+    @GetMapping("/analytics/logistics")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<LogisticsAnalyticsResponse> getLogisticsAnalytics() {
+        return ResponseEntity.ok(transferUseCase.getLogisticsAnalytics());
+    }
 }

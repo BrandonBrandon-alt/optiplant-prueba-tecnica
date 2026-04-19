@@ -15,6 +15,10 @@ import Select from "@/components/ui/Select";
 import DataTable, { Column } from "@/components/ui/DataTable";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  Cell, Legend, RadarChart, PolarGrid, PolarAngleAxis, Radar
+} from "recharts";
 import { 
   ArrowRight, 
   ArrowRightCircle,
@@ -28,7 +32,10 @@ import {
   Timer,
   MessageCircle,
   LogOut,
-  LogIn
+  LogIn,
+  BarChart2,
+  TrendingUp,
+  DollarSign
 } from "lucide-react";
 
 // Components
@@ -47,6 +54,7 @@ function TransfersContent() {
   const [branchesMap, setBranchesMap] = useState<Map<number, string>>(new Map());
   const [branchesList, setBranchesList] = useState<BranchResponse[]>([]);
   const [fulfillmentReport, setFulfillmentReport] = useState<any>(null);
+  const [logisticsAnalytics, setLogisticsAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<number | null>(null);
   const searchParams = useSearchParams();
@@ -62,7 +70,7 @@ function TransfersContent() {
   const [viewingReason, setViewingReason] = useState<TransferResponse | null>(null);
 
   // Filters
-  const [activeTab, setActiveTab] = useState<"all" | "resolutions" | "monitor">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "monitor" | "analytics">("all");
   const [filterOrigin, setFilterOrigin] = useState<string>("all");
   const [filterDestination, setFilterDestination] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -83,23 +91,28 @@ function TransfersContent() {
 
   const fetchTransfers = useCallback(async () => {
     try {
-      const [tRes, bRes, fRes] = await Promise.all([
+      const isAdminOrManager = (session?.rol === "ADMIN" || session?.rol === "MANAGER");
+      const requests: Promise<any>[] = [
         apiClient.GET("/api/v1/transfers"),
         apiClient.GET("/api/branches"),
         (apiClient as any).GET("/api/v1/transfers/fulfillment-report")
-      ]);
+      ];
+      if (isAdminOrManager) {
+        requests.push((apiClient as any).GET("/api/v1/transfers/analytics/logistics"));
+      }
+      const [tRes, bRes, fRes, aRes] = await Promise.all(requests);
       
       const allTransfers = tRes.data ?? [];
       // Filter for non-admins: only show where I am origin or destination
       if (!isAdmin && myBranchId) {
-        let branchTransfers = allTransfers.filter(t => 
+        let branchTransfers = allTransfers.filter((t: TransferResponse) => 
           Number(t.originBranchId) === Number(myBranchId) || 
           Number(t.destinationBranchId) === Number(myBranchId)
         );
         // INVENTORY only sees operational transfers they need to act on (Origin) 
         // OR transfers they requested (Destination)
         if (isInventory) {
-          branchTransfers = branchTransfers.filter(t => 
+          branchTransfers = branchTransfers.filter((t: TransferResponse) => 
             t.status === "PREPARING" || 
             t.status === "IN_TRANSIT" || 
             t.status === "WITH_ISSUE" ||
@@ -112,8 +125,9 @@ function TransfersContent() {
       }
       const rawBranches = bRes.data ?? [];
       setBranchesList(rawBranches);
-      setBranchesMap(new Map(rawBranches.map(b => [b.id!, b.nombre!])));
+      setBranchesMap(new Map(rawBranches.map((b: BranchResponse) => [b.id!, b.nombre!])));
       if (fRes.data) setFulfillmentReport(fRes.data);
+      if (aRes?.data) setLogisticsAnalytics(aRes.data);
     } catch (err) {
       showToast("Error al cargar traslados", "error");
     } finally {
@@ -138,7 +152,6 @@ function TransfersContent() {
   }, [branchIdPreselected]);
 
   const filteredTransfers = transfers.filter(t => {
-    if (activeTab === "resolutions" && t.status !== "WITH_ISSUE") return false;
     if (filterOrigin !== "all" && t.originBranchId?.toString() !== filterOrigin) return false;
     if (filterDestination !== "all" && t.destinationBranchId?.toString() !== filterDestination) return false;
     if (filterStatus !== "all" && t.status !== filterStatus) return false;
@@ -305,6 +318,41 @@ function TransfersContent() {
           <span style={{ fontSize: "13px", color: "var(--neutral-400)" }}>{t.details?.length} productos</span>
         </div>
       )
+    },
+    {
+      header: "SLA",
+      key: "estimatedArrivalDate",
+      width: "140px",
+      render: (t) => {
+        if (t.status !== "DELIVERED" && t.status !== "IN_TRANSIT") {
+          return <span style={{ fontSize: "12px", color: "var(--neutral-600)" }}>—</span>;
+        }
+        const estimated = t.estimatedArrivalDate ? new Date(t.estimatedArrivalDate) : null;
+        const actual = t.actualArrivalDate ? new Date(t.actualArrivalDate) : null;
+        const now = new Date();
+        
+        if (t.status === "IN_TRANSIT" && estimated) {
+          const diffMs = estimated.getTime() - now.getTime();
+          const diffHrs = Math.round(diffMs / 3600000);
+          if (diffHrs < 0) {
+            return <Badge variant="danger">Retrasado {Math.abs(diffHrs)}h</Badge>;
+          }
+          return <Badge variant="warning">Vence en {diffHrs}h</Badge>;
+        }
+        if (actual && estimated) {
+          const diffMs = actual.getTime() - estimated.getTime();
+          const diffHrs = Math.round(diffMs / 3600000);
+          if (diffHrs > 0) {
+            return (
+              <Badge variant="danger">
+                +{diffHrs > 24 ? `${(diffHrs/24).toFixed(1)}d` : `${diffHrs}h`} tarde
+              </Badge>
+            );
+          }
+          return <Badge variant="success">A tiempo ✓</Badge>;
+        }
+        return <span style={{ fontSize: "12px", color: "var(--neutral-600)" }}>Sin fecha</span>;
+      }
     }
   ];
 
@@ -354,29 +402,8 @@ function TransfersContent() {
         >
           Panel General
         </button>
-        <button 
-          onClick={() => setActiveTab("resolutions")}
-          style={{ 
-            padding: "12px 20px", 
-            background: "none", 
-            border: "none", 
-            color: activeTab === "resolutions" ? "var(--brand-500)" : "var(--neutral-400)",
-            borderBottom: activeTab === "resolutions" ? "2px solid var(--brand-500)" : "none",
-            fontWeight: 600,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px"
-          }}
-        >
-          Centro de Resoluciones
-          {transfers.filter(t => t.status === "WITH_ISSUE").length > 0 && (
-            <span style={{ background: "var(--color-danger)", color: "white", borderRadius: "10px", padding: "2px 8px", fontSize: "10px" }}>
-              {transfers.filter(t => t.status === "WITH_ISSUE").length}
-            </span>
-          )}
-        </button>
-        {isAdmin && (
+
+        {(isAdmin || isManager) && (
           <button 
             onClick={() => setActiveTab("monitor")}
             style={{ 
@@ -395,9 +422,165 @@ function TransfersContent() {
             Monitor Logístico
           </button>
         )}
+        {(isAdmin || isManager) && (
+          <button
+            onClick={() => setActiveTab("analytics")}
+            style={{
+              padding: "12px 20px",
+              background: "none",
+              border: "none",
+              color: activeTab === "analytics" ? "var(--brand-500)" : "var(--neutral-400)",
+              borderBottom: activeTab === "analytics" ? "2px solid var(--brand-500)" : "none",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px"
+            }}
+          >
+            <BarChart2 size={15} />
+            Analítica Logística
+          </button>
+        )}
       </div>
 
-      {activeTab === "monitor" ? (
+      {activeTab === "analytics" ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          {/* Global KPI cards */}
+          {logisticsAnalytics?.globalMetrics && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
+              <Card style={{ padding: "20px 24px", marginBottom: 0 }}>
+                <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--neutral-500)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>Total Traslados</p>
+                <p style={{ fontSize: "28px", fontWeight: 700, color: "var(--brand-400)" }}>{logisticsAnalytics.globalMetrics.totalTransfers}</p>
+              </Card>
+              <Card style={{ padding: "20px 24px", marginBottom: 0 }}>
+                <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--neutral-500)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>Cumplimiento SLA</p>
+                <p style={{ fontSize: "28px", fontWeight: 700, color: "#2ecc71" }}>{logisticsAnalytics.globalMetrics.onTimePercentage?.toFixed(1)}%</p>
+              </Card>
+              <Card style={{ padding: "20px 24px", marginBottom: 0 }}>
+                <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--neutral-500)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>Retrasados</p>
+                <p style={{ fontSize: "28px", fontWeight: 700, color: "var(--color-danger)" }}>{logisticsAnalytics.globalMetrics.delayedTransfers}</p>
+              </Card>
+              <Card style={{ padding: "20px 24px", marginBottom: 0 }}>
+                <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--neutral-500)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>Demora Promedio</p>
+                <p style={{ fontSize: "28px", fontWeight: 700, color: "#f39c12" }}>
+                  {logisticsAnalytics.globalMetrics.averageDelayHours > 24
+                    ? `${(logisticsAnalytics.globalMetrics.averageDelayHours / 24).toFixed(1)} días`
+                    : `${logisticsAnalytics.globalMetrics.averageDelayHours?.toFixed(1) || 0} hrs`}
+                </p>
+              </Card>
+            </div>
+          )}
+
+          {/* Route Metrics Chart */}
+          {logisticsAnalytics?.topRoutes?.length > 0 ? (
+            <Card style={{ padding: "24px", marginBottom: 0 }}>
+              <div style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h3 style={{ fontWeight: 700, color: "var(--neutral-100)", fontSize: "15px", marginBottom: "4px" }}>Rendimiento por Ruta</h3>
+                  <p style={{ fontSize: "12px", color: "var(--neutral-500)" }}>Top 10 rutas por volumen de traslados</p>
+                </div>
+                <TrendingUp size={18} style={{ color: "var(--brand-400)" }} />
+              </div>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart
+                  data={logisticsAnalytics.topRoutes.map((r: any) => ({
+                    ruta: `${branchesMap.get(r.originBranchId) || `S${r.originBranchId}`} → ${branchesMap.get(r.destinationBranchId) || `S${r.destinationBranchId}`}`,
+                    total: r.totalTransfers,
+                    aTiempo: r.onTimeTransfers,
+                    retrasados: r.delayedTransfers,
+                    urgentes: r.urgentCount,
+                  }))}
+                  margin={{ top: 5, right: 30, left: 0, bottom: 80 }}
+                >
+                  <XAxis
+                    dataKey="ruta"
+                    tick={{ fill: "var(--neutral-500)", fontSize: 10 }}
+                    angle={-35}
+                    textAnchor="end"
+                    interval={0}
+                  />
+                  <YAxis tick={{ fill: "var(--neutral-500)", fontSize: 11 }} />
+                  <Tooltip
+                    contentStyle={{ background: "var(--surface-02)", border: "1px solid var(--border-default)", borderRadius: "8px", color: "var(--neutral-100)" }}
+                  />
+                  <Legend wrapperStyle={{ paddingTop: "60px", fontSize: "12px" }} />
+                  <Bar dataKey="aTiempo" name="A tiempo" fill="#2ecc71" radius={[4,4,0,0]} />
+                  <Bar dataKey="retrasados" name="Retrasados" fill="#e74c3c" radius={[4,4,0,0]} />
+                  <Bar dataKey="urgentes" name="Alta prioridad" fill="#f39c12" radius={[4,4,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+          ) : (
+            <Card style={{ padding: "24px", marginBottom: 0 }}>
+              <EmptyState
+                title="Sin datos de rutas"
+                description="Aún no hay suficientes traslados completados para generar reportes por ruta."
+                icon={<BarChart2 size={40} />}
+              />
+            </Card>
+          )}
+
+          {/* Route Detail Table */}
+          {logisticsAnalytics?.topRoutes?.length > 0 && (
+            <Card style={{ padding: "24px", marginBottom: 0 }}>
+              <h3 style={{ fontWeight: 700, color: "var(--neutral-100)", fontSize: "15px", marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <DollarSign size={16} style={{ color: "var(--brand-400)" }} />
+                Desglose por Ruta
+              </h3>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
+                      {["Ruta", "Total", "A Tiempo", "Retrasados", "% SLA", "Demora Prom.", "Costo Total", "Alta Prior."].map(h => (
+                        <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: "11px", color: "var(--neutral-500)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {logisticsAnalytics.topRoutes.map((r: any, i: number) => {
+                      const sla = r.totalTransfers > 0 ? ((r.onTimeTransfers / (r.onTimeTransfers + r.delayedTransfers || 1)) * 100) : 0;
+                      return (
+                        <tr key={i} style={{ borderBottom: "1px solid var(--border-default)", transition: "background 0.2s" }}
+                          onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
+                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                        >
+                          <td style={{ padding: "12px", color: "var(--neutral-100)", fontWeight: 600, whiteSpace: "nowrap" }}>
+                            {branchesMap.get(r.originBranchId) || `Sucursal ${r.originBranchId}`}
+                            <span style={{ color: "var(--neutral-500)", margin: "0 6px" }}>→</span>
+                            {branchesMap.get(r.destinationBranchId) || `Sucursal ${r.destinationBranchId}`}
+                          </td>
+                          <td style={{ padding: "12px", color: "var(--neutral-300)" }}>{r.totalTransfers}</td>
+                          <td style={{ padding: "12px" }}><Badge variant="success">{r.onTimeTransfers}</Badge></td>
+                          <td style={{ padding: "12px" }}><Badge variant={r.delayedTransfers > 0 ? "danger" : "neutral"}>{r.delayedTransfers}</Badge></td>
+                          <td style={{ padding: "12px" }}>
+                            <span style={{ color: sla >= 80 ? "#2ecc71" : sla >= 50 ? "#f39c12" : "#e74c3c", fontWeight: 700 }}>
+                              {isNaN(sla) ? "—" : `${sla.toFixed(0)}%`}
+                            </span>
+                          </td>
+                          <td style={{ padding: "12px", color: "var(--neutral-400)" }}>
+                            {r.averageDelayHours > 0
+                              ? r.averageDelayHours > 24
+                                ? `${(r.averageDelayHours / 24).toFixed(1)} días`
+                                : `${r.averageDelayHours.toFixed(1)} hrs`
+                              : <span style={{ color: "var(--neutral-600)" }}>—</span>}
+                          </td>
+                          <td style={{ padding: "12px", color: "var(--neutral-200)", fontWeight: 600 }}>
+                            {r.totalShippingCost > 0 ? `$${Number(r.totalShippingCost).toLocaleString("es-CO", { minimumFractionDigits: 0 })}` : <span style={{ color: "var(--neutral-600)" }}>—</span>}
+                          </td>
+                          <td style={{ padding: "12px" }}>
+                            {r.urgentCount > 0 ? <Badge variant="danger">{r.urgentCount}</Badge> : <span style={{ color: "var(--neutral-600)" }}>—</span>}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+        </div>
+      ) : activeTab === "monitor" ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           <div style={{ display: "flex", gap: "16px" }}>
             <Card style={{ padding: "16px 24px", display: "flex", alignItems: "center", gap: "16px", marginBottom: "0px", minWidth: "220px" }}>

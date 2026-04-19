@@ -23,7 +23,8 @@ public class AnalyticsService implements AnalyticsUseCase {
     }
 
     @Override
-    public List<TopSellingProduct> getTopSellingProducts(int limit, LocalDateTime startDate, LocalDateTime endDate, Long branchId) {
+    public List<TopSellingProduct> getTopSellingProducts(int limit, LocalDateTime startDate, LocalDateTime endDate,
+            Long branchId) {
         if (limit <= 0) {
             limit = 5;
         }
@@ -57,7 +58,6 @@ public class AnalyticsService implements AnalyticsUseCase {
                 getSalesTrend(startDate, endDate, branchId),
                 getTopSellingProducts(5, startDate, endDate, branchId),
                 getBranchValuations(branchId),
-                getBranchPerformance(startDate, endDate, branchId)
-        );
+                getBranchPerformance(startDate, endDate, branchId));
     }
 }
