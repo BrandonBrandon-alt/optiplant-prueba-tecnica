@@ -269,6 +269,7 @@ export default function AuditPage() {
 
       <Card style={{ padding: 0, overflow: "hidden" }}>
         <DataTable<any>
+          itemsPerPage={25}
           columns={columns}
           data={filteredAndSortedMovements}
           sortConfig={sortConfig}

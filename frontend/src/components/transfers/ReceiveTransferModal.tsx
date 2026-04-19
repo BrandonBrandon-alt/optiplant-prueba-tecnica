@@ -135,6 +135,7 @@ export default function ReceiveTransferModal({ open, onClose, onSuccess, transfe
 
         <div style={{ overflow: "hidden", borderRadius: "12px", border: "1px solid var(--border-subtle)" }}>
           <DataTable<TransferDetailResponse>
+            itemsPerPage={25}
             columns={columns}
             data={transfer.details ?? []}
             density="compact"

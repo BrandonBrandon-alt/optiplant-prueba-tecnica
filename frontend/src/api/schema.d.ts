@@ -1446,6 +1446,9 @@ export interface components {
             /** Format: date-time */
             alertDate?: string;
             resolved?: boolean;
+            type?: string;
+            /** Format: int64 */
+            referenceId?: number;
         };
     };
     responses: never;

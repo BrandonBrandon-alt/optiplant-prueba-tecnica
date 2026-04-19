@@ -409,6 +409,7 @@ export default function InventoryPage() {
           <div className="mt-12 outline-none">
             <Card className="p-0 overflow-hidden border-[var(--neutral-800)] bg-[var(--bg-card)] shadow-2xl">
               <DataTable<ProductResponse>
+                itemsPerPage={25}
                 sortConfig={sortConfig}
                 onSort={handleSort}
                 columns={[
@@ -539,6 +540,7 @@ export default function InventoryPage() {
 
             <Card style={{ padding: 0, overflow: "hidden", border: "1px solid var(--border-default)" }}>
               <DataTable<InventoryMovementExtended>
+                itemsPerPage={25}
                 columns={[
                   {
                     header: "Fecha y Hora",

@@ -666,6 +666,7 @@ function PurchasesContent() {
 
         <Card title={`Kardex de Adquisiciones (${filteredOrders.length})`} className="shadow-2xl border-[var(--neutral-800)] bg-[var(--bg-card)] overflow-hidden rounded-[2rem]">
           <DataTable 
+            itemsPerPage={25}
             columns={columns.map(col => ({ ...col, header: col.label }))} 
             data={filteredOrders} 
             isLoading={isLoadingOrders}

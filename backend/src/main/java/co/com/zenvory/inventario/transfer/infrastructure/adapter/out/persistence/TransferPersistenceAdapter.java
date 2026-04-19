@@ -38,6 +38,13 @@ public class TransferPersistenceAdapter implements TransferRepositoryPort {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<Transfer> findByBranch(Long branchId) {
+        return jpaTransferRepository.findByOriginBranchIdOrDestinationBranchIdOrderByIdDesc(branchId, branchId).stream()
+                .map(this::toDomain)
+                .collect(Collectors.toList());
+    }
+
     private TransferEntity toEntity(Transfer domain) {
         TransferEntity entity = new TransferEntity();
         entity.setId(domain.getId());

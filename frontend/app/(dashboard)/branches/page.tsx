@@ -472,6 +472,7 @@ export default function BranchesPage() {
       {/* Table Card */}
       <Card delay="0.1s" style={{ padding: 0, overflow: "hidden" }}>
         <DataTable<BranchResponse>
+          itemsPerPage={25}
           columns={columns}
           data={filteredAndSortedBranches}
           sortConfig={sortConfig}

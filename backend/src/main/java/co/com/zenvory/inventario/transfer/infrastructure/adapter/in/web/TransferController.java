@@ -10,6 +10,10 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import co.com.zenvory.inventario.auth.application.port.out.UserRepositoryPort;
+import co.com.zenvory.inventario.auth.domain.model.User;
 
 @RestController
 @RequestMapping("/api/v1/transfers")
@@ -17,9 +21,11 @@ import org.springframework.web.bind.annotation.*;
 public class TransferController {
 
     private final TransferUseCase transferUseCase;
+    private final UserRepositoryPort userRepositoryPort;
 
-    public TransferController(TransferUseCase transferUseCase) {
+    public TransferController(TransferUseCase transferUseCase, UserRepositoryPort userRepositoryPort) {
         this.transferUseCase = transferUseCase;
+        this.userRepositoryPort = userRepositoryPort;
     }
 
     @PostMapping
@@ -140,7 +146,17 @@ public class TransferController {
 
     @GetMapping
     public ResponseEntity<java.util.List<TransferResponse>> getAllTransfers() {
-        return ResponseEntity.ok(transferUseCase.getAllTransfers().stream()
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepositoryPort.findByEmail(auth.getName()).orElseThrow();
+        
+        java.util.List<Transfer> transfers;
+        if ("ADMIN".equals(user.getRole().getNombre())) {
+            transfers = transferUseCase.getAllTransfers();
+        } else {
+            transfers = transferUseCase.getTransfersByBranch(user.getSucursalId());
+        }
+        
+        return ResponseEntity.ok(transfers.stream()
                 .map(TransferResponse::fromDomain)
                 .toList());
     }

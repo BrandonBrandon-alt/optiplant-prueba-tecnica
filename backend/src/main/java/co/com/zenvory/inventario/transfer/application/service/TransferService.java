@@ -76,9 +76,11 @@ public class TransferService implements TransferUseCase {
                 user.getNombre()
         );
 
-        // SENIOR DIRECTIVE: Auto-Approval for Managers
-        if (user.getRole() != null && "MANAGER".equals(user.getRole().getNombre())) {
+        boolean autoApproved = false;
+        // SENIOR DIRECTIVE: Auto-Approval for Managers and Admins
+        if (user.getRole() != null && ("MANAGER".equals(user.getRole().getNombre()) || "ADMIN".equals(user.getRole().getNombre()))) {
             transfer.approveDestination(user.getId(), user.getNombre());
+            autoApproved = true;
         }
 
         // REGLA DE NEGOCIO: Reservar stock en la sucursal de origen
@@ -90,7 +92,21 @@ public class TransferService implements TransferUseCase {
             );
         }
 
-        return transferRepositoryPort.save(transfer);
+        Transfer savedTransfer = transferRepositoryPort.save(transfer);
+
+        if (autoApproved) {
+            String msg = String.format("⚠ Solicitud de Traslado: La sucursal %s solicita productos. Requiere tu autorización de salida.", 
+                    user.getSucursalId() != null ? "tu sucursal vecina" : "Administración");
+            alertUseCase.createAlert(
+                savedTransfer.getOriginBranchId(), 
+                details.get(0).getProductId(), 
+                msg, 
+                co.com.zenvory.inventario.alert.domain.model.StockAlert.AlertType.TRANSFER_REQUEST, 
+                savedTransfer.getId()
+            );
+        }
+
+        return savedTransfer;
     }
 
     @Override
@@ -163,8 +179,17 @@ public class TransferService implements TransferUseCase {
 
         transfer.prepare(user.getId(), user.getNombre());
 
-        // En la preparación, el administrador podría ajustar cantidades solicitadas.
-        // Por sencillez en esta fase, solo pasamos a estado PREPARING.
+        // Al autorizar la salida (preparar), buscamos si había una alerta de solicitud para cerrarla
+        try {
+            List<co.com.zenvory.inventario.alert.domain.model.StockAlert> originAlerts = alertUseCase.getActiveAlerts(transfer.getOriginBranchId());
+            for (var alert : originAlerts) {
+                if (alert.getMessage().contains("Solicitud de Traslado") && alert.getProductId().equals(transfer.getDetails().get(0).getProductId())) {
+                    alertUseCase.dismissAlert(alert.getId(), "Transferencia autorizada por el gerente");
+                }
+            }
+        } catch (Exception e) {
+            // No bloqueamos el flujo principal si falla la limpieza de alertas
+        }
         
         return transferRepositoryPort.save(transfer);
     }
@@ -189,7 +214,7 @@ public class TransferService implements TransferUseCase {
                 hasIssues = true;
                 String msg = String.format("Novedad en Traslado #%d: Faltan %d unidades del producto #%d en destino", 
                         transfer.getId(), detail.getMissingQuantity(), detail.getProductId());
-                alertUseCase.createAlert(transfer.getDestinationBranchId(), detail.getProductId(), msg);
+                alertUseCase.createAlert(transfer.getDestinationBranchId(), detail.getProductId(), msg, co.com.zenvory.inventario.alert.domain.model.StockAlert.AlertType.ISSUE_REPORTED, transfer.getId());
             }
             
             // Si llego mayor a cero, ingresar físicamente a la sucursal de destino
@@ -351,6 +376,11 @@ public class TransferService implements TransferUseCase {
     @Override
     public List<Transfer> getAllTransfers() {
         return transferRepositoryPort.findAll();
+    }
+
+    @Override
+    public List<Transfer> getTransfersByBranch(Long branchId) {
+        return transferRepositoryPort.findByBranch(branchId);
     }
 
     @Override

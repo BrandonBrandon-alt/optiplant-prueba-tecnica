@@ -66,6 +66,17 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    href: "/sales/history",
+    label: "Historial Ventas",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M12 8v4l3 3" />
+        <circle cx="12" cy="12" r="9" />
+        <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" />
+      </svg>
+    ),
+  },
 ];
 
 const adminItems = [
@@ -121,17 +132,6 @@ const adminItems = [
         <line x1="16" y1="13" x2="8" y2="13" />
         <line x1="16" y1="17" x2="8" y2="17" />
         <polyline points="10 9 9 9 8 9" />
-      </svg>
-    ),
-  },
-  {
-    href: "/sales/history",
-    label: "Historial Ventas",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M12 8v4l3 3" />
-        <circle cx="12" cy="12" r="9" />
-        <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" />
       </svg>
     ),
   },
@@ -266,7 +266,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       // OPERADOR_INVENTARIO: Panel + physical inventory + transfer execution
       return item.label === "Panel" || item.label === "Inventario" || item.label === "Traslados";
     }
-    return true; // Manager sees all base navItems
+    // Managers see everything in base navItems
+    return true;
   });
 
   const NavLink = ({ href, label, icon }: { href: string; label: string; icon: React.ReactNode }) => {

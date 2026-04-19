@@ -17,6 +17,7 @@ import Modal from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
 import { 
   ArrowRight, 
+  ArrowRightCircle,
   Truck, 
   Package, 
   Clock, 
@@ -24,7 +25,9 @@ import {
   AlertCircle, 
   XCircle, 
   Timer,
-  MessageCircle
+  MessageCircle,
+  LogOut,
+  LogIn
 } from "lucide-react";
 
 // Components
@@ -88,7 +91,10 @@ function TransfersContent() {
       const allTransfers = tRes.data ?? [];
       // Filter for non-admins: only show where I am origin or destination
       if (!isAdmin && myBranchId) {
-        let branchTransfers = allTransfers.filter(t => t.originBranchId === myBranchId || t.destinationBranchId === myBranchId);
+        let branchTransfers = allTransfers.filter(t => 
+          Number(t.originBranchId) === Number(myBranchId) || 
+          Number(t.destinationBranchId) === Number(myBranchId)
+        );
         // INVENTORY only sees operational transfers they need to act on (Origin) 
         // OR transfers they requested (Destination)
         if (isInventory) {
@@ -448,6 +454,7 @@ function TransfersContent() {
 
           <Card style={{ padding: 0, overflow: "hidden", border: "1px solid var(--border-default)" }}>
             <DataTable<TransferResponse>
+              itemsPerPage={25}
               columns={monitorColumns}
               data={transfers}
               isLoading={loading}
@@ -506,46 +513,101 @@ function TransfersContent() {
                 icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>}
               />
             ) : (
-              filteredTransfers.map((t) => (
-                <Card key={t.id} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              filteredTransfers.map((t) => {
+                const originName = branchesMap.get(t.originBranchId!) || "Sede Desconocida";
+                const destName = branchesMap.get(t.destinationBranchId!) || "Sede Desconocida";
+                
+                // Logic for the Action Banner
+                let actionMessage = "";
+                let actionColor = "var(--neutral-400)";
+                let actionIcon = <Clock size={14} />;
+
+                switch (t.status) {
+                  case "PENDING":
+                    actionMessage = `Esperando aprobación de ingreso en ${destName}`;
+                    actionColor = "var(--color-warning)";
+                    break;
+                  case "APPROVED_DEST":
+                    actionMessage = `Esperando autorización de salida en ${originName}`;
+                    actionColor = "var(--brand-500)";
+                    actionIcon = <Timer size={14} />;
+                    break;
+                  case "PREPARING":
+                    actionMessage = `Preparando despacho en ${originName}`;
+                    actionColor = "var(--color-info)";
+                    actionIcon = <Package size={14} />;
+                    break;
+                  case "IN_TRANSIT":
+                    actionMessage = `En tránsito hacia ${destName}`;
+                    actionColor = "var(--color-info)";
+                    actionIcon = <Truck size={14} />;
+                    break;
+                  case "WITH_ISSUE":
+                    actionMessage = "Novedad en entrega: Requiere resolución";
+                    actionColor = "var(--color-danger)";
+                    actionIcon = <AlertCircle size={14} />;
+                    break;
+                  case "DELIVERED":
+                    actionMessage = "Traslado completado con éxito";
+                    actionColor = "var(--color-success)";
+                    actionIcon = <CheckCircle2 size={14} />;
+                    break;
+                  default:
+                    actionMessage = t.status === "CANCELLED" ? "Traslado cancelado" : "Traslado rechazado";
+                    actionColor = "var(--neutral-500)";
+                    actionIcon = <XCircle size={14} />;
+                }
+
+                return (
+                <Card key={t.id} style={{ display: "flex", flexDirection: "column", gap: "20px", position: "relative", overflow: "hidden" }}>
+                  {/* Decorative status strip */}
+                  <div style={{ position: "absolute", top: 0, left: 0, width: "4px", height: "100%", background: actionColor }} />
+                  
                   <div style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "start", gap: "24px" }}>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "32px", alignItems: "start" }}>
-                      <div>
-                        <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "4px" }}>Ruta</p>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 600 }}>
-                          <span>{branchesMap.get(t.originBranchId!) || t.originBranchId}</span>
-                          <ArrowRight size={14} style={{ color: "var(--brand-500)" }} />
-                          <span>{branchesMap.get(t.destinationBranchId!) || t.destinationBranchId}</span>
+                      
+                      {/* REDESIGNED ROUTE HEADER */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                        <div style={{ background: "rgba(255,255,255,0.03)", padding: "10px 16px", borderRadius: "12px", border: "1px solid var(--border-default)" }}>
+                           <p style={{ fontSize: "9px", color: "var(--neutral-500)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+                             <LogOut size={10} /> Sale de (Origen)
+                           </p>
+                           <p style={{ fontSize: "15px", fontWeight: 700, color: "var(--neutral-100)" }}>{originName}</p>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                          <ArrowRightCircle size={20} style={{ color: actionColor, opacity: 0.8 }} />
+                        </div>
+
+                        <div style={{ background: "rgba(255,255,255,0.03)", padding: "10px 16px", borderRadius: "12px", border: "1px solid var(--border-default)" }}>
+                           <p style={{ fontSize: "9px", color: "var(--neutral-500)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+                             <LogIn size={10} /> Llega a (Destino)
+                           </p>
+                           <p style={{ fontSize: "15px", fontWeight: 700, color: "var(--neutral-100)" }}>{destName}</p>
                         </div>
                       </div>
 
-                      <div>
-                        {(() => {
-                          const s = t.status || "PENDING";
-                          let variant: "neutral" | "success" | "warning" | "danger" | "info" = "neutral";
-                          let icon = <Clock size={12} />;
-                          let label = "Por Aprobar";
-
-                          switch (s) {
-                            case "PENDING": label = "Por Aprobar Destino"; variant = "neutral"; break;
-                            case "APPROVED_DEST": label = "Esperando Origen"; variant = "info"; icon = <Timer size={12} />; break;
-                            case "PREPARING": label = "En Preparación"; variant = "warning"; icon = <Package size={12} />; break;
-                            case "IN_TRANSIT": label = "En Tránsito"; variant = "info"; icon = <Truck size={12} />; break;
-                            case "DELIVERED": label = "Entregado"; variant = "success"; icon = <CheckCircle2 size={12} />; break;
-                            case "WITH_ISSUE": label = "Con Novedad"; variant = "danger"; icon = <AlertCircle size={12} />; break;
-                            case "CANCELLED": label = "Cancelado"; variant = "neutral"; icon = <XCircle size={12} />; break;
-                            case "REJECTED": label = "Rechazado"; variant = "danger"; icon = <XCircle size={12} />; break;
-                          }
-
-                          return (
-                            <Badge variant={variant} dot>
-                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                {icon}
-                                <span style={{ fontWeight: 700 }}>{label}</span>
-                              </div>
-                            </Badge>
-                          );
-                        })()}
+                      {/* ACTION INDICATOR BANNER */}
+                      <div style={{ 
+                        display: "flex", 
+                        flexDirection: "column", 
+                        justifyContent: "center",
+                        minWidth: "200px"
+                      }}>
+                        <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "6px" }}>Estado Actual</p>
+                        <div style={{ 
+                          display: "flex", 
+                          alignItems: "center", 
+                          gap: "8px", 
+                          padding: "8px 12px", 
+                          background: `rgba(${actionColor === 'var(--brand-500)' ? 'var(--brand-500-rgb)' : '255,255,255'}, 0.05)`, 
+                          borderRadius: "8px",
+                          border: `1px solid ${actionColor}`,
+                          color: actionColor
+                        }}>
+                          {actionIcon}
+                          <span style={{ fontSize: "13px", fontWeight: 700, letterSpacing: "-0.01em" }}>{actionMessage}</span>
+                        </div>
                       </div>
 
                       <div>
@@ -555,19 +617,24 @@ function TransfersContent() {
                         </Badge>
                       </div>
 
-                      {(t.status === "CANCELLED" || t.status === "REJECTED") && (t as any).reasonResolution && (
-                        <div style={{ maxWidth: "250px" }}>
-                          <p style={{ fontSize: "11px", color: "var(--color-danger)", textTransform: "uppercase", marginBottom: "4px" }}>Resuelto por: {(t as any).resolutorNombre || "SISTEMA"}</p>
-                          <p style={{ fontSize: "12px", fontStyle: "italic", color: "var(--neutral-400)", lineHeight: "1.4" }}>
-                             "{ (t as any).reasonResolution }"
-                          </p>
-                        </div>
-                      )}
-
                       <div>
                         <p style={{ fontSize: "11px", color: "var(--neutral-500)", textTransform: "uppercase", marginBottom: "4px" }}>ID</p>
-                        <p style={{ fontSize: "14px", fontWeight: 600 }}>#{t.id}</p>
+                        <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--neutral-400)" }}>#{t.id}</p>
                       </div>
+
+                      {(t.status === "CANCELLED" || t.status === "REJECTED") && (t as any).reasonResolution && (
+                        <div style={{ maxWidth: "400px", marginTop: "4px" }}>
+                          <p style={{ fontSize: "11px", color: "var(--color-danger)", textTransform: "uppercase", marginBottom: "4px" }}>Motivo de la resolución:</p>
+                          <div style={{ background: "rgba(217,99,79,0.05)", padding: "12px", borderRadius: "8px", border: "1px solid rgba(217,99,79,0.2)" }}>
+                            <p style={{ fontSize: "13px", color: "var(--neutral-300)", fontStyle: "italic", lineHeight: "1.5" }}>
+                              "{ (t as any).reasonResolution }"
+                            </p>
+                            <p style={{ fontSize: "11px", color: "var(--neutral-500)", marginTop: "8px", textAlign: "right" }}>
+                              — Por: {(t as any).resolutorNombre || "SISTEMA"}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
@@ -687,6 +754,17 @@ function TransfersContent() {
                       </div>
 
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", zIndex: 1, position: "relative", minWidth: "120px" }}>
+                        <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: (t as any).autorizadorNombre ? "var(--brand-500)" : "var(--neutral-800)", display: "flex", alignItems: "center", justifyContent: "center", color: (t as any).autorizadorNombre ? "white" : "var(--neutral-600)" }}>
+                          <CheckCircle2 size={12} />
+                        </div>
+                        <div style={{ textAlign: "center" }}>
+                          <p style={{ fontSize: "11px", fontWeight: 700, color: (t as any).autorizadorNombre ? "var(--neutral-200)" : "var(--neutral-600)" }}>Autorizado</p>
+                          <p style={{ fontSize: "10px", color: "var(--neutral-500)", marginBottom: "2px" }}>{ (t as any).autorizadorNombre ? "✓" : "-" }</p>
+                          { (t as any).autorizadorNombre && <p style={{ fontSize: "10px", color: "var(--brand-400)", fontWeight: 600 }}>{ (t as any).autorizadorNombre }</p> }
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", zIndex: 1, position: "relative", minWidth: "120px" }}>
                         <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: (t as any).dispatchDate ? "var(--brand-500)" : "var(--neutral-800)", display: "flex", alignItems: "center", justifyContent: "center", color: (t as any).dispatchDate ? "white" : "var(--neutral-600)" }}>
                           <Truck size={12} />
                         </div>
@@ -710,11 +788,12 @@ function TransfersContent() {
                     </div>
                   </div>
                 </Card>
-              ))
-            )}
-          </div>
-        </>
-      )}
+              );
+            })
+          )}
+        </div>
+      </>
+    )}
 
       {/* Modals */}
       <NewTransferModal 

@@ -17,6 +17,7 @@ public interface AlertUseCase {
     void dismissAlert(Long alertId, String reason);
     
     void createAlert(Long branchId, Long productId, String message);
+    void createAlert(Long branchId, Long productId, String message, StockAlert.AlertType type, Long referenceId);
     void handleLowStockCheck(LocalInventory inv);
     void handleRestoredStockCheck(Long branchId, Long productId);
 }

@@ -521,6 +521,7 @@ export default function UsersPage() {
 
             <Card style={{ padding: 0, overflow: "hidden" }}>
                 <DataTable<UserResponse>
+                    itemsPerPage={25}
                     columns={columns}
                     data={filteredAndSortedUsers}
                     sortConfig={sortConfig}
