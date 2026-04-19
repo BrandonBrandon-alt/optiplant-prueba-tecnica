@@ -48,7 +48,13 @@ public class InventoryService implements InventoryUseCase {
     @Override
     public LocalInventory getInventory(Long branchId, Long productId) {
         return localInventoryRepository.findByBranchAndProduct(branchId, productId)
-                .orElseThrow(() -> new InventoryNotFoundException(branchId, productId));
+                .orElseGet(() -> LocalInventory.builder()
+                        .branchId(branchId)
+                        .productId(productId)
+                        .currentQuantity(BigDecimal.ZERO)
+                        .minimumStock(BigDecimal.ZERO)
+                        .committedQuantity(BigDecimal.ZERO)
+                        .build());
     }
 
     @Override
@@ -243,6 +249,7 @@ public class InventoryService implements InventoryUseCase {
                             .salePrice(product.getSalePrice())
                             .averageCost(product.getAverageCost())
                             .unit(product.getUnitAbbreviation())
+                            .productActive(product.getActive())
                             .lastUpdated(inv.getLastUpdated())
                             .build();
                 })

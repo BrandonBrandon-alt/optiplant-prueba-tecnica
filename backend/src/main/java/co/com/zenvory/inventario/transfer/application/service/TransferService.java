@@ -77,8 +77,9 @@ public class TransferService implements TransferUseCase {
         );
 
         boolean autoApproved = false;
-        // SENIOR DIRECTIVE: Auto-Approval for Managers and Admins
-        if (user.getRole() != null && ("MANAGER".equals(user.getRole().getNombre()) || "ADMIN".equals(user.getRole().getNombre()))) {
+        // REGLA DE NEGOCIO: Los Managers y Admins auto-aprueban la recepción en destino al solicitar
+        String role = user.getRole() != null ? user.getRole().getNombre() : "";
+        if ("MANAGER".equals(role) || "ADMIN".equals(role)) {
             transfer.approveDestination(user.getId(), user.getNombre());
             autoApproved = true;
         }

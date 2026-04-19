@@ -31,6 +31,7 @@ interface InventoryItem {
   sku: string;
   stockActual: number;
   precioVenta: number;
+  activo?: boolean;
 }
 
 interface CartItem {
@@ -150,8 +151,9 @@ function POSContent() {
 
   const filteredProducts = useMemo(() => {
     return inventory.filter(item => 
-      item.productoNombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.sku.toLowerCase().includes(searchTerm.toLowerCase())
+      (item.activo !== false) && 
+      (item.productoNombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       item.sku.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [inventory, searchTerm]);
 

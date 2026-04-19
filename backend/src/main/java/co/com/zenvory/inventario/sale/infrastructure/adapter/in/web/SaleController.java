@@ -31,7 +31,7 @@ public class SaleController {
     }
 
     @PostMapping
-    @org.springframework.security.access.prepost.PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_SELLER')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SELLER')")
     public ResponseEntity<SaleResponse> createSale(@Valid @RequestBody SaleRequest request) {
         CreateSaleCommand command = new CreateSaleCommand(
                 request.branchId(),
@@ -55,7 +55,7 @@ public class SaleController {
     }
 
     @GetMapping
-    @org.springframework.security.access.prepost.PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_SELLER')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SELLER')")
     public ResponseEntity<List<SaleResponse>> getAllSales(@RequestParam(required = false) Long branchId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         User user = userRepositoryPort.findByEmail(auth.getName()).orElseThrow();
@@ -75,14 +75,14 @@ public class SaleController {
     }
 
     @GetMapping("/{id}")
-    @org.springframework.security.access.prepost.PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_SELLER')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SELLER')")
     public ResponseEntity<SaleResponse> getSale(@PathVariable Long id) {
         Sale sale = saleManagementUseCase.getSaleById(id);
         return ResponseEntity.ok(SaleResponse.fromDomain(sale));
     }
 
     @DeleteMapping("/{id}")
-    @org.springframework.security.access.prepost.PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_MANAGER')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Void> cancelSale(@PathVariable Long id, @RequestParam String reason) {
         saleManagementUseCase.cancelSale(id, reason);
         return ResponseEntity.noContent().build();

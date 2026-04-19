@@ -4,7 +4,7 @@ import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
-import { ShoppingCart, RotateCcw, Truck, CreditCard, ArrowRight, ChevronDown } from "lucide-react";
+import { ShoppingCart, RotateCcw, Truck, CreditCard, ArrowRight, ChevronDown, XCircle } from "lucide-react";
 
 const EXTERNAL_MOTIVES: Record<string, { label: string, path: string, description: string, icon: any }> = {
   COMPRA: {
@@ -85,7 +85,28 @@ export default function AdjustStockModal({
       onClose={onClose}
       title={`Registrar Movimiento - ${product?.nombre}`}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: "40px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        {product?.activo === false && (
+          <div style={{ 
+            padding: "16px", 
+            background: "var(--color-danger-10)", 
+            border: "1px solid var(--color-danger-20)", 
+            borderRadius: "12px",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            color: "var(--color-danger)"
+          }}>
+            <div style={{ padding: "8px", background: "var(--color-danger-10)", borderRadius: "8px" }}>
+              <XCircle size={20} />
+            </div>
+            <div>
+              <h4 style={{ margin: 0, fontSize: "14px", fontWeight: 800, textTransform: "uppercase" }}>Producto Descatalogado</h4>
+              <p style={{ margin: 0, fontSize: "12px", opacity: 0.8 }}>Este producto está inactivo en el catálogo. Use este módulo solo para ajustes de liquidación.</p>
+            </div>
+          </div>
+        )}
+
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px" }}>
           <button 
             onClick={() => setAdjustData({...adjustData, type: "INGRESO"})}

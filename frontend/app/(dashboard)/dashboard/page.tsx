@@ -116,12 +116,40 @@ export default function DashboardPage() {
 
     async function fetchLocal() {
       try {
-        const [traRes, braRes, salesRes] = await Promise.all([
+        let startDate: string | undefined = undefined;
+        let endDate: string | undefined = undefined;
+        const now = new Date();
+
+        if (timeRange === "today") {
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          startDate = today.toISOString();
+          endDate = new Date(today.getTime() + 86400000 - 1).toISOString();
+        } else if (timeRange === "7d") {
+          const past = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+          startDate = past.toISOString();
+        } else if (timeRange === "month") {
+          const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          startDate = startMonth.toISOString();
+        }
+
+        const dateQuery = { startDate, endDate };
+        const cleanQuery = Object.fromEntries(Object.entries(dateQuery).filter(([_, v]) => v != null));
+
+        const [traRes, braRes, gloRes, topRes, trendRes] = await Promise.all([
           apiClient.GET("/api/v1/transfers"),
           apiClient.GET("/api/branches"),
-          apiClient.GET("/api/v1/sales", { params: { query: { branchId: session?.sucursalId } } })
+          // @ts-ignore
+          apiClient.GET("/api/v1/analytics/global-summary", { params: { query: { ...cleanQuery } } }),
+          // @ts-ignore
+          apiClient.GET("/api/v1/analytics/top-products", { params: { query: { limit: 5, ...cleanQuery } } }),
+          // @ts-ignore
+          (apiClient as any).GET("/api/v1/analytics/sales-trend", { params: { query: cleanQuery } }),
         ]);
+
         setBranches(braRes.data ?? []);
+        setTopProducts(topRes.data ?? []);
+        setGlobal(gloRes.data ?? null);
+        setSalesTrend(trendRes?.data ?? []);
 
         let branchTransfers = traRes.data ?? [];
         if (session?.sucursalId) {
@@ -132,29 +160,13 @@ export default function DashboardPage() {
         }
         setTransfers(branchTransfers.filter((t: any) => t.status !== "RECEIVED"));
 
-        if (salesRes.data) {
-          const now = new Date();
-          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-          const allSales = salesRes.data as any[];
-          const completedSales = allSales.filter((s: any) => s.status === "COMPLETED");
-          const monthRevenue = completedSales
-            .filter((s: any) => new Date(s.date).getTime() >= monthStart)
-            .reduce((acc: number, s: any) => acc + (s.totalFinal || 0), 0);
-          const todayRevenue = completedSales
-            .filter((s: any) => new Date(s.date).getTime() >= todayStart)
-            .reduce((acc: number, s: any) => acc + (s.totalFinal || 0), 0);
-            
-          setSalesTrend([{ saleDate: "Hoy", revenue: todayRevenue }, { saleDate: "Este Mes", revenue: monthRevenue }]);
-        }
-
-        if (isManager && session?.sucursalId) {
+        if (session?.sucursalId) {
           // @ts-ignore
           const alertRes = await apiClient.GET("/api/v1/alerts", { params: { query: { branchId: session.sucursalId } } });
           setAlerts((alertRes.data ?? []).filter(a => !a.resolved));
         }
       } catch (e) {
-        console.error(e);
+        console.error("Manager dashboard fetch error:", e);
       } finally {
         setLoading(false);
       }
@@ -222,9 +234,46 @@ export default function DashboardPage() {
   if (isManager) {
     return (
       <div style={{ padding: "var(--page-padding)", maxWidth: "1400px", margin: "0 auto" }}>
-        <PageHeader title="Panel de Gerencia" description={`Bienvenido, ${session?.nombre ?? "Gerente"}. Información operativa de tu sede.`} />
+        <PageHeader title="Panel de Gerencia" description={`Bienvenido, ${session?.nombre ?? "Gerente"}. Información operativa y analítica de tu sede.`} />
         
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "24px", marginBottom: "32px", marginTop: "32px" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "24px", marginTop: "16px" }}>
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value as any)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+              background: 'var(--bg-card)',
+              color: 'var(--neutral-100)',
+              outline: 'none',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: '13px',
+            }}
+          >
+            <option value="today">Ventas de Hoy</option>
+            <option value="7d">Últimos 7 Días</option>
+            <option value="month">Este Mes</option>
+            <option value="all">Histórico Completo</option>
+          </select>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "24px", marginBottom: "32px" }}>
+          <KpiCard
+            label="Ventas Netas"
+            value={formatCOP(global?.totalRevenue ?? 0)}
+            sub={`Ticket Promedio: ${formatCOP(global?.averageTicket ?? 0)}`}
+            accent="#10b981"
+            icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>}
+          />
+          <KpiCard
+            label="Valor Inventario Local"
+            value={formatCOP(global?.totalInventoryValue ?? 0)}
+            sub="Basado en stock actual"
+            accent="#f59e0b"
+            icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 8l-9-4-9 4m18 8l-9 4-9-4m18-4l-9 4-9-4m9-11v11" /></svg>}
+          />
           <Link href="/transfers" style={{ textDecoration: 'none' }} className="transition-transform hover:scale-[1.02]">
             <KpiCard
               label="Traslados Pendientes"
@@ -243,18 +292,20 @@ export default function DashboardPage() {
               icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>}
             />
           </Link>
-          <Link href="/transfers" style={{ textDecoration: 'none' }} className="transition-transform hover:scale-[1.02]">
-            <KpiCard
-              label="Traslados en Tránsito"
-              value={String(transfers.filter(t => t.status === "IN_TRANSIT").length)}
-              sub="Por confirmar recepción"
-              accent="#f59e0b"
-              icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3m-1 7h-5l-1-1H7l-1 1H1m19-1a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" /></svg>}
-            />
-          </Link>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "24px", marginBottom: "32px" }}>
+          <Card title="Tendencia de Facturación">
+            <div style={{ width: '100%', height: 300, paddingTop: '16px' }}>
+              <SalesTrendChart data={salesTrend} variant="line" />
+            </div>
+          </Card>
+          <Card title="Productos más vendidos (Sede)">
+            <TopProductsList products={topProducts} />
+          </Card>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "24px" }}>
           <Card title="Traslados en Curso">
             <ActiveTransfersList transfers={transfers} branchMap={branchMap} />
           </Card>

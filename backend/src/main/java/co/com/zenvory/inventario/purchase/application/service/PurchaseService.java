@@ -52,7 +52,7 @@ public class PurchaseService implements PurchaseUseCase {
                 command.supplierId(),
                 command.userId(),
                 command.branchId(), 
-                command.estimatedArrivalDate(),
+                command.leadTimeDays(),
                 command.paymentDueDays(),
                 details,
                 isManager

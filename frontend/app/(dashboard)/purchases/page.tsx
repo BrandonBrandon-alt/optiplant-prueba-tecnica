@@ -32,7 +32,7 @@ const formatCurrency = (amount: number) => {
 };
 
 // ── Types ──────────────────────────────────────────────────
-interface Product { id: number; sku: string; nombre: string; costoPromedio: number; precioVenta: number; proveedorId: number; }
+interface Product { id: number; sku: string; nombre: string; costoPromedio: number; precioVenta: number; }
 interface PurchaseDetail { productId: number; nombre: string; sku: string; quantity: number; unitPrice: number | ""; discountPct: number | ""; }
 interface OrderDetailItem { id: number; productId: number; quantity: number; unitPrice: number; subtotal: number; discountPct?: number; productName?: string; }
 interface PurchaseOrder { id: number; supplierId: number; branchId: number; requestDate: string; estimatedArrivalDate: string; actualArrivalDate: string | null; receptionStatus: "AWAITING_APPROVAL" | "PENDING" | "IN_TRANSIT" | "RECEIVED_TOTAL" | "RECEIVED_PARTIAL" | "CANCELLED"; paymentStatus: "POR_PAGAR" | "PAGADO"; total: number; details?: OrderDetailItem[]; reasonResolution?: string; resolutionDate?: string; exceptionApproved?: boolean; }
@@ -77,8 +77,8 @@ function PurchasesContent() {
   // State: New Order
   const [supplierId, setSupplierId] = useState<string>("");
   const [branchId, setBranchId] = useState<string>("");
-  const [estimatedArrival, setEstimatedArrival] = useState<string>("");
-  const [paymentDueDays, setPaymentDueDays] = useState<string>("");
+  const [leadTimeDays, setLeadTimeDays] = useState<number>(3);
+  const [paymentDueDays, setPaymentDueDays] = useState<string>("30");
   const [cart, setCart] = useState<PurchaseDetail[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resolvingOrder, setResolvingOrder] = useState<PurchaseOrder | null>(null);
@@ -102,10 +102,33 @@ function PurchasesContent() {
 
       if (suppliersRes.data) setSuppliers(suppliersRes.data);
       if (branchesRes.data) setBranches(branchesRes.data);
-      if (productsRes.data) setProducts(productsRes.data as Product[]);
     } catch (error) {
       console.error("Error fetching catalogs:", error);
       showToast("Error al cargar catálogos.", "error");
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "new") {
+      fetchProductsForSupplier(supplierId);
+    }
+  }, [supplierId, activeTab]);
+
+  const fetchProductsForSupplier = async (sid: string) => {
+    try {
+      if (!sid) {
+        // Si no hay proveedor, solo cargar si hay búsqueda o nada?
+        // En un ERP con N:M, "productos sin proveedor" no debería ser el default para compras.
+        // Pero para facilitar, si no hay proveedor mostramos vacío o el top.
+        setProducts([]);
+        return;
+      }
+      const { data } = await (apiClient as any).GET("/api/catalog/suppliers/{id}/products", {
+        params: { path: { id: parseInt(sid) } }
+      });
+      setProducts(data ?? []);
+    } catch (err) {
+      console.error("Error fetching supplier products", err);
     }
   };
 
@@ -125,11 +148,10 @@ function PurchasesContent() {
   // ── Handlers & Memos ───────────────────────────────────────
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
-      const matchSupplier = supplierId ? p.proveedorId === parseInt(supplierId) : true;
       const matchSearch = searchTerm ? p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || p.sku.toLowerCase().includes(searchTerm.toLowerCase()) : true;
-      return matchSupplier && matchSearch;
+      return matchSearch;
     });
-  }, [products, searchTerm, supplierId]);
+  }, [products, searchTerm]);
 
   const filteredOrders = useMemo(() => {
     let result = orders.filter(o => {
@@ -160,7 +182,6 @@ function PurchasesContent() {
 
   const cartActions = {
     addToCart: (prod: Product) => {
-      setSupplierId(String(prod.proveedorId));
       setCart(prev => {
         const existing = prev.find(item => item.productId === prod.id);
         if (existing) {
@@ -243,7 +264,7 @@ function PurchasesContent() {
         supplierId: parseInt(supplierId),
         userId: session.id,
         branchId: parseInt(branchId),
-        estimatedArrivalDate: (estimatedArrival || new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0]) + "T00:00:00",
+        leadTimeDays: leadTimeDays || 3,
         paymentDueDays: parseInt(paymentDueDays) || 30,
         items: cart.map(item => ({
           productId: item.productId,
@@ -262,7 +283,7 @@ function PurchasesContent() {
         setCart([]);
         setSupplierId("");
         setBranchId("");
-        setEstimatedArrival("");
+        setLeadTimeDays(3);
         if (session?.rol === "OPERADOR_INVENTARIO") {
           router.push("/inventory");
         } else {
@@ -483,8 +504,8 @@ function PurchasesContent() {
         setSupplierId={setSupplierId}
         branchId={branchId}
         setBranchId={setBranchId}
-        estimatedArrival={estimatedArrival}
-        setEstimatedArrival={setEstimatedArrival}
+        leadTimeDays={leadTimeDays}
+        setLeadTimeDays={setLeadTimeDays}
         paymentDueDays={paymentDueDays}
         setPaymentDueDays={setPaymentDueDays}
         isSubmitting={isSubmitting}

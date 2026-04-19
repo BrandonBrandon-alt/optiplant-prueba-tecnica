@@ -45,16 +45,30 @@ export default function PurchasesHistoryTab({
     },
     { 
       key: "requestDate", 
-      label: "Fecha Emisión", 
+      label: "Emisión y Plazo", 
       render: (row: any) => (
-        <div className="flex flex-col gap-0.5">
-          <div className="flex items-center gap-2 text-[var(--neutral-300)] font-bold">
-            <Calendar size={12} className="text-[var(--neutral-500)]" /> 
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 text-[var(--neutral-100)] font-bold">
+            <Calendar size={12} className="text-[var(--brand-500)]" /> 
             {new Date(row.requestDate).toLocaleDateString()}
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-[var(--neutral-500)] font-mono ml-5">
-            <Clock size={10} />
-            {new Date(row.requestDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          <div className="flex items-center gap-2">
+            <Truck size={12} className="text-[var(--neutral-500)]" />
+            <span className="text-[10px] font-black text-[var(--neutral-400)] uppercase tracking-widest">
+              {row.deliveryLeadTimeDays || 0} DÍAS PACTADOS
+            </span>
+          </div>
+        </div>
+      )
+    },
+    { 
+      key: "estimatedArrivalDate", 
+      label: "Expectativa", 
+      render: (row: any) => (
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-black text-[var(--neutral-500)] uppercase tracking-widest opacity-60">Llegada Est.</span>
+          <div className="flex items-center gap-2 font-black text-[var(--neutral-50)] text-[13px]">
+            {new Date(row.estimatedArrivalDate).toLocaleDateString()}
           </div>
         </div>
       )

@@ -592,7 +592,7 @@ function TransfersContent() {
       {/* Modals */}
       <NewTransferModal 
         open={isNewModalOpen} onClose={() => setIsNewModalOpen(false)} onSuccess={fetchTransfers}
-        currentBranchId={myBranchId} isAdmin={isAdmin} initialProductId={productIdPreselected}
+        currentBranchId={myBranchId} isAdmin={isAdmin} isManager={isManager} initialProductId={productIdPreselected}
         branches={branchesList}
       />
       <ReceiveTransferModal

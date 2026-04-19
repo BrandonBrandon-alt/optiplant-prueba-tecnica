@@ -21,6 +21,7 @@ public class PurchaseOrder {
     private LocalDateTime requestDate;
     private LocalDateTime estimatedArrivalDate;
     private LocalDateTime actualArrivalDate;
+    private Integer deliveryLeadTimeDays;
     
     private ReceptionStatus receptionStatus;
     private PaymentStatus paymentStatus;
@@ -38,6 +39,7 @@ public class PurchaseOrder {
 
     public PurchaseOrder(Long id, Long supplierId, Long branchId, Long userId, Long receivingUserId,
                          LocalDateTime requestDate, LocalDateTime estimatedArrivalDate, LocalDateTime actualArrivalDate,
+                         Integer deliveryLeadTimeDays,
                          ReceptionStatus receptionStatus, PaymentStatus paymentStatus, Integer paymentDueDays, 
                          LocalDateTime paymentDueDate, BigDecimal total, List<PurchaseOrderDetail> details,
                          String reasonResolution, Long resolvedById, LocalDateTime resolutionDate, boolean exceptionApproved, Integer version) {
@@ -54,7 +56,8 @@ public class PurchaseOrder {
         this.userId = userId;
         this.receivingUserId = receivingUserId;
         this.requestDate = (requestDate != null) ? requestDate : LocalDateTime.now();
-        this.estimatedArrivalDate = estimatedArrivalDate;
+        this.deliveryLeadTimeDays = (deliveryLeadTimeDays != null) ? deliveryLeadTimeDays : 3;
+        this.estimatedArrivalDate = (estimatedArrivalDate != null) ? estimatedArrivalDate : this.requestDate.plusDays(this.deliveryLeadTimeDays);
         this.actualArrivalDate = actualArrivalDate;
         this.receptionStatus = (receptionStatus != null) ? receptionStatus : ReceptionStatus.PENDING;
         this.paymentStatus = (paymentStatus != null) ? paymentStatus : PaymentStatus.POR_PAGAR;
@@ -70,10 +73,15 @@ public class PurchaseOrder {
     }
 
     public static PurchaseOrder create(Long supplierId, Long userId, Long branchId, 
-                                     LocalDateTime estimatedArrivalDate, Integer paymentDueDays, List<PurchaseOrderDetail> details, boolean isManager) {
+                                     Integer leadTimeDays, Integer paymentDueDays, List<PurchaseOrderDetail> details, boolean isManager) {
         ReceptionStatus initialStatus = isManager ? ReceptionStatus.PENDING : ReceptionStatus.AWAITING_APPROVAL;
+        LocalDateTime now = LocalDateTime.now();
+        Integer days = (leadTimeDays != null) ? leadTimeDays : 3;
+        LocalDateTime estimated = now.plusDays(days);
+        
         return new PurchaseOrder(null, supplierId, branchId, userId, null, 
-                                LocalDateTime.now(), estimatedArrivalDate, null,
+                                now, estimated, null,
+                                days,
                                 initialStatus, PaymentStatus.POR_PAGAR, paymentDueDays, null, null, details,
                                 null, null, null, false, 0);
     }
@@ -179,6 +187,7 @@ public class PurchaseOrder {
     public LocalDateTime getRequestDate() { return requestDate; }
     public LocalDateTime getEstimatedArrivalDate() { return estimatedArrivalDate; }
     public LocalDateTime getActualArrivalDate() { return actualArrivalDate; }
+    public Integer getDeliveryLeadTimeDays() { return deliveryLeadTimeDays; }
     public ReceptionStatus getReceptionStatus() { return receptionStatus; }
     public PaymentStatus getPaymentStatus() { return paymentStatus; }
     public Integer getPaymentDueDays() { return paymentDueDays; }

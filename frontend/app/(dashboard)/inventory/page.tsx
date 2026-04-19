@@ -25,7 +25,7 @@ import { usePersistence } from "@/hooks/usePersistence";
 import SearchFilter from "@/components/ui/SearchFilter";
 
 // ── Types ──────────────────────────────────────────────────
-type ProductResponse  = components["schemas"]["ProductResponse"];
+type ProductResponse  = components["schemas"]["ProductResponse"] & { activo?: boolean };
 type LocalInventory   = components["schemas"]["LocalInventory"];
 type BranchResponse   = components["schemas"]["BranchResponse"];
 type InventoryProductResponse = components["schemas"]["InventoryProductResponse"];
@@ -403,7 +403,16 @@ export default function InventoryPage() {
                     key: "nombre",
                     sortable: true,
                     render: (p) => (
-                      <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--neutral-100)", textTransform: "uppercase" }}>{p.nombre}</span>
+                      <div className={`flex flex-col gap-1 transition-opacity ${p.activo === false ? 'opacity-40 grayscale' : ''}`}>
+                        <div className="flex items-center gap-2">
+                          <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--neutral-100)", textTransform: "uppercase" }}>{p.nombre}</span>
+                          {p.activo === false && (
+                            <Badge variant="neutral" dot={false}>
+                              <span style={{ fontSize: "9px", fontWeight: 900 }}>DESCATALOGADO</span>
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
                     )
                   },
                   {

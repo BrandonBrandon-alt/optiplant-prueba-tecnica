@@ -29,7 +29,7 @@ public class AnalyticsPersistenceAdapter implements AnalyticsRepositoryPort {
                 FROM detalles_venta d
                 JOIN producto p ON d.producto_id = p.id
                 JOIN ventas v ON d.venta_id = v.id
-                WHERE 1=1
+                WHERE v.estado = 'COMPLETED'
                 """);
         List<Object> args = new ArrayList<>();
 
@@ -92,6 +92,8 @@ public class AnalyticsPersistenceAdapter implements AnalyticsRepositoryPort {
         String branchSuffix    = branchId != null ? " AND sucursal_id = ? " : "";
         String branchSuffixV   = branchId != null ? " AND v.sucursal_id = ? " : "";
         String invBranchFilter = branchId != null ? " AND i.sucursal_id = ? " : "";
+        String statusFilter    = " AND estado = 'COMPLETED' ";
+        String statusFilterV   = " AND v.estado = 'COMPLETED' ";
 
         // total_revenue
         if (branchId != null) args.add(branchId);
@@ -117,10 +119,10 @@ public class AnalyticsPersistenceAdapter implements AnalyticsRepositoryPort {
                     (SELECT COALESCE(AVG(total_final), 0) FROM ventas WHERE 1=1 %s%s%s) as avg_ticket,
                     (SELECT COUNT(*) FROM sucursal WHERE activa = true) as branch_count
                 """,
-                branchSuffix, startDateFilter, endDateFilter,
-                branchSuffixV, startDateFilterV, endDateFilterV,
+                branchSuffix, statusFilter, startDateFilter, endDateFilter,
+                branchSuffixV, statusFilterV, startDateFilterV, endDateFilterV,
                 invBranchFilter,
-                branchSuffix, startDateFilter, endDateFilter);
+                branchSuffix, statusFilter, startDateFilter, endDateFilter);
 
         return jdbcTemplate.queryForObject(query, (rs, rowNum) -> new GlobalSummary(
                 rs.getBigDecimal("total_revenue"),
@@ -142,7 +144,8 @@ public class AnalyticsPersistenceAdapter implements AnalyticsRepositoryPort {
                     COALESCE(SUM(dv.cantidad), 0) as units_sold,
                     COUNT(DISTINCT v.id) as sales_count
                 FROM sucursal s
-                LEFT JOIN ventas v ON s.id = v.sucursal_id
+                LEFT JOIN ventas v ON s.id = v.sucursal_id AND v.estado = 'COMPLETED'
+                LEFT JOIN detalles_venta dv ON v.id = dv.venta_id
                 """);
 
         List<Object> args = new ArrayList<>();
@@ -165,7 +168,6 @@ public class AnalyticsPersistenceAdapter implements AnalyticsRepositoryPort {
         }
 
         query.append("""
-                LEFT JOIN detalles_venta dv ON v.id = dv.venta_id
                 WHERE s.activa = true
                 """);
 
@@ -190,7 +192,7 @@ public class AnalyticsPersistenceAdapter implements AnalyticsRepositoryPort {
         StringBuilder query = new StringBuilder("""
                 SELECT CAST(v.fecha AS DATE) as sale_date, SUM(v.total_final) as revenue
                 FROM ventas v
-                WHERE 1=1
+                WHERE v.estado = 'COMPLETED'
                 """);
         List<Object> args = new ArrayList<>();
 

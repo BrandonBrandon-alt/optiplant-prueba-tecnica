@@ -48,6 +48,7 @@ public class PurchasePersistenceAdapter implements PurchaseRepositoryPort {
         entity.setRequestDate(domain.getRequestDate());
         entity.setEstimatedArrivalDate(domain.getEstimatedArrivalDate());
         entity.setActualArrivalDate(domain.getActualArrivalDate());
+        entity.setDeliveryLeadTimeDays(domain.getDeliveryLeadTimeDays());
         entity.setReceptionStatus(domain.getReceptionStatus().name());
         entity.setPaymentStatus(domain.getPaymentStatus().name());
         entity.setPaymentDueDate(domain.getPaymentDueDate());
@@ -88,6 +89,7 @@ public class PurchasePersistenceAdapter implements PurchaseRepositoryPort {
                 entity.getRequestDate(),
                 entity.getEstimatedArrivalDate(),
                 entity.getActualArrivalDate(),
+                entity.getDeliveryLeadTimeDays(),
                 ReceptionStatus.valueOf(entity.getReceptionStatus()),
                 PaymentStatus.valueOf(entity.getPaymentStatus()),
                 entity.getPaymentDueDays(),

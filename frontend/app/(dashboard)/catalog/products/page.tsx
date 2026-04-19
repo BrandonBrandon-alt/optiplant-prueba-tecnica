@@ -5,7 +5,7 @@ import { apiClient } from "@/api/client";
 import type { components } from "@/api/schema";
 import { getSession } from "@/api/auth";
 import { useRouter } from "next/navigation";
-import { Package, Plus, Edit, Trash2, Search, Tag, Truck, DollarSign, ChevronDown, ChevronUp } from "lucide-react";
+import { Package, Plus, Edit, Trash2, Search, Tag, Truck, DollarSign, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 
 import Select from "@/components/ui/Select";
 import Badge from "@/components/ui/Badge";
@@ -21,7 +21,10 @@ import Spinner from "@/components/ui/Spinner";
 import SearchFilter from "@/components/ui/SearchFilter";
 
 // Types from schema
-type ProductResponse = components["schemas"]["ProductResponse"];
+type ProductResponse = components["schemas"]["ProductResponse"] & { 
+  proveedores?: any[];
+  activo?: boolean;
+};
 type SupplierResponse = components["schemas"]["SupplierResponse"];
 type UnitOfMeasureResponse = components["schemas"]["UnitOfMeasureResponse"];
 
@@ -55,9 +58,11 @@ export default function MasterProductsPage() {
     nombre: "",
     costoPromedio: "" as number | "",
     precioVenta: "" as number | "",
-    proveedorId: 0,
     unitId: 0,
+    supplierIds: [] as number[],
+    activo: true
   });
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>("");
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -98,9 +103,11 @@ export default function MasterProductsPage() {
         nombre: product.nombre ?? "",
         costoPromedio: product.costoPromedio ?? "",
         precioVenta: product.precioVenta ?? "",
-        proveedorId: product.proveedorId ?? 0,
         unitId: product.unitId ?? 0,
+        supplierIds: (product as any).proveedores?.map((sp: any) => sp.id) ?? [],
+        activo: product.activo ?? true
       });
+      setSelectedSupplierId((product as any).proveedores?.[0]?.id?.toString() ?? "");
 
       // Cargar precios por lista existentes para este producto
       if (product.id && priceLists.length > 0) {
@@ -131,9 +138,11 @@ export default function MasterProductsPage() {
         nombre: "", 
         costoPromedio: "", 
         precioVenta: "", 
-        proveedorId: suppliers[0]?.id ?? 0, 
-        unitId: units[0]?.id ?? 0 
+        unitId: units[0]?.id ?? 0,
+        supplierIds: [],
+        activo: true
       });
+      setSelectedSupplierId("");
       const defaults: Record<number, string> = {};
       priceLists.forEach(l => { defaults[l.id] = ""; });
       setPriceListValues(defaults);
@@ -155,6 +164,8 @@ export default function MasterProductsPage() {
               ...formData,
               costoPromedio: Number(formData.costoPromedio) || 0,
               precioVenta: Number(formData.precioVenta) || 0,
+              supplierIds: selectedSupplierId ? [parseInt(selectedSupplierId)] : [],
+              activo: formData.activo
             } as any,
           });
           showToast("Producto actualizado correctamente.", "success", "Cambios guardados");
@@ -164,6 +175,7 @@ export default function MasterProductsPage() {
               ...formData,
               costoPromedio: Number(formData.costoPromedio) || 0,
               precioVenta: Number(formData.precioVenta) || 0,
+              supplierIds: selectedSupplierId ? [parseInt(selectedSupplierId)] : []
             } as any 
           });
           savedProductId = (res.data as any)?.id;
@@ -198,13 +210,15 @@ export default function MasterProductsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("¿Estás seguro de eliminar este producto del catálogo maestro?")) return;
+    if (!confirm("¿Desactivar este producto del catálogo maestro? Ya no se podrá usar en nuevas ventas o compras.")) return;
     try {
-      await apiClient.DELETE("/api/catalog/products/{id}", { params: { path: { id } } });
-      showToast("El producto ha sido eliminado del catálogo.", "success");
+      console.log("[DEBUG] Deactivating Product ID:", id);
+      const res = await apiClient.DELETE("/api/catalog/products/{id}", { params: { path: { id } } });
+      console.log("[DEBUG] DELETE Response:", res);
+      showToast("El producto ha sido desactivado.", "success", "Producto desactivado");
       fetchData();
     } catch (error) {
-      showToast("No se puede eliminar: tiene movimientos asociados.", "error");
+      showToast("No se pudo desactivar el producto.", "error");
     }
   };
 
@@ -217,14 +231,12 @@ export default function MasterProductsPage() {
 
   const filteredAndSortedProducts = (products || []).filter(p => {
     const term = searchTerm.toLowerCase();
-    const supplierName = suppliers.find(s => s.id === p.proveedorId)?.nombre?.toLowerCase() || "";
     const unit = (p.unitAbbreviation || "").toLowerCase();
     const price = (p.precioVenta ?? 0).toString();
 
     return (
       p.nombre?.toLowerCase().includes(term) || 
       p.sku?.toLowerCase().includes(term) ||
-      supplierName.includes(term) ||
       unit.includes(term) ||
       price.includes(term)
     );
@@ -260,14 +272,44 @@ export default function MasterProductsPage() {
       render: (p: ProductResponse) => <Badge variant="neutral">{p.unitAbbreviation || "N/A"}</Badge>
     },
     {
-      header: "Proveedor",
-      key: "proveedorId",
+      header: "Estado",
+      key: "activo",
+      width: "100px",
       sortable: true,
       render: (p: ProductResponse) => (
-        <span style={{ fontSize: "13px", color: "var(--neutral-400)" }}>
-          {suppliers.find(s => s.id === p.proveedorId)?.nombre ?? "N/A"}
-        </span>
+        <Badge variant={p.activo ? "success" : "neutral"} dot>
+          {p.activo ? "Activo" : "Inactivo"}
+        </Badge>
       )
+    },
+    {
+      header: "Proveedor",
+      key: "proveedores",
+      render: (p: ProductResponse) => {
+        const provs = p.proveedores || [];
+        if (provs.length === 0) return <span style={{ color: "var(--neutral-500)", fontStyle: "italic", fontSize: "12px" }}>Sin proveedor</span>;
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--neutral-100)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "150px" }}>
+              {provs[0].nombre}
+            </span>
+            {provs.length > 1 && (
+              <span style={{
+                background: "rgba(111,114,242,0.1)",
+                color: "var(--brand-400)",
+                fontSize: "10px",
+                padding: "2px 8px",
+                borderRadius: "9999px",
+                fontWeight: 900,
+                border: "1px solid rgba(111,114,242,0.2)",
+                fontFamily: "var(--font-primary)"
+              }}>
+                +{provs.length - 1}
+              </span>
+            )}
+          </div>
+        );
+      }
     },
     {
       header: "Precio Base",
@@ -290,9 +332,11 @@ export default function MasterProductsPage() {
           <Button variant="ghost" size="sm" onClick={() => handleOpenModal(p)} title="Editar producto">
             <Edit size={14} />
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id!)} title="Eliminar producto">
-            <span style={{ color: "var(--brand-500)" }}><Trash2 size={14} /></span>
-          </Button>
+          {p.activo && (
+            <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id!)} title="Desactivar producto">
+              <span style={{ color: "var(--brand-500)" }}><Trash2 size={14} /></span>
+            </Button>
+          )}
         </div>
       )
     }
@@ -401,16 +445,80 @@ export default function MasterProductsPage() {
               ]}
             />
             <Select
-              label="Proveedor"
-              value={formData.proveedorId.toString()}
-              onChange={(val: string) => setFormData({ ...formData, proveedorId: Number(val) })}
+              label="Proveedor Principal"
+              value={selectedSupplierId}
+              onChange={(val: string) => setSelectedSupplierId(val)}
               icon={<Truck size={15} />}
               options={[
-                { value: "0", label: "Selecciona proveedor" },
-                ...suppliers.map(s => ({ value: s.id!.toString(), label: s.nombre! }))
+                { value: "", label: "Sin proveedor" },
+                ...suppliers.map(s => ({ value: s.id!.toString(), label: s.nombre ?? "" }))
               ]}
             />
           </div>
+
+          {/* ── Control de Activación (Solo en edición) ─────────────────── */}
+          {editingProduct && (
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "12px 16px",
+              background: "rgba(255, 255, 255, 0.03)",
+              borderRadius: "12px",
+              border: "1px solid var(--neutral-700)",
+              marginTop: "4px"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "10px",
+                  background: formData.activo ? "rgba(34, 197, 94, 0.1)" : "rgba(239, 68, 68, 0.1)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: formData.activo ? "var(--color-success)" : "var(--brand-500)",
+                  transition: "all 0.3s ease"
+                }}>
+                  <RefreshCw size={18} className={!formData.activo ? "animate-spin-slow" : ""} />
+                </div>
+                <div>
+                  <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--neutral-100)" }}>
+                    {formData.activo ? "Producto Activo" : "Producto Inactivo"}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--neutral-400)" }}>
+                    {formData.activo 
+                      ? "Disponible en todas las operaciones del sistema." 
+                      : "Restringido en POS, Compras y Traslados."}
+                  </div>
+                </div>
+              </div>
+              
+              <div 
+                onClick={() => setFormData({ ...formData, activo: !formData.activo })}
+                style={{
+                  width: "48px",
+                  height: "26px",
+                  borderRadius: "999px",
+                  background: formData.activo ? "var(--color-success)" : "var(--neutral-600)",
+                  padding: "3px",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: formData.activo ? "flex-end" : "flex-start"
+                }}
+              >
+                <div style={{
+                  width: "20px",
+                  height: "20px",
+                  borderRadius: "50%",
+                  background: "white",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.2)"
+                }} />
+              </div>
+            </div>
+          )}
 
           {/* ── Sección de Listas de Precios ─────────────────────────────── */}
           {priceLists.length > 0 && (

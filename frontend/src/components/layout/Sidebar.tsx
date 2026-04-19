@@ -126,16 +126,6 @@ const adminItems = [
       </svg>
     ),
   },
-  {
-    href: "/analytics",
-    label: "Análisis Global",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-        <path d="M22 12A10 10 0 0 0 12 2v10z" />
-      </svg>
-    ),
-  },
 
   {
     href: "/audit",
@@ -453,6 +443,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {visibleNavItems.map((item) => (
           <NavLink key={item.href} {...item} />
         ))}
+
+        {(isAdmin || isManager) && (
+          <NavLink 
+            href="/analytics" 
+            label={isAdmin ? "Análisis Global" : "Análisis de Sede"} 
+            icon={(
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+                <path d="M22 12A10 10 0 0 0 12 2v10z" />
+              </svg>
+            )}
+          />
+        )}
 
         {isAdmin && (
           <>

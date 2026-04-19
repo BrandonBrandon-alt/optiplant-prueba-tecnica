@@ -7,7 +7,8 @@ import QuantitySelector from "@/components/ui/QuantitySelector";
 import Spinner from "@/components/ui/Spinner";
 import { 
   Package, Search, Plus, ShoppingCart, 
-  Trash2, DollarSign, Percent, ArrowRight
+  Trash2, DollarSign, Percent, ArrowRight,
+  Building2, Truck
 } from "lucide-react";
 
 const formatCurrency = (amount: number) => {
@@ -119,8 +120,8 @@ interface NewPurchaseDraftProps {
   setSupplierId: (v: string) => void;
   branchId: string;
   setBranchId: (v: string) => void;
-  estimatedArrival: string;
-  setEstimatedArrival: (v: string) => void;
+  leadTimeDays: number;
+  setLeadTimeDays: (v: number) => void;
   paymentDueDays: string;
   setPaymentDueDays: (v: string) => void;
   isSubmitting: boolean;
@@ -133,41 +134,80 @@ interface NewPurchaseDraftProps {
 
 export default function NewPurchaseDraft({
   filteredProducts, searchTerm, setSearchTerm, cartActions, cart, 
-  supplierId, setSupplierId, branchId, setBranchId, estimatedArrival, 
-  setEstimatedArrival, paymentDueDays, setPaymentDueDays, 
+  supplierId, setSupplierId, branchId, setBranchId, leadTimeDays, 
+  setLeadTimeDays, paymentDueDays, setPaymentDueDays, 
   isSubmitting, handleSubmitOrder, financialSummary, suppliers, branches,
   branchDisabled = false
 }: NewPurchaseDraftProps) {
   return (
     <main className="flex gap-8 flex-col lg:flex-row h-[82vh] animate-in fade-in zoom-in-95 duration-300 mt-8">
       {/* ── PANEL IZQUIERDO: CATÁLOGO ───────────────── */}
-      <div className="flex flex-[3] flex-col gap-5 min-w-0 bg-[var(--bg-surface)] border border-[var(--neutral-800)] rounded-3xl p-8 shadow-2xl overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-[3] flex-col gap-6 min-w-0 bg-[var(--bg-surface)] border border-[var(--neutral-800)] rounded-3xl p-8 shadow-2xl overflow-hidden">
+        
+        {/* Selection Strategy Header */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-6 border-b border-[var(--neutral-800)]">
+          <Select 
+            label="Proveedor Estratégico" 
+            value={supplierId} 
+            onChange={setSupplierId} 
+            options={[
+              { value: "", label: "Seleccionar Proveedor" },
+              ...suppliers.map(s => ({ value: String(s.id), label: s.nombre }))
+            ]} 
+          />
+          <Select 
+            label="Centro de Recepción" 
+            value={branchId} 
+            onChange={setBranchId} 
+            disabled={branchDisabled}
+            options={[
+              { value: "", label: "Seleccionar Sucursal" },
+              ...branches.map(b => ({ value: String(b.id), label: b.nombre }))
+            ]} 
+          />
+        </div>
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-2">
           <div>
-            <h3 className="text-2xl font-black text-[var(--neutral-50)] tracking-tight uppercase leading-none">Catálogo de Abastecimiento</h3>
-            <p className="text-[10px] text-[var(--neutral-500)] font-black uppercase tracking-[0.2em] mt-2">Selección estratégica de insumos</p>
+            <h3 className="text-xl font-black text-[var(--neutral-50)] tracking-tight uppercase leading-none">Portafolio de Insumos</h3>
+            <p className="text-[9px] text-[var(--neutral-500)] font-black uppercase tracking-[0.2em] mt-2">Disponibilidad contractual confirmada</p>
           </div>
           
           <div className="w-full md:w-72">
             <Input 
               icon={<Search className="h-4 w-4 text-[var(--brand-500)]" />} 
-              placeholder="Filtro rápido..." 
+              placeholder="Buscar por SKU o Nombre..." 
               value={searchTerm} 
               onChange={(e: any) => setSearchTerm(e.target.value)} 
+              disabled={!supplierId}
               className="bg-[var(--bg-base)] border-[var(--neutral-800)]" 
             />
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-6">
-            {filteredProducts.map(p => <ProductCard key={p.id} product={p} onAdd={cartActions.addToCart} />)}
-          </div>
-          {filteredProducts.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center py-20 opacity-30">
-              <Package size={64} strokeWidth={1} className="mb-4 text-[var(--neutral-500)]" />
-              <p className="text-sm font-bold uppercase tracking-widest text-[var(--neutral-400)]">Sin resultados en catálogo</p>
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 pt-2">
+          {!supplierId ? (
+            <div className="h-full flex flex-col items-center justify-center py-20 bg-[var(--bg-card)]/20 rounded-3xl border border-dashed border-[var(--neutral-800)]">
+              <div className="w-16 h-16 bg-[var(--brand-500)]/10 rounded-full flex items-center justify-center mb-4 border border-[var(--brand-500)]/20">
+                <Building2 className="h-8 w-8 text-[var(--brand-500)]" />
+              </div>
+              <h4 className="text-sm font-black text-[var(--neutral-100)] uppercase tracking-widest">Catálogo Restringido</h4>
+              <p className="text-[11px] text-[var(--neutral-500)] font-medium mt-2 text-center max-w-[250px]">
+                Selecciona un <span className="text-[var(--brand-400)] font-bold">socio comercial</span> para habilitar su portafolio de productos asociados.
+              </p>
             </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-6">
+                {filteredProducts.map(p => <ProductCard key={p.id} product={p} onAdd={cartActions.addToCart} />)}
+              </div>
+              {filteredProducts.length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center py-20 opacity-30">
+                  <Package size={64} strokeWidth={1} className="mb-4 text-[var(--neutral-500)]" />
+                  <p className="text-sm font-bold uppercase tracking-widest text-[var(--neutral-400)]">Sin resultados para este proveedor</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -181,13 +221,13 @@ export default function NewPurchaseDraft({
                 <ShoppingCart className="h-5 w-5 text-[var(--brand-500)]" />
               </div>
               <div>
-                <h2 className="font-black text-[var(--neutral-50)] text-base tracking-tight uppercase">Borrador de Negociación</h2>
+                <h2 className="font-black text-[var(--neutral-50)] text-base tracking-tight uppercase">Resumen de Negociación</h2>
                 {cart.length > 0 && (
                   <button 
                     className="text-[10px] font-black text-[var(--neutral-500)] hover:text-[var(--color-danger)] transition-colors uppercase tracking-widest" 
                     onClick={cartActions.clearCart}
                   >
-                    Descartar Todo
+                    Anular Selección
                   </button>
                 )}
               </div>
@@ -201,63 +241,52 @@ export default function NewPurchaseDraft({
           ))}
 
           {cart.length === 0 && (
-            <div className="flex-1 flex flex-col items-center justify-center opacity-40">
-              <ShoppingCart size={40} className="mb-4 text-[var(--neutral-500)]" />
-              <p className="text-sm font-bold text-center text-[var(--neutral-300)]">Carrito vacío</p>
+            <div className="flex-1 flex flex-col items-center justify-center opacity-40 py-12">
+              <Plus size={40} className="mb-4 text-[var(--neutral-500)]" />
+              <p className="text-xs font-black text-center text-[var(--neutral-500)] uppercase tracking-widest">Carrito de Compras Vacío</p>
             </div>
           )}
         </div>
 
-        <div className="border-t border-[var(--neutral-800)] bg-[var(--bg-card)]/90 p-5 space-y-3 z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.2)] block">
+        <div className="border-t border-[var(--neutral-800)] bg-[var(--bg-card)]/90 p-5 space-y-4 z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.2)] block">
           
-          <div className="grid grid-cols-2 gap-3 mb-2">
-            <Select 
-              label="Socio Comercial" 
-              placement="top" 
-              value={supplierId} 
-              onChange={setSupplierId} 
-              options={[
-                { value: "", label: "Seleccionar Proveedor" },
-                ...suppliers.map(s => ({ value: String(s.id), label: s.nombre }))
-              ]} 
-            />
-            <Select 
-              label="Sucursal Destino" 
-              placement="top" 
-              value={branchId} 
-              onChange={setBranchId} 
-              disabled={branchDisabled}
-              options={[
-                { value: "", label: "Seleccionar Sucursal" },
-                ...branches.map(b => ({ value: String(b.id), label: b.nombre }))
-              ]} 
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-[var(--neutral-500)] uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                <Truck size={12} className="text-[var(--brand-500)]" />
+                Entrega (Días)
+              </label>
+              <Input 
+                type="number" 
+                min="1"
+                placeholder="Plazo"
+                value={leadTimeDays} 
+                onChange={(e: any) => setLeadTimeDays(parseInt(e.target.value) || 0)} 
+                className="bg-[var(--bg-base)] border-[var(--neutral-800)] h-11 text-[13px] font-bold"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-[var(--neutral-500)] uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                <DollarSign size={12} className="text-[var(--brand-500)]" />
+                Plazo de Pago
+              </label>
+              <Select
+                placement="top" 
+                value={paymentDueDays}
+                onChange={setPaymentDueDays}
+                options={[
+                  { value: "0", label: "Contado" },
+                  { value: "15", label: "15 Días" },
+                  { value: "30", label: "30 Días" },
+                  { value: "60", label: "60 Días" }
+                ]}
+              />
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pb-3 border-b border-[var(--neutral-800)]/50">
-            <Input 
-              label="Fecha Esperada" 
-              type="date" 
-              value={estimatedArrival} 
-              onChange={(e: any) => setEstimatedArrival(e.target.value)} 
-            />
-            <Select
-              label="Términos (Días)"
-              placement="top" 
-              value={paymentDueDays}
-              onChange={setPaymentDueDays}
-              options={[
-                { value: "0", label: "Contado (0 d)" },
-                { value: "15", label: "Crédito (15 d)" },
-                { value: "30", label: "Net 30" },
-                { value: "60", label: "Net 60" },
-                { value: "90", label: "Net 90" }
-              ]}
-            />
-          </div>
-
-          <div className="flex justify-between items-end pt-2">
-            <span className="text-xs font-black text-[var(--neutral-400)] uppercase tracking-widest">Total Negociado</span>
+          <div className="flex justify-between items-end pt-2 border-t border-[var(--neutral-800)]/40 mt-2">
+            <span className="text-[10px] font-black text-[var(--neutral-400)] uppercase tracking-widest">Valor Neto a Emitir</span>
             <span className="text-2xl font-black text-[var(--brand-400)] leading-none" style={{ textShadow: "0 0 20px var(--brand-glow)" }}>
               {formatCurrency(financialSummary)}
             </span>
@@ -266,7 +295,7 @@ export default function NewPurchaseDraft({
           <Button 
             className="w-full h-14 mt-4 font-black tracking-widest shadow-[0_10px_20px_rgba(217,99,79,0.25)] hover:scale-[1.02] active:scale-[0.98] transition-all relative overflow-hidden group border-none"
             style={{ backgroundImage: 'linear-gradient(45deg, var(--brand-600), var(--brand-400))' }}
-            disabled={cart.length === 0 || isSubmitting}
+            disabled={cart.length === 0 || isSubmitting || !supplierId || !branchId}
             onClick={handleSubmitOrder}
           >
             <div className="absolute inset-0 bg-white/20 group-hover:translate-x-full transition-transform duration-500 ease-out -skew-x-12 -translate-x-full" />
@@ -274,7 +303,7 @@ export default function NewPurchaseDraft({
               <Spinner size={20} />
             ) : (
               <div className="flex items-center gap-3">
-                <span className="text-sm">EMITIR ORDEN DE COMPRA</span>
+                <span className="text-sm">NOTIFICAR ÓRDEN DE COMPRA</span>
                 <ArrowRight className="h-5 w-5" />
               </div>
             )}
