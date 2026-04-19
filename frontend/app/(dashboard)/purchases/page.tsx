@@ -469,28 +469,33 @@ function PurchasesContent() {
     />
   );
 
-  const renderNewOrder = () => (
-    <NewPurchaseDraft 
-      filteredProducts={filteredProducts}
-      searchTerm={searchTerm}
-      setSearchTerm={setSearchTerm}
-      cartActions={cartActions}
-      cart={cart}
-      supplierId={supplierId}
-      setSupplierId={setSupplierId}
-      branchId={branchId}
-      setBranchId={setBranchId}
-      estimatedArrival={estimatedArrival}
-      setEstimatedArrival={setEstimatedArrival}
-      paymentDueDays={paymentDueDays}
-      setPaymentDueDays={setPaymentDueDays}
-      isSubmitting={isSubmitting}
-      handleSubmitOrder={handleSubmitOrder}
-      financialSummary={financialSummary}
-      suppliers={suppliers}
-      branches={branches}
-    />
-  );
+  const renderNewOrder = () => {
+    const isBranchRestricted = session?.rol === "MANAGER" || session?.rol === "OPERADOR_INVENTARIO";
+    
+    return (
+      <NewPurchaseDraft 
+        filteredProducts={filteredProducts}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        cartActions={cartActions}
+        cart={cart}
+        supplierId={supplierId}
+        setSupplierId={setSupplierId}
+        branchId={branchId}
+        setBranchId={setBranchId}
+        estimatedArrival={estimatedArrival}
+        setEstimatedArrival={setEstimatedArrival}
+        paymentDueDays={paymentDueDays}
+        setPaymentDueDays={setPaymentDueDays}
+        isSubmitting={isSubmitting}
+        handleSubmitOrder={handleSubmitOrder}
+        financialSummary={financialSummary}
+        suppliers={suppliers}
+        branches={branches}
+        branchDisabled={isBranchRestricted}
+      />
+    );
+  };
 
   return (
     <div style={{ padding: "var(--page-padding)", maxWidth: "1400px", margin: "0 auto", minHeight: "100vh" }}>

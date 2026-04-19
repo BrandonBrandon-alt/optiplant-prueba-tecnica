@@ -128,13 +128,15 @@ interface NewPurchaseDraftProps {
   financialSummary: number;
   suppliers: any[];
   branches: any[];
+  branchDisabled?: boolean;
 }
 
 export default function NewPurchaseDraft({
   filteredProducts, searchTerm, setSearchTerm, cartActions, cart, 
   supplierId, setSupplierId, branchId, setBranchId, estimatedArrival, 
   setEstimatedArrival, paymentDueDays, setPaymentDueDays, 
-  isSubmitting, handleSubmitOrder, financialSummary, suppliers, branches
+  isSubmitting, handleSubmitOrder, financialSummary, suppliers, branches,
+  branchDisabled = false
 }: NewPurchaseDraftProps) {
   return (
     <main className="flex gap-8 flex-col lg:flex-row h-[82vh] animate-in fade-in zoom-in-95 duration-300 mt-8">
@@ -224,6 +226,7 @@ export default function NewPurchaseDraft({
               placement="top" 
               value={branchId} 
               onChange={setBranchId} 
+              disabled={branchDisabled}
               options={[
                 { value: "", label: "Seleccionar Sucursal" },
                 ...branches.map(b => ({ value: String(b.id), label: b.nombre }))
