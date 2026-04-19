@@ -56,6 +56,7 @@ public class PurchasePersistenceAdapter implements PurchaseRepositoryPort {
         entity.setReasonResolution(domain.getReasonResolution());
         entity.setResueltoPorId(domain.getResolvedById());
         entity.setFechaResolucion(domain.getResolutionDate());
+        entity.setExceptionApproved(domain.isExceptionApproved());
         entity.setVersion(domain.getVersion());
 
         domain.getDetails().forEach(d -> {
@@ -96,6 +97,7 @@ public class PurchasePersistenceAdapter implements PurchaseRepositoryPort {
                 entity.getReasonResolution(),
                 entity.getResueltoPorId(),
                 entity.getFechaResolucion(),
+                entity.isExceptionApproved(),
                 entity.getVersion()
         );
     }

@@ -58,6 +58,9 @@ public class PurchaseOrderEntity {
     @Column(name = "fecha_resolucion")
     private LocalDateTime fechaResolucion;
 
+    @Column(name = "excepcion_aprobada", nullable = false)
+    private boolean exceptionApproved = false;
+
     @Version
     private Integer version;
 
@@ -118,6 +121,9 @@ public class PurchaseOrderEntity {
 
     public LocalDateTime getFechaResolucion() { return fechaResolucion; }
     public void setFechaResolucion(LocalDateTime fechaResolucion) { this.fechaResolucion = fechaResolucion; }
+
+    public boolean isExceptionApproved() { return exceptionApproved; }
+    public void setExceptionApproved(boolean exceptionApproved) { this.exceptionApproved = exceptionApproved; }
 
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }

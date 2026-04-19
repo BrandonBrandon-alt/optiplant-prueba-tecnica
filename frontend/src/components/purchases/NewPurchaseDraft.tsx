@@ -211,6 +211,7 @@ export default function NewPurchaseDraft({
           <div className="grid grid-cols-2 gap-3 mb-2">
             <Select 
               label="Socio Comercial" 
+              placement="top" 
               value={supplierId} 
               onChange={setSupplierId} 
               options={[
@@ -220,6 +221,7 @@ export default function NewPurchaseDraft({
             />
             <Select 
               label="Sucursal Destino" 
+              placement="top" 
               value={branchId} 
               onChange={setBranchId} 
               options={[
@@ -238,6 +240,7 @@ export default function NewPurchaseDraft({
             />
             <Select
               label="Términos (Días)"
+              placement="top" 
               value={paymentDueDays}
               onChange={setPaymentDueDays}
               options={[

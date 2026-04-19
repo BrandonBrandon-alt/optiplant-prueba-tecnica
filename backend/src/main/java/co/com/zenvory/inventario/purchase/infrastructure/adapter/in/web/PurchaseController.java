@@ -53,6 +53,15 @@ public class PurchaseController {
         return ResponseEntity.ok(PurchaseResponse.fromDomain(order));
     }
 
+    @PostMapping("/{id}/approve-exception")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<PurchaseResponse> approveException(
+            @PathVariable Long id,
+            @RequestParam Long userId) {
+        PurchaseOrder order = purchaseUseCase.approveException(id, userId);
+        return ResponseEntity.ok(PurchaseResponse.fromDomain(order));
+    }
+
     @PostMapping("/{id}/dispatch")
     @org.springframework.security.access.prepost.PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<PurchaseResponse> markAsInTransit(@PathVariable Long id) {

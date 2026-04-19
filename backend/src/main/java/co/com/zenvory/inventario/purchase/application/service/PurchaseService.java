@@ -74,6 +74,14 @@ public class PurchaseService implements PurchaseUseCase {
 
     @Override
     @Transactional
+    public PurchaseOrder approveException(Long orderId, Long userId) {
+        PurchaseOrder order = getOrderById(orderId);
+        order.approveException(userId);
+        return repository.save(order);
+    }
+
+    @Override
+    @Transactional
     public PurchaseOrder markAsInTransit(Long orderId) {
         PurchaseOrder order = getOrderById(orderId);
         order.markAsInTransit();

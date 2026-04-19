@@ -24,6 +24,7 @@ interface PurchasesHistoryTabProps {
   receiveOrder: (id: number) => void;
   handleCloseShortfall: (id: number) => void;
   handleApproveOrder: (id: number) => void;
+  handleApproveException: (id: number) => void;
   registerPayment: (id: number) => void;
   setResolvingOrder: (row: any) => void;
   showToast: (msg: string, type: "success" | "error" | "warning" | "info") => void;
@@ -33,7 +34,7 @@ export default function PurchasesHistoryTab({
   filteredOrders, isLoadingOrders, filterSupplierId, setFilterSupplierId, 
   filterProductId, setFilterProductId, suppliers, products, branches, 
   formatCurrency, session, openOrderDetail, receiveOrder, handleCloseShortfall, 
-  handleApproveOrder, registerPayment, setResolvingOrder, showToast
+  handleApproveOrder, handleApproveException, registerPayment, setResolvingOrder, showToast
 }: PurchasesHistoryTabProps) {
 
   const columns = [
@@ -181,11 +182,11 @@ export default function PurchasesHistoryTab({
               </button>
             )}
 
-            {row.receptionStatus === "PENDING" && isAdmin && (
+            {row.receptionStatus === "PENDING" && isAdmin && !row.exceptionApproved && (
               <button 
                 onClick={() => {
                   if (confirm("¿Aprobar excepción de límite de crédito para esta orden?")) {
-                    showToast("Excepción de compra aprobada exitosamente.", "success");
+                    handleApproveException(row.id);
                   }
                 }} 
                 className="p-2 text-[var(--brand-400)] hover:bg-[var(--brand-400)]/10 rounded-lg transition-all" 
@@ -193,6 +194,12 @@ export default function PurchasesHistoryTab({
               >
                 <TrendingUp size={16} />
               </button>
+            )}
+
+            {row.exceptionApproved && (
+              <div className="p-2 text-[var(--color-success)]" title="Excepción Aprobada">
+                <CheckCircle size={16} />
+              </div>
             )}
 
             {row.paymentStatus === "POR_PAGAR" && row.receptionStatus !== "CANCELLED" && (

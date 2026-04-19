@@ -85,8 +85,8 @@ export default function AdjustStockModal({
       onClose={onClose}
       title={`Registrar Movimiento - ${product?.nombre}`}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "40px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px" }}>
           <button 
             onClick={() => setAdjustData({...adjustData, type: "INGRESO"})}
             style={{

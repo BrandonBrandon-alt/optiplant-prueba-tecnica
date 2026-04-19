@@ -21,6 +21,7 @@ public record PurchaseResponse(
         Long branchId,
         BigDecimal total,
         String reasonResolution,
+        boolean exceptionApproved,
         List<PurchaseDetailResponse> details
 ) {
     public record PurchaseDetailResponse(
@@ -48,6 +49,7 @@ public record PurchaseResponse(
                 order.getBranchId(),
                 order.getTotal(),
                 order.getReasonResolution(),
+                order.isExceptionApproved(),
                 order.getDetails().stream().map(d -> new PurchaseDetailResponse(
                         d.getId(),
                         d.getProductId(),

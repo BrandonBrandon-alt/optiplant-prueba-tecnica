@@ -33,13 +33,14 @@ public class PurchaseOrder {
     private String reasonResolution;
     private Long resolvedById;
     private LocalDateTime resolutionDate;
+    private boolean exceptionApproved;
     private Integer version;
 
     public PurchaseOrder(Long id, Long supplierId, Long branchId, Long userId, Long receivingUserId,
                          LocalDateTime requestDate, LocalDateTime estimatedArrivalDate, LocalDateTime actualArrivalDate,
                          ReceptionStatus receptionStatus, PaymentStatus paymentStatus, Integer paymentDueDays, 
                          LocalDateTime paymentDueDate, BigDecimal total, List<PurchaseOrderDetail> details,
-                         String reasonResolution, Long resolvedById, LocalDateTime resolutionDate, Integer version) {
+                         String reasonResolution, Long resolvedById, LocalDateTime resolutionDate, boolean exceptionApproved, Integer version) {
         if (supplierId == null || branchId == null || userId == null) {
             throw new IllegalArgumentException("Proveedor, Sucursal y Usuario Autorizador son obligatorios.");
         }
@@ -64,6 +65,7 @@ public class PurchaseOrder {
         this.reasonResolution = reasonResolution;
         this.resolvedById = resolvedById;
         this.resolutionDate = resolutionDate;
+        this.exceptionApproved = exceptionApproved;
         this.version = version;
     }
 
@@ -73,7 +75,7 @@ public class PurchaseOrder {
         return new PurchaseOrder(null, supplierId, branchId, userId, null, 
                                 LocalDateTime.now(), estimatedArrivalDate, null,
                                 initialStatus, PaymentStatus.POR_PAGAR, paymentDueDays, null, null, details,
-                                null, null, null, 0);
+                                null, null, null, false, 0);
     }
 
     private BigDecimal calculateTotal() {
@@ -89,6 +91,19 @@ public class PurchaseOrder {
         this.receptionStatus = ReceptionStatus.PENDING;
         this.resolvedById = userId;
         this.resolutionDate = LocalDateTime.now();
+    }
+
+    /**
+     * Aprueba una excepción de límite de crédito u otra anomalía detectada.
+     */
+    public void approveException(Long userId) {
+        if (this.receptionStatus != ReceptionStatus.PENDING) {
+            throw new InvalidPurchaseStateException("Solo se pueden aprobar excepciones en órdenes con estado PENDING.");
+        }
+        this.exceptionApproved = true;
+        this.resolvedById = userId;
+        this.resolutionDate = LocalDateTime.now();
+        this.reasonResolution = "Excepción de compra aprobada manualmente por administrador.";
     }
 
     public void markAsInTransit() {
@@ -173,5 +188,6 @@ public class PurchaseOrder {
     public String getReasonResolution() { return reasonResolution; }
     public Long getResolvedById() { return resolvedById; }
     public LocalDateTime getResolutionDate() { return resolutionDate; }
+    public boolean isExceptionApproved() { return exceptionApproved; }
     public Integer getVersion() { return version; }
 }

@@ -35,7 +35,7 @@ const formatCurrency = (amount: number) => {
 interface Product { id: number; sku: string; nombre: string; costoPromedio: number; precioVenta: number; proveedorId: number; }
 interface PurchaseDetail { productId: number; nombre: string; sku: string; quantity: number; unitPrice: number | ""; discountPct: number | ""; }
 interface OrderDetailItem { id: number; productId: number; quantity: number; unitPrice: number; subtotal: number; discountPct?: number; productName?: string; }
-interface PurchaseOrder { id: number; supplierId: number; branchId: number; requestDate: string; estimatedArrivalDate: string; actualArrivalDate: string | null; receptionStatus: "AWAITING_APPROVAL" | "PENDING" | "IN_TRANSIT" | "RECEIVED_TOTAL" | "RECEIVED_PARTIAL" | "CANCELLED"; paymentStatus: "POR_PAGAR" | "PAGADO"; total: number; details?: OrderDetailItem[]; reasonResolution?: string; resolutionDate?: string; }
+interface PurchaseOrder { id: number; supplierId: number; branchId: number; requestDate: string; estimatedArrivalDate: string; actualArrivalDate: string | null; receptionStatus: "AWAITING_APPROVAL" | "PENDING" | "IN_TRANSIT" | "RECEIVED_TOTAL" | "RECEIVED_PARTIAL" | "CANCELLED"; paymentStatus: "POR_PAGAR" | "PAGADO"; total: number; details?: OrderDetailItem[]; reasonResolution?: string; resolutionDate?: string; exceptionApproved?: boolean; }
 interface CppImpact { productId: number; productName: string; oldCpp: number; newCpp: number; quantityReceived: number; }
 interface ReceiveOrderResult { orderId: number; status: string; impacts: CppImpact[]; }
 
@@ -405,6 +405,28 @@ function PurchasesContent() {
     }
   };
 
+  const handleApproveException = async (orderId: number) => {
+    const session = getSession();
+    if (!session) return;
+    
+    try {
+      const { error } = await (apiClient.POST as any)("/api/v1/purchases/{id}/approve-exception", {
+        params: { 
+          path: { id: orderId },
+          query: { userId: session.id }
+        }
+      });
+      if (!error) {
+        showToast("Excepción de compra aprobada correctamente.", "success");
+        fetchOrders();
+      } else {
+        showToast("Error al aprobar la excepción.", "error");
+      }
+    } catch (err) {
+      showToast("Error de conexión.", "error");
+    }
+  };
+
   const openOrderDetail = async (order: PurchaseOrder) => {
     setIsLoadingDetail(true);
     try {
@@ -440,6 +462,7 @@ function PurchasesContent() {
       receiveOrder={receiveOrder}
       handleCloseShortfall={handleCloseShortfall}
       handleApproveOrder={handleApproveOrder}
+      handleApproveException={handleApproveException}
       registerPayment={registerPayment}
       setResolvingOrder={setResolvingOrder}
       showToast={showToast}
@@ -748,10 +771,10 @@ function PurchasesContent() {
       </Modal>
 
       <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--neutral-700); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--neutral-600); }
       `}</style>
     </div>
   );
