@@ -305,7 +305,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           borderRadius: "var(--radius-md)",
           fontSize: "14px",
           fontWeight: isActive ? 600 : 400,
-          color: isActive ? "var(--neutral-50)" : "var(--neutral-400)",
+          color: isActive ? "var(--neutral-50)" : "var(--neutral-200)",
           background: isActive ? "var(--bg-card)" : "transparent",
           border: isActive ? "1px solid var(--border-default)" : "1px solid transparent",
           textDecoration: "none",
@@ -313,13 +313,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         }}
         onMouseEnter={(e) => {
           if (!isActive) {
-            e.currentTarget.style.color = "var(--neutral-100)";
+            e.currentTarget.style.color = "var(--neutral-50)";
             e.currentTarget.style.background = "var(--bg-hover)";
           }
         }}
         onMouseLeave={(e) => {
           if (!isActive) {
-            e.currentTarget.style.color = "var(--neutral-400)";
+            e.currentTarget.style.color = "var(--neutral-200)";
             e.currentTarget.style.background = "transparent";
           }
         }}

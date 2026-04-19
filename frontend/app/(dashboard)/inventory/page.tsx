@@ -247,14 +247,14 @@ export default function InventoryPage() {
     }
   };
 
-  const handleConfigSubmit = async () => {
+  const handleConfigSubmit = async (minStock: number) => {
     if (!configProduct || !selectedBranchId) return;
     setSubmitting(true);
     try {
       const { error } = await apiClient.PUT("/api/v1/inventory/branches/{branchId}/products/{productId}/config", {
         params: { 
           path: { branchId: selectedBranchId, productId: configProduct.p.id! },
-          query: { minimumStock: Number(minStockValue) || 0 }
+          query: { minimumStock: minStock }
         }
       });
 

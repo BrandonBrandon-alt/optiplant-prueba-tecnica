@@ -252,7 +252,14 @@ public class InventoryService implements InventoryUseCase {
     @Override
     @Transactional
     public LocalInventory updateMinimumStock(Long branchId, Long productId, BigDecimal minimumStock) {
-        LocalInventory inventory = getInventory(branchId, productId);
+        LocalInventory inventory = localInventoryRepository.findByBranchAndProduct(branchId, productId)
+                .orElseGet(() -> LocalInventory.builder()
+                        .branchId(branchId)
+                        .productId(productId)
+                        .currentQuantity(BigDecimal.ZERO) // Empieza en 0
+                        .committedQuantity(BigDecimal.ZERO)
+                        .build());
+
         inventory.setMinimumStock(minimumStock);
         inventory.setLastUpdated(LocalDateTime.now());
         LocalInventory saved = localInventoryRepository.save(inventory);
