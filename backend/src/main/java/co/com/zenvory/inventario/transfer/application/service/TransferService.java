@@ -95,15 +95,7 @@ public class TransferService implements TransferUseCase {
         Transfer savedTransfer = transferRepositoryPort.save(transfer);
 
         if (autoApproved) {
-            String msg = String.format("⚠ Solicitud de Traslado: La sucursal %s solicita productos. Requiere tu autorización de salida.", 
-                    user.getSucursalId() != null ? "tu sucursal vecina" : "Administración");
-            alertUseCase.createAlert(
-                savedTransfer.getOriginBranchId(), 
-                details.get(0).getProductId(), 
-                msg, 
-                co.com.zenvory.inventario.alert.domain.model.StockAlert.AlertType.TRANSFER_REQUEST, 
-                savedTransfer.getId()
-            );
+            // Generación de alertas desactivada
         }
 
         return savedTransfer;
@@ -213,9 +205,7 @@ public class TransferService implements TransferUseCase {
             detail.registerReceipt(rDetail.receivedQuantity());
             if (detail.getMissingQuantity() > 0) {
                 hasIssues = true;
-                String msg = String.format("Novedad en Traslado #%d: Faltan %d unidades del producto #%d en destino", 
-                        transfer.getId(), detail.getMissingQuantity(), detail.getProductId());
-                alertUseCase.createAlert(transfer.getDestinationBranchId(), detail.getProductId(), msg, co.com.zenvory.inventario.alert.domain.model.StockAlert.AlertType.ISSUE_REPORTED, transfer.getId());
+                // Generación de alerta ISSUE_REPORTED desactivada
             }
             
             // Si llego mayor a cero, ingresar físicamente a la sucursal de destino

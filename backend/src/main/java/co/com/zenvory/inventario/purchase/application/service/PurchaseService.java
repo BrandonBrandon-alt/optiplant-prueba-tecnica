@@ -60,26 +60,8 @@ public class PurchaseService implements PurchaseUseCase {
 
         PurchaseOrder savedOrder = repository.save(order);
 
-        // Generar Alerta para los Administradores SI requiere seguimiento (Operador)
-        if (!isManager) {
-            String msg = String.format("Aviso de Compra (B2B): Se ha solicitado una orden de compra (#%d).", savedOrder.getId());
-            Long referenceProductId = savedOrder.getDetails().get(0).getProductId();
-            alertUseCase.createAlert(
-                savedOrder.getBranchId(),
-                referenceProductId,
-                msg,
-                StockAlert.AlertType.PURCHASE_REQUEST,
-                savedOrder.getId()
-            );
-        }
 
         return savedOrder;
-    }
-
-    private void resolvePurchaseAlerts(PurchaseOrder order, String reason) {
-        alertUseCase.getActiveAlerts(order.getBranchId()).stream()
-            .filter(a -> a.getType() == StockAlert.AlertType.PURCHASE_REQUEST && order.getId().equals(a.getReferenceId()))
-            .forEach(a -> alertUseCase.dismissAlert(a.getId(), reason));
     }
 
     @Override
@@ -87,9 +69,7 @@ public class PurchaseService implements PurchaseUseCase {
     public PurchaseOrder approveOrder(Long orderId, Long userId) {
         PurchaseOrder order = getOrderById(orderId);
         order.approve(userId);
-        PurchaseOrder saved = repository.save(order);
-        resolvePurchaseAlerts(saved, "Orden de compra aprobada por administración");
-        return saved;
+        return repository.save(order);
     }
 
     @Override
@@ -178,7 +158,6 @@ public class PurchaseService implements PurchaseUseCase {
         PurchaseOrder order = getOrderById(orderId);
         order.cancel(reason, userId);
         repository.save(order);
-        resolvePurchaseAlerts(order, "Orden de compra denegada/cancelada: " + reason);
         
         // TODO: Notificar anulación a módulo CXP (Cuentas por Pagar). 
         // En este MVP lo manejaremos con este placeholder.

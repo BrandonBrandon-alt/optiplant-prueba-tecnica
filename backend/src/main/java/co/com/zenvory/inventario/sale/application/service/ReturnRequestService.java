@@ -97,18 +97,7 @@ public class ReturnRequestService implements ReturnRequestUseCase {
 
         ReturnRequest savedRequest = repositoryPort.save(request);
 
-        // 6. Generar Alerta para los Managers
-        String msg = String.format("Solicitud de Devolución pendiente para la venta #%d. Requiere revisión del administrador.", command.saleId());
-        // Se asocia al primer producto de la devolución
-        Long referenceProductId = savedRequest.getDetails().get(0).getProductId();
-        
-        alertUseCase.createAlert(
-            savedRequest.getBranchId(),
-            referenceProductId,
-            msg,
-            StockAlert.AlertType.RETURN_REQUEST,
-            savedRequest.getId()
-        );
+
 
         return savedRequest;
     }

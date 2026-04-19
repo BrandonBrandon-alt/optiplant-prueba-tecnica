@@ -166,17 +166,7 @@ public class SaleService implements CreateSaleUseCase, SaleManagementUseCase {
             );
         }
         
-        // Disparar Alerta de Anulación
-        if (!sale.getDetails().isEmpty()) {
-            Long firstProductId = sale.getDetails().get(0).getProductId();
-            alertUseCase.createAlert(
-                sale.getBranchId(), 
-                firstProductId, 
-                "FRAUDE/ANULACIÓN: El empleado " + sale.getUserName() + " anuló la venta REF-" + id + " por COP " + sale.getTotalFinal(),
-                co.com.zenvory.inventario.alert.domain.model.StockAlert.AlertType.VOID_SALE,
-                sale.getId()
-            );
-        }
+        // Alertas de anulación desactivadas según petición del usuario
     }
     @Override
     @Transactional
