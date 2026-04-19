@@ -164,8 +164,9 @@ export default function DashboardPage() {
         
         let branchTransfers = traRes.data ?? [];
         if (session?.sucursalId) {
-           branchTransfers = branchTransfers.filter((t: any) => 
-               t.originBranchId === session.sucursalId || t.destinationBranchId === session.sucursalId
+           const myBranchId = Number(session.sucursalId);
+           branchTransfers = branchTransfers.filter((t: any) =>
+               Number(t.originBranchId) === myBranchId || Number(t.destinationBranchId) === myBranchId
            );
         }
         setTransfers(branchTransfers.filter((t: any) => t.status !== "RECEIVED"));
@@ -216,8 +217,13 @@ export default function DashboardPage() {
 
   // Operative Dashboard UI for Bodeguero
   if (isInventory) {
-     const vehiculosPorRecibir = transfers.filter(t => t.destinationBranchId === session?.sucursalId && t.status === "IN_TRANSIT").length;
-     const porEmpacar = transfers.filter(t => t.originBranchId === session?.sucursalId && t.status === "PREPARING").length;
+     const myBranch = Number(session?.sucursalId);
+     const vehiculosPorRecibir = transfers.filter(t =>
+       Number(t.destinationBranchId) === myBranch && t.status === "IN_TRANSIT"
+     ).length;
+     const porEmpacar = transfers.filter(t =>
+       Number(t.originBranchId) === myBranch && (t.status === "PREPARING" || t.status === "AUTHORIZED")
+     ).length;
 
      return (
         <div style={{ padding: "var(--page-padding)", maxWidth: "1400px", margin: "0 auto" }}>
@@ -315,7 +321,9 @@ export default function DashboardPage() {
                 icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>}
               />
             ) : (
-              alerts.slice(0, 5).map(a => <AlertRow key={a.id} alert={a} />)
+              <div className="custom-scrollbar" style={{ maxHeight: "350px", overflowY: "auto", paddingRight: "8px" }}>
+                {alerts.map(a => <AlertRow key={a.id} alert={a} />)}
+              </div>
             )}
           </Card>
         </div>
@@ -529,7 +537,9 @@ export default function DashboardPage() {
                 icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>}
               />
             ) : (
-              alerts.slice(0, 4).map(a => <AlertRow key={a.id} alert={a} />)
+              <div className="custom-scrollbar" style={{ maxHeight: "350px", overflowY: "auto", paddingRight: "8px" }}>
+                {alerts.map(a => <AlertRow key={a.id} alert={a} />)}
+              </div>
             )}
           </Card>
         </div>

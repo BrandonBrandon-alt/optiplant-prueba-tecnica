@@ -381,7 +381,7 @@ export default function BranchesPage() {
       render: (branch: BranchResponse) => (
         <div>
           <p style={{ fontSize: "14px", fontWeight: 500, color: "var(--neutral-100)", marginBottom: "2px" }}>{branch.nombre}</p>
-          {branch.telefono && <p style={{ fontSize: "12px", color: "var(--neutral-500)" }}>📞 {branch.telefono}</p>}
+          {branch.telefono && <p style={{ fontSize: "12px", color: "var(--neutral-500)", display: "flex", gap: "6px", alignItems: "center" }}><Phone size={12} /> {branch.telefono}</p>}
         </div>
       )
     },

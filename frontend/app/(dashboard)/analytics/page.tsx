@@ -65,7 +65,7 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     const session = getSession();
-    if (!session || session.rol !== "ADMIN") {
+    if (!session || (session.rol !== "ADMIN" && session.rol !== "MANAGER")) {
       router.push("/dashboard");
       return;
     }
@@ -127,11 +127,17 @@ export default function AnalyticsPage() {
     }
   ];
 
+  const session = getSession();
+  const isAdmin = session?.rol === "ADMIN";
+
   return (
     <div style={{ padding: "var(--page-padding)", maxWidth: "1600px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "32px" }}>
       <PageHeader
-        title="Análisis Global"
-        description="Perspectiva holística del rendimiento operativo y financiero de la red."
+        title={isAdmin ? "Análisis Global de Red" : "Análisis de Mi Sede"}
+        description={isAdmin
+          ? "Perspectiva holística del rendimiento operativo y financiero de toda la red."
+          : "Métricas operativas y financieras de tu sucursal en tiempo real."
+        }
       />
 
       {/* Primary KPI Cards */}

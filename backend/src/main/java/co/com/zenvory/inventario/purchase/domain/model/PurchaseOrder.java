@@ -68,10 +68,11 @@ public class PurchaseOrder {
     }
 
     public static PurchaseOrder create(Long supplierId, Long userId, Long branchId, 
-                                     LocalDateTime estimatedArrivalDate, Integer paymentDueDays, List<PurchaseOrderDetail> details) {
+                                     LocalDateTime estimatedArrivalDate, Integer paymentDueDays, List<PurchaseOrderDetail> details, boolean isManager) {
+        ReceptionStatus initialStatus = isManager ? ReceptionStatus.PENDING : ReceptionStatus.AWAITING_APPROVAL;
         return new PurchaseOrder(null, supplierId, branchId, userId, null, 
                                 LocalDateTime.now(), estimatedArrivalDate, null,
-                                ReceptionStatus.PENDING, PaymentStatus.POR_PAGAR, paymentDueDays, null, null, details,
+                                initialStatus, PaymentStatus.POR_PAGAR, paymentDueDays, null, null, details,
                                 null, null, null, 0);
     }
 
@@ -79,6 +80,15 @@ public class PurchaseOrder {
         return details.stream()
                 .map(PurchaseOrderDetail::computeSubtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public void approve(Long userId) {
+        if (this.receptionStatus != ReceptionStatus.AWAITING_APPROVAL) {
+            throw new InvalidPurchaseStateException("Solo se pueden aprobar órdenes en estado AWAITING_APPROVAL.");
+        }
+        this.receptionStatus = ReceptionStatus.PENDING;
+        this.resolvedById = userId;
+        this.resolutionDate = LocalDateTime.now();
     }
 
     public void markAsInTransit() {
@@ -121,8 +131,10 @@ public class PurchaseOrder {
     }
 
     public void cancel(String reason, Long userId) {
-        if (this.receptionStatus != ReceptionStatus.PENDING && this.receptionStatus != ReceptionStatus.IN_TRANSIT) {
-            throw new InvalidPurchaseStateException("Solo se pueden cancelar órdenes que no hayan sido recibidas aún.");
+        if (this.receptionStatus != ReceptionStatus.PENDING && 
+            this.receptionStatus != ReceptionStatus.IN_TRANSIT &&
+            this.receptionStatus != ReceptionStatus.AWAITING_APPROVAL) {
+            throw new InvalidPurchaseStateException("Solo se pueden cancelar órdenes que no hayan sido recibidas aún o que estén pendientes de aprobación.");
         }
         if (reason == null || reason.isBlank()) {
             throw new IllegalArgumentException("El motivo de cancelación es obligatorio.");

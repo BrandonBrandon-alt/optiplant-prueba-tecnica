@@ -5,7 +5,7 @@ import { apiClient } from "@/api/client";
 import type { components } from "@/api/schema";
 import { getSession } from "@/api/auth";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import Button from "@/components/ui/Button";
 import SearchFilter from "@/components/ui/SearchFilter";
@@ -213,7 +213,7 @@ export default function MasterSuppliersPage() {
                   <h2 style={{ color: "white", fontSize: "20px", fontWeight: "bold", margin: 0 }}>Catálogo Asociado</h2>
                   <p style={{ color: "var(--brand-400)", fontSize: "14px", fontWeight: "bold", marginTop: "4px" }}>{viewCatalogSupplier.nombre}</p>
                </div>
-               <button onClick={() => setViewCatalogSupplier(null)} style={{ background: "none", border: "none", color: "var(--neutral-400)", cursor: "pointer", fontSize: "18px" }}>✖</button>
+               <button onClick={() => setViewCatalogSupplier(null)} style={{ background: "none", border: "none", color: "var(--neutral-400)", cursor: "pointer", fontSize: "18px" }}><X size={18} /></button>
             </div>
             
             <div className="custom-scrollbar" style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "12px", paddingRight: "8px" }}>

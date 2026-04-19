@@ -33,7 +33,7 @@ const formatCurrency = (amount: number) => {
 interface Product { id: number; sku: string; nombre: string; costoPromedio: number; precioVenta: number; proveedorId: number; }
 interface PurchaseDetail { productId: number; nombre: string; sku: string; quantity: number; unitPrice: number | ""; discountPct: number | ""; }
 interface OrderDetailItem { id: number; productId: number; quantity: number; unitPrice: number; subtotal: number; discountPct?: number; productName?: string; }
-interface PurchaseOrder { id: number; supplierId: number; branchId: number; requestDate: string; estimatedArrivalDate: string; actualArrivalDate: string | null; receptionStatus: "PENDING" | "IN_TRANSIT" | "RECEIVED_TOTAL" | "RECEIVED_PARTIAL" | "CANCELLED"; paymentStatus: "POR_PAGAR" | "PAGADO"; total: number; details?: OrderDetailItem[]; resolutionReason?: string; resolutionDate?: string; }
+interface PurchaseOrder { id: number; supplierId: number; branchId: number; requestDate: string; estimatedArrivalDate: string; actualArrivalDate: string | null; receptionStatus: "AWAITING_APPROVAL" | "PENDING" | "IN_TRANSIT" | "RECEIVED_TOTAL" | "RECEIVED_PARTIAL" | "CANCELLED"; paymentStatus: "POR_PAGAR" | "PAGADO"; total: number; details?: OrderDetailItem[]; reasonResolution?: string; resolutionDate?: string; }
 interface CppImpact { productId: number; productName: string; oldCpp: number; newCpp: number; quantityReceived: number; }
 interface ReceiveOrderResult { orderId: number; status: string; impacts: CppImpact[]; }
 
@@ -134,6 +134,7 @@ const CartItemRow = ({ item, actions }: { item: PurchaseDetail, actions: any }) 
 // ── Main Page Component ──────────────────────────────────────
 
 function PurchasesContent() {
+  const session = typeof window !== "undefined" ? getSession() : null;
   const [activeTab, setActiveTab] = useState<"history" | "new">("new");
   const { showToast } = useToast();
   const router = useRouter();
@@ -143,11 +144,10 @@ function PurchasesContent() {
 
   // Protect route
   useEffect(() => {
-    const session = getSession();
-    if (session?.rol === "OPERADOR_INVENTARIO" || session?.rol === "SELLER") {
+    if (session?.rol === "SELLER") {
       router.replace("/dashboard");
     }
-  }, [router]);
+  }, [router, session]);
 
   // State: Catalogs
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -221,12 +221,23 @@ function PurchasesContent() {
   }, [products, searchTerm, supplierId]);
 
   const filteredOrders = useMemo(() => {
-    return orders.filter(o => {
+    let result = orders.filter(o => {
       const matchSupplier = filterSupplierId ? o.supplierId === parseInt(filterSupplierId) : true;
       const matchProduct = filterProductId ? o.details?.some(d => d.productId === parseInt(filterProductId)) : true;
       return matchSupplier && matchProduct;
     });
-  }, [orders, filterSupplierId, filterProductId]);
+
+    const session = getSession();
+    if (session?.rol === "ADMIN") {
+      result = [...result].sort((a, b) => {
+        const branchA = branches.find(br => br.id === a.branchId)?.nombre || "";
+        const branchB = branches.find(br => br.id === b.branchId)?.nombre || "";
+        return branchA.localeCompare(branchB);
+      });
+    }
+
+    return result;
+  }, [orders, filterSupplierId, filterProductId, branches]);
 
   const financialSummary = useMemo(() => {
     return cart.reduce((acc, curr) => {
@@ -275,8 +286,10 @@ function PurchasesContent() {
   useEffect(() => {
     if (branchIdPreselected) {
       setBranchId(branchIdPreselected);
+    } else if (session && (session.rol === "OPERADOR_INVENTARIO" || session.rol === "MANAGER") && session.sucursalId) {
+      setBranchId(String(session.sucursalId));
     }
-  }, [branchIdPreselected]);
+  }, [branchIdPreselected, session]);
 
   useEffect(() => {
     if (receivingOrder) {
@@ -339,8 +352,12 @@ function PurchasesContent() {
         setSupplierId("");
         setBranchId("");
         setEstimatedArrival("");
-        setActiveTab("history");
-        fetchOrders();
+        if (session?.rol === "OPERADOR_INVENTARIO") {
+          router.push("/inventory");
+        } else {
+          setActiveTab("history");
+          fetchOrders();
+        }
       }
     } catch (err: any) {
       showToast("Error de conexión con el servidor.", "error");
@@ -455,6 +472,28 @@ function PurchasesContent() {
     }
   };
 
+  const handleApproveOrder = async (orderId: number) => {
+    const session = getSession();
+    if (!session) return;
+
+    try {
+      const { error } = await (apiClient.POST as any)("/api/v1/purchases/{id}/approve", {
+        params: { 
+          path: { id: orderId },
+          query: { userId: session.id }
+        }
+      });
+      if (!error) {
+        showToast("Orden de compra aprobada correctamente.", "success");
+        fetchOrders();
+      } else {
+        showToast("Error al aprobar la orden.", "error");
+      }
+    } catch (err) {
+      showToast("Error de conexión.", "error");
+    }
+  };
+
   const openOrderDetail = async (order: PurchaseOrder) => {
     setIsLoadingDetail(true);
     try {
@@ -530,6 +569,18 @@ function PurchasesContent() {
         render: (row: PurchaseOrder) => <span className="font-semibold text-[var(--neutral-100)]">{suppliers.find(s => s.id === row.supplierId)?.nombre || "Desconocido"}</span> 
       },
       { 
+        key: "branchId", 
+        label: "Sucursal", 
+        render: (row: PurchaseOrder) => (
+          <div className="flex items-center gap-2">
+            <Building2 size={14} className="text-[var(--neutral-500)]" />
+            <span className="font-bold text-[var(--neutral-100)] uppercase tracking-tight text-[11px]">
+              {branches.find(b => b.id === row.branchId)?.nombre || `Sucursal #${row.branchId}`}
+            </span>
+          </div>
+        )
+      },
+      { 
         key: "total", 
         label: "Monto Total", 
         render: (row: PurchaseOrder) => <span className="font-black text-[var(--neutral-50)]">{formatCurrency(row.total)}</span> 
@@ -540,14 +591,14 @@ function PurchasesContent() {
         render: (row: PurchaseOrder) => (
           <div className="flex flex-col gap-1.5">
             <Badge 
-              variant={row.receptionStatus === "RECEIVED_TOTAL" ? "success" : (row.receptionStatus as string) === "CANCELLED" ? "danger" : row.receptionStatus === "IN_TRANSIT" ? "warning" : "info"} 
+              variant={row.receptionStatus === "RECEIVED_TOTAL" ? "success" : (row.receptionStatus as string) === "CANCELLED" ? "danger" : row.receptionStatus === "IN_TRANSIT" ? "warning" : row.receptionStatus === "AWAITING_APPROVAL" ? "neutral" : "info"} 
               dot
             >
-              {row.receptionStatus === "RECEIVED_TOTAL" ? "ENTREGADO" : (row.receptionStatus as string) === "CANCELLED" ? "CANCELADO" : row.receptionStatus === "IN_TRANSIT" ? "EN CAMINO" : "SOLICITADO"}
+              {row.receptionStatus === "RECEIVED_TOTAL" ? "ENTREGADO" : (row.receptionStatus as string) === "CANCELLED" ? "CANCELADO" : row.receptionStatus === "IN_TRANSIT" ? "EN CAMINO" : row.receptionStatus === "AWAITING_APPROVAL" ? "SOLICITADO" : "APROBADO"}
             </Badge>
-            {(row.receptionStatus as string) === "CANCELLED" && row.resolutionReason && (
+            {(row.receptionStatus as string) === "CANCELLED" && row.reasonResolution && (
               <p className="text-[10px] text-[var(--neutral-500)] italic leading-tight max-w-[120px]">
-                {row.resolutionReason}
+                {row.reasonResolution}
               </p>
             )}
           </div>
@@ -567,7 +618,8 @@ function PurchasesContent() {
         label: "", 
         render: (row: PurchaseOrder) => {
           const session = getSession();
-          const isManager = session?.rol === "ADMIN" || session?.rol === "GERENTE";
+          const isAdmin = session?.rol === "ADMIN";
+          const isManager = session?.rol === "MANAGER";
           
           return (
             <div className="flex justify-end gap-2">
@@ -575,7 +627,9 @@ function PurchasesContent() {
                 <Eye size={16} />
               </button>
               
-              {row.receptionStatus !== "RECEIVED_TOTAL" && row.receptionStatus !== "CANCELLED" && (
+              {row.receptionStatus !== "RECEIVED_TOTAL" && 
+               row.receptionStatus !== "CANCELLED" && 
+               row.receptionStatus !== "AWAITING_APPROVAL" && (
                 <button 
                   onClick={() => receiveOrder(row.id)} 
                   className="p-2 text-[var(--color-success)] hover:bg-[var(--color-success)]/10 rounded-lg transition-all" 
@@ -595,6 +649,16 @@ function PurchasesContent() {
                 </button>
               )}
 
+              {row.receptionStatus === "AWAITING_APPROVAL" && (isAdmin || isManager) && (
+                <button 
+                  onClick={() => handleApproveOrder(row.id)} 
+                  className="p-2 text-[var(--color-success)] hover:bg-[var(--color-success)]/10 rounded-lg transition-all" 
+                  title="Aprobar Solicitud"
+                >
+                  <CheckCircle size={16} />
+                </button>
+              )}
+
               {row.receptionStatus === "PENDING" && session?.rol === "ADMIN" && (
                 <button 
                   onClick={() => {
@@ -605,7 +669,7 @@ function PurchasesContent() {
                   className="p-2 text-[var(--brand-400)] hover:bg-[var(--brand-400)]/10 rounded-lg transition-all" 
                   title="Aprobar Excepción"
                 >
-                  <CheckCircle size={16} />
+                  <TrendingUp size={16} />
                 </button>
               )}
 
@@ -619,7 +683,7 @@ function PurchasesContent() {
                 </button>
               )}
 
-              {row.receptionStatus === "PENDING" && (
+              {(row.receptionStatus === "PENDING" || row.receptionStatus === "AWAITING_APPROVAL") && (
                 <button 
                   onClick={() => setResolvingOrder(row)} 
                   className="p-2 text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-lg transition-all" 
@@ -763,6 +827,7 @@ function PurchasesContent() {
                 options={[...branches.map(b => ({ value: String(b.id), label: b.nombre }))]} 
                 className="bg-[var(--bg-base)]/50 border-[var(--neutral-800)]/50"
                 icon={<Warehouse size={14} />}
+                disabled={session?.rol === "OPERADOR_INVENTARIO" || session?.rol === "MANAGER"}
               />
               <Input 
                 label="ETA Estimada"
@@ -851,14 +916,16 @@ function PurchasesContent() {
           >
             <ShoppingCart size={18} className="mr-2" /> Nueva Negociación
           </Button>
-          <Button 
-            variant={activeTab === "history" ? "primary" : "ghost"} 
-            size="md"
-            onClick={() => setActiveTab("history")}
-            style={{ borderRadius: "10px", fontWeight: 800, textTransform: "uppercase", fontSize: "11px", letterSpacing: "1px" }}
-          >
-            <TrendingUp size={18} className="mr-2" /> Historial Diario
-          </Button>
+          {session?.rol !== "OPERADOR_INVENTARIO" && (
+            <Button 
+              variant={activeTab === "history" ? "primary" : "ghost"} 
+              size="md"
+              onClick={() => setActiveTab("history")}
+              style={{ borderRadius: "10px", fontWeight: 800, textTransform: "uppercase", fontSize: "11px", letterSpacing: "1px" }}
+            >
+              <TrendingUp size={18} className="mr-2" /> Historial Diario
+            </Button>
+          )}
         </div>
 
         {activeTab === "new" && cart.length > 0 && (
@@ -887,7 +954,9 @@ function PurchasesContent() {
             <Button variant="ghost" onClick={() => setSelectedOrder(null)}>
               Cerrar
             </Button>
-            {selectedOrder?.receptionStatus !== "RECEIVED_TOTAL" && (
+            {selectedOrder?.receptionStatus !== "RECEIVED_TOTAL" && 
+             selectedOrder?.receptionStatus !== "CANCELLED" && 
+             selectedOrder?.receptionStatus !== "AWAITING_APPROVAL" && (
               <Button 
                 onClick={() => { if (selectedOrder) { receiveOrder(selectedOrder.id); setSelectedOrder(null); } }}
                 leftIcon={<CheckCircle size={18} />}
@@ -910,7 +979,7 @@ function PurchasesContent() {
                   <div>
                     <h4 className="text-[11px] font-black text-[var(--color-danger)] uppercase tracking-[0.2em] mb-1">Orden de Compra Anulada</h4>
                     <p className="text-sm text-[var(--neutral-100)] font-medium leading-relaxed italic">
-                      "{selectedOrder.resolutionReason || "Sin motivo especificado"}"
+                      "{selectedOrder.reasonResolution || "Sin motivo especificado"}"
                     </p>
                     {selectedOrder.resolutionDate && (
                       <p className="text-[10px] text-[var(--neutral-500)] mt-2 uppercase font-black tracking-widest">

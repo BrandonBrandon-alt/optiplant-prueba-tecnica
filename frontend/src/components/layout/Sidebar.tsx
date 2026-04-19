@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { MapPin } from "lucide-react";
 import Logo from "@/components/ui/Logo";
 import { logout, getSession, type AuthSession } from "@/api/auth";
 import { apiClient } from "@/api/client";
@@ -55,6 +56,16 @@ const navItems = [
     ),
   },
   {
+    href: "/purchases",
+    label: "Compras (B2B)",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    ),
+  },
+  {
     href: "/sales/pos",
     label: "Terminal POS",
     icon: (
@@ -74,6 +85,17 @@ const navItems = [
         <path d="M12 8v4l3 3" />
         <circle cx="12" cy="12" r="9" />
         <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" />
+      </svg>
+    ),
+  },
+  {
+    href: "/returns",
+    label: "Devoluciones",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0" />
+        <path d="M12 8v4l-3 2" />
+        <path d="M21 12H15" />
       </svg>
     ),
   },
@@ -112,16 +134,7 @@ const adminItems = [
       </svg>
     ),
   },
-  {
-    href: "/purchases",
-    label: "Compras (B2B)",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-        <circle cx="12" cy="12" r="3" />
-      </svg>
-    ),
-  },
+
   {
     href: "/audit",
     label: "Auditoría Global",
@@ -265,6 +278,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     if (isInventory) {
       // OPERADOR_INVENTARIO: Panel + physical inventory + transfer execution
       return item.label === "Panel" || item.label === "Inventario" || item.label === "Traslados";
+    }
+    if (isSeller) {
+      // SELLERS: POS + Inventory + Sales History + Returns
+      return item.label === "Terminal POS" || item.label === "Inventario" || item.label === "Historial Ventas" || item.label === "Devoluciones";
     }
     // Managers see everything in base navItems
     return true;
@@ -467,49 +484,70 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       </nav>
 
       {/* Profile & Logout */}
-      <div style={{ padding: "0 12px", borderTop: "1px solid var(--border-default)", paddingTop: "16px", marginTop: "8px" }}>
+      <div style={{ padding: "16px 12px 12px", borderTop: "1px solid var(--border-default)", marginTop: "8px" }}>
         {session && (
-          <div style={{ padding: "0 10px", marginBottom: "12px" }}>
-            <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--neutral-100)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{session.nombre}</p>
-            <div style={{ marginTop: "4px", display: "flex", gap: "6px", alignItems: "center" }}>
-              <span style={{ 
-                fontSize: "10px", 
-                fontWeight: 700, 
-                padding: "2px 8px", 
-                borderRadius: "4px",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                background: session.rol === "ADMIN" ? "rgba(var(--brand-500-rgb), 0.15)" : 
-                            session.rol === "MANAGER" ? "rgba(var(--color-success-rgb), 0.15)" : 
-                            session.rol === "OPERADOR_INVENTARIO" ? "rgba(var(--color-warning-rgb), 0.15)" :
-                            session.rol === "SELLER" ? "rgba(var(--color-info-rgb), 0.15)" :
-                            "rgba(var(--neutral-500-rgb), 0.15)",
-                color: session.rol === "ADMIN" ? "var(--brand-400)" : 
-                       session.rol === "MANAGER" ? "var(--color-success)" : 
-                       session.rol === "OPERADOR_INVENTARIO" ? "var(--color-warning)" :
-                       session.rol === "SELLER" ? "var(--color-info)" :
-                       "var(--neutral-400)",
-                border: session.rol === "ADMIN" ? "1px solid rgba(var(--brand-500-rgb), 0.3)" : 
-                        session.rol === "MANAGER" ? "1px solid rgba(var(--color-success-rgb), 0.3)" : 
-                        session.rol === "OPERADOR_INVENTARIO" ? "1px solid rgba(var(--color-warning-rgb), 0.3)" :
-                        session.rol === "SELLER" ? "1px solid rgba(var(--color-info-rgb), 0.3)" :
-                        "1px solid rgba(var(--neutral-500-rgb), 0.3)"
-              }}>
-                {session.rol === "OPERADOR_INVENTARIO" ? "Operador" : session.rol}
-              </span>
+          <div style={{ 
+            display: "flex", 
+            alignItems: "center", 
+            gap: "10px", 
+            padding: "10px", 
+            background: "var(--bg-card)", 
+            borderRadius: "var(--radius-lg)", 
+            border: "1px solid var(--border-subtle)",
+            marginBottom: "12px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+          }}>
+            <div style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, var(--brand-500), #eab308)",
+              color: "white",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "13px",
+              fontWeight: 800,
+              flexShrink: 0,
+              boxShadow: "inset 0 -2px 4px rgba(0,0,0,0.2)"
+            }}>
+              {session.nombre ? session.nombre.substring(0, 2).toUpperCase() : "U"}
             </div>
-            {branchName && (
-              <p style={{ 
-                fontSize: "10px", 
-                color: "var(--brand-500)", 
-                fontWeight: 600, 
-                marginTop: "2px",
-                textTransform: "uppercase",
-                letterSpacing: "0.02em"
-              }}>
-                {branchName}
+            <div style={{ overflow: "hidden", flex: 1 }}>
+              <p style={{ fontSize: "14px", fontWeight: 700, color: "var(--neutral-50)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", lineHeight: "1.2" }}>
+                {session.nombre}
               </p>
-            )}
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
+                <span style={{ 
+                  fontSize: "9.5px", 
+                  fontWeight: 800, 
+                  textTransform: "uppercase", 
+                  letterSpacing: "0.05em", 
+                  color: session.rol === "ADMIN" ? "var(--brand-400)" : 
+                         session.rol === "MANAGER" ? "#10b981" : 
+                         session.rol === "OPERADOR_INVENTARIO" ? "#f59e0b" :
+                         session.rol === "SELLER" ? "#3b82f6" : "var(--neutral-400)"
+                }}>
+                  {session.rol === "OPERADOR_INVENTARIO" ? "OPERADOR" : session.rol}
+                </span>
+              </div>
+              {branchName && (
+                <p style={{ 
+                  fontSize: "11px", 
+                  color: "var(--neutral-400)", 
+                  whiteSpace: "nowrap", 
+                  overflow: "hidden", 
+                  textOverflow: "ellipsis",
+                  fontWeight: 500,
+                  marginTop: "3px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px"
+                }}>
+                  <MapPin size={11} /> {branchName}
+                </p>
+              )}
+            </div>
           </div>
         )}
         <button

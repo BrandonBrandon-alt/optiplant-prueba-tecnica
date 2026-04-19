@@ -38,9 +38,9 @@ const EXTERNAL_MOTIVES: Record<string, { label: string, path: string, descriptio
     icon: <ShoppingCart size={24} />
   },
   DEVOLUCION: {
-    label: "Ir a Historial de Ventas",
-    path: "/sales/history",
-    description: "Las devoluciones de clientes deben procesarse desde el historial de ventas para anular la factura y cargar el stock automáticamente.",
+    label: "Consultar con Manager",
+    path: "/dashboard",
+    description: "Las devoluciones de clientes deben ser procesadas exclusivamente por un Manager desde el historial de ventas para validar el reembolso y la integridad del producto.",
     icon: <RotateCcw size={24} />
   },
   TRASLADO: {
@@ -685,7 +685,7 @@ export default function InventoryPage() {
             label="Motivo del Movimiento"
             value={adjustData.reason}
             onChange={(val) => setAdjustData({...adjustData, reason: val})}
-            options={adjustData.type === "INGRESO" ? [
+            options={(adjustData.type === "INGRESO" ? [
               { value: "COMPRA", label: "Compra a Proveedor" },
               { value: "DEVOLUCION", label: "Devolución de Cliente" },
               { value: "AJUSTE_POSITIVO", label: "Ajuste de Auditoría (+)" },
@@ -695,7 +695,15 @@ export default function InventoryPage() {
               { value: "MERMA", label: "Merma / Daño" },
               { value: "AJUSTE_NEGATIVO", label: "Ajuste de Auditoría (-)" },
               { value: "TRASLADO", label: "Traslado Enviado" }
-            ]}
+            ]).filter(opt => {
+              if (isInventory && opt.value === "DEVOLUCION") {
+                return false;
+              }
+              if(isInventory && opt.value === "VENTA") {
+                return false;
+              }
+              return true;
+            })}
           />
 
           {adjustData.reason === "MERMA" && (

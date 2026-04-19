@@ -67,11 +67,20 @@ export default function HistoryTable({ sales, onOpenDetail, formatCurrency, onRe
       header: "Estado",
       key: "status",
       align: "center",
-      render: (sale) => (
-        <Badge variant={sale.status === 'COMPLETED' ? "success" : "neutral"} dot>
-          {sale.status === 'COMPLETED' ? "Aprobada" : "Anulada"}
-        </Badge>
-      )
+      render: (sale) => {
+        const rawStatus = (sale.status || "").toUpperCase().trim();
+        const variantMap: Record<string, any> = {
+          'COMPLETED': { variant: 'success', text: 'Venta Ok' },
+          'RETURNED': { variant: 'warning', text: 'Devolución' },
+          'CANCELED': { variant: 'neutral', text: 'Anulada' }
+        };
+        const config = variantMap[rawStatus] || { variant: 'neutral', text: rawStatus || 'Sin Estado' };
+        return (
+          <Badge variant={config.variant} dot>
+            {config.text}
+          </Badge>
+        );
+      }
     },
     {
       header: "Acciones",
@@ -94,15 +103,19 @@ export default function HistoryTable({ sales, onOpenDetail, formatCurrency, onRe
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
         <span className="tabular" style={{ fontSize: "12px", fontWeight: 700, color: "var(--brand-400)" }}>#{sale.id}</span>
         <div style={{ 
-            padding: "2px 6px", 
-            borderRadius: "4px", 
+            padding: "2px 8px", 
+            borderRadius: "6px", 
             fontSize: "9px", 
-            fontWeight: 700, 
+            fontWeight: 800, 
             textTransform: "uppercase",
-            background: sale.status === 'COMPLETED' ? "color-mix(in srgb, var(--color-success), transparent 90%)" : "color-mix(in srgb, var(--color-danger), transparent 90%)",
-            color: sale.status === 'COMPLETED' ? "var(--color-success)" : "var(--color-danger)",
+            background: sale.status === 'COMPLETED' ? "rgba(var(--color-success-rgb), 0.1)" : 
+                        sale.status === 'RETURNED' ? "rgba(var(--color-warning-rgb), 0.1)" : "rgba(var(--neutral-500-rgb), 0.1)",
+            color: sale.status === 'COMPLETED' ? "var(--color-success)" : 
+                   sale.status === 'RETURNED' ? "var(--color-warning)" : "var(--neutral-400)",
+            border: `1px solid ${sale.status === 'COMPLETED' ? "rgba(var(--color-success-rgb), 0.2)" : 
+                                  sale.status === 'RETURNED' ? "rgba(var(--color-warning-rgb), 0.2)" : "rgba(var(--neutral-500-rgb), 0.2)"}`
         }}>
-          {sale.status === 'COMPLETED' ? "Aprobada" : "Anulada"}
+          {sale.status === 'COMPLETED' ? "Venta Ok" : sale.status === 'RETURNED' ? "Devolución" : "Anulada"}
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>

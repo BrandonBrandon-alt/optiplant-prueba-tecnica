@@ -146,6 +146,14 @@ public class TransferService implements TransferUseCase {
             
             String productName = productUseCase.getProductById(detail.getProductId()).getName();
             
+            // REGLA DE NEGOCIO: Liberar el stock comprometido antes de retirar físicamente
+            // para que la validación de 'hasSufficientStock' no lo cuente dos veces.
+            inventoryUseCase.releaseStock(
+                    transfer.getOriginBranchId(),
+                    detail.getProductId(),
+                    BigDecimal.valueOf(detail.getRequestedQuantity())
+            );
+
             inventoryUseCase.withdrawStock(
                     transfer.getOriginBranchId(),
                     detail.getProductId(),
@@ -158,13 +166,6 @@ public class TransferService implements TransferUseCase {
                     "TRANSFERENCIA_OUT",
                     null,
                     null
-            );
-
-            // REGLA DE NEGOCIO: Liberar el stock comprometido que ya se retiró físicamente
-            inventoryUseCase.releaseStock(
-                    transfer.getOriginBranchId(),
-                    detail.getProductId(),
-                    BigDecimal.valueOf(detail.getRequestedQuantity())
             );
         }
 

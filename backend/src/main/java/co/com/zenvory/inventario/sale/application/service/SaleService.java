@@ -178,4 +178,15 @@ public class SaleService implements CreateSaleUseCase, SaleManagementUseCase {
             );
         }
     }
+    @Override
+    @Transactional
+    public void updateSaleStatus(Long id, co.com.zenvory.inventario.sale.domain.model.SaleStatus status) {
+        if (status == co.com.zenvory.inventario.sale.domain.model.SaleStatus.RETURNED) {
+            Sale sale = getSaleById(id);
+            sale.markAsReturned();
+            saleRepositoryPort.save(sale);
+        } else {
+            saleRepositoryPort.updateStatus(id, status);
+        }
+    }
 }

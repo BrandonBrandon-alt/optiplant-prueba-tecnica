@@ -23,6 +23,7 @@ import {
   Clock, 
   CheckCircle2, 
   AlertCircle, 
+  Zap,
   XCircle, 
   Timer,
   MessageCircle,
@@ -647,7 +648,7 @@ function TransfersContent() {
                           loading={processingId === t.id}
                           title="Cancelar forzosamente (Siniestro)"
                         >
-                          ⚡ Siniestro
+                          <span style={{display: 'flex', gap: '6px', alignItems: 'center'}}><Zap size={14} /> Siniestro</span>
                         </Button>
                       )}
                       {/* PENDING: Manager from destination must approve first */}
@@ -660,14 +661,14 @@ function TransfersContent() {
                             loading={processingId === t.id}
                             style={{ background: "#2ecc71", borderColor: "#27ae60" }}
                           >
-                            ✅ Aprobar Entrada
+                            <span style={{display: 'flex', gap: '6px', alignItems: 'center'}}><CheckCircle2 size={14} /> Aprobar Entrada</span>
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => setResolvingTransfer({ t, mode: "reject" })} loading={processingId === t.id} style={{ color: "var(--color-danger)" }}>Rechazar</Button>
                         </div>
                       )}
 
-                      {/* APPROVED_DEST: Manager from origin must authorize departure */}
-                      {t.status === "APPROVED_DEST" && (isAdmin || (isManager && Number(t.originBranchId) === Number(myBranchId))) && (
+                      {/* APPROVED_DEST: Manager or Inventory from origin must authorize departure */}
+                      {t.status === "APPROVED_DEST" && (isAdmin || ((isManager || isInventory) && Number(t.originBranchId) === Number(myBranchId))) && (
                         <div style={{ display: "flex", gap: "8px" }}>
                           <Button 
                             variant="primary" 
@@ -675,7 +676,7 @@ function TransfersContent() {
                             onClick={() => setPreparingTransfer(t)}
                             style={{ background: "var(--brand-500)" }}
                           >
-                            📦 Autorizar Salida
+                            <span style={{display: 'flex', gap: '6px', alignItems: 'center'}}><Package size={14} /> Autorizar Salida</span>
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => setResolvingTransfer({ t, mode: "cancel" })} loading={processingId === t.id}>Cancelar</Button>
                         </div>
@@ -683,7 +684,9 @@ function TransfersContent() {
 
                       {/* PREPARING: Origin branch can dispatch (Manager or Staff) */}
                       {t.status === "PREPARING" && (isAdmin || Number(t.originBranchId) === Number(myBranchId)) && (
-                        <Button variant="primary" size="sm" onClick={() => setDispatchingTransfer(t)}>🚀 Despachar</Button>
+                        <Button variant="primary" size="sm" onClick={() => setDispatchingTransfer(t)}>
+                           <span style={{display: 'flex', gap: '6px', alignItems: 'center'}}><Truck size={14} /> Despachar</span>
+                        </Button>
                       )}
                       {/* IN_TRANSIT: Destination branch can receive (Manager or Inventory) */}
                       {t.status === "IN_TRANSIT" && (isAdmin || Number(t.destinationBranchId) === Number(myBranchId)) && (

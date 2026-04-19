@@ -205,7 +205,7 @@ public class AlertService implements AlertUseCase {
                 ))
         );
         
-        var order = purchaseUseCase.createOrder(cmd);
+        var order = purchaseUseCase.createOrder(cmd, true);
         
         alert.resolve(ResolutionType.PURCHASE, order.getId(), "Abastecimiento vía orden de compra");
         alertRepository.save(alert);
