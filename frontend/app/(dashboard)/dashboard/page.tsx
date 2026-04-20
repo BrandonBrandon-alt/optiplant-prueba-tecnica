@@ -252,14 +252,15 @@ export default function DashboardPage() {
           </div>
         </div>
       ) : (
-        <div className="space-y-12">
-          {/* I. KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="space-y-12 pb-12">
+          {/* Layer 1: Executive Pulse (KPIs) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             <KpiCard
               label="Ventas Netas"
               value={formatCOP(dashboardData.global?.totalRevenue ?? 0)}
               sub={`Ticket Promedio: ${formatCOP(dashboardData.global?.averageTicket ?? 0)}`}
               accent="var(--color-success)"
+              progress={75}
               icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>}
             />
             <KpiCard
@@ -267,6 +268,7 @@ export default function DashboardPage() {
               value={formatCOP(dashboardData.global?.totalInventoryValue ?? 0)}
               sub={isAdmin ? `${dashboardData.branches.length} sedes` : "Local"}
               accent="var(--color-warning)"
+              progress={45}
               icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 8l-9-4-9 4m18 8l-9 4-9-4m18-4l-9 4-9-4m9-11v11" /></svg>}
             />
             <KpiCard
@@ -274,6 +276,7 @@ export default function DashboardPage() {
               value={`${((dashboardData.inventoryRotation.reduce((a, b) => a + (b.rotationRatio || 0), 0) / (dashboardData.inventoryRotation.length || 1)) * 100).toFixed(1)}%`}
               sub="Eficiencia catálogo"
               accent="var(--brand-500)"
+              progress={62}
               icon={<BarChart3 size={22} strokeWidth={2.5} />}
             />
             <KpiCard
@@ -281,57 +284,66 @@ export default function DashboardPage() {
               value={String(dashboardData.alerts.length)}
               sub="Pendientes"
               accent={dashboardData.alerts.length > 0 ? "var(--color-danger)" : "var(--color-success)"}
+              progress={dashboardData.alerts.length > 0 ? 85 : 0}
               icon={<Zap size={22} strokeWidth={2.5} />}
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-8 space-y-8">
-              <Card title="Evolución Comercial" headerRight={<LayoutGrid size={18} className="text-[var(--neutral-500)]" />}>
-                <div className="space-y-10 mt-6">
-                  <div className="h-[320px]">
-                    <SalesTrendChart data={dashboardData.salesTrend} variant="area" />
-                  </div>
-                  <div className="pt-8 border-t border-[var(--neutral-800)]">
-                    <h4 className="text-[11px] font-black text-[var(--neutral-500)] uppercase tracking-widest mb-6">Comparativa Histórica Mensual</h4>
-                    <MonthlyComparisonChart data={dashboardData.monthlySales} />
-                  </div>
+          {/* Layer 2: Commercial Intelligence (2/3 + 1/3) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-8">
+              <Card title="Tendencia de Ingresos" headerRight={<LineChartIcon size={18} className="text-[var(--neutral-500)]" />}>
+                <div className="h-[360px] w-full pt-4">
+                  <SalesTrendChart data={dashboardData.salesTrend} variant="area" />
                 </div>
               </Card>
-
-              <Card title="Análisis de Eficiencia de Inventario" headerRight={<PackageSearch size={18} className="text-[var(--neutral-500)]" />}>
-                <InventoryInsightTable data={dashboardData.inventoryRotation} />
-              </Card>
             </div>
-
-            <div className="lg:col-span-4 space-y-8">
-              {dashboardData.transferImpact && <TransfersImpactDisplay data={dashboardData.transferImpact} />}
-              
-              <Card title="Top Productos" headerRight={<TrendingUp size={16} className="text-[var(--brand-500)]" />}>
-                <TopProductsList products={dashboardData.topProducts} />
-              </Card>
-
-              {isAdmin && (
-                <Card title="Rendimiento Sedes">
-                  <div className="h-[320px] py-4">
-                    <BranchPerformanceChart data={dashboardData.performance} />
-                  </div>
-                </Card>
-              )}
-
-              <Card title="Traslados Activos" headerRight={<Badge variant="info">Logística</Badge>}>
-                <ActiveTransfersList transfers={dashboardData.transfers} branchMap={branchMap} />
+            <div className="lg:col-span-4">
+              <Card title="Comparativa Mensual" headerRight={<BarChart3 size={18} className="text-[var(--neutral-500)]" />}>
+                <div className="h-[360px] w-full pt-4">
+                  <MonthlyComparisonChart data={dashboardData.monthlySales} />
+                </div>
               </Card>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card title="Manejo de Abastecimiento" headerRight={<ShoppingCart size={18} className="text-[var(--neutral-500)]" />}>
-              <ReplenishmentGrid data={dashboardData.replenishment} />
-            </Card>
-            <Card title="Monitoreo de Alertas Stock" headerRight={<Zap size={18} className="text-[var(--color-danger)]" />}>
-              <AlertsList alerts={dashboardData.alerts} />
-            </Card>
+          {/* Layer 3: Inventory & Logistics Deep Dive (3/5 + 2/5 approx 7/12) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-7">
+              <Card title="Análisis de Eficiencia y Rotación" headerRight={<PackageSearch size={18} className="text-[var(--neutral-500)]" />}>
+                <InventoryInsightTable data={dashboardData.inventoryRotation} />
+              </Card>
+            </div>
+            <div className="lg:col-span-5 space-y-8">
+              {dashboardData.transferImpact && <TransfersImpactDisplay data={dashboardData.transferImpact} />}
+              <Card title="Velocidad de Productos" headerRight={<TrendingUp size={16} className="text-[var(--brand-500)]" />}>
+                <TopProductsList products={dashboardData.topProducts} />
+              </Card>
+            </div>
+          </div>
+
+          {/* Layer 4: Operations & Control (5/12 + 7/12) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-5">
+              <Card title="Gestión de Reabastecimiento" headerRight={<ShoppingCart size={18} className="text-[var(--neutral-500)]" />}>
+                <ReplenishmentGrid data={dashboardData.replenishment} />
+              </Card>
+            </div>
+            <div className="lg:col-span-7 space-y-8">
+               <Card title="Monitoreo de Alertas Stock" headerRight={<Zap size={18} className="text-[var(--color-danger)]" />}>
+                <AlertsList alerts={dashboardData.alerts} />
+              </Card>
+              <Card title="Traslados en Curso" headerRight={<Badge variant="info">Logística</Badge>}>
+                <ActiveTransfersList transfers={dashboardData.transfers} branchMap={branchMap} />
+              </Card>
+              {isAdmin && (
+                <Card title="Rendimiento Global de Sedes">
+                  <div className="h-[300px] py-4">
+                    <BranchPerformanceChart data={dashboardData.performance} />
+                  </div>
+                </Card>
+              )}
+            </div>
           </div>
         </div>
       )}

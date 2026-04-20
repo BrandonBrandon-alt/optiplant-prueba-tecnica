@@ -71,8 +71,8 @@ export default function MonthlyComparisonChart({ data }: MonthlyComparisonChartP
           cursor={{ fill: 'rgba(255,255,255,0.05)' }}
           contentStyle={{
             background: "var(--bg-surface)",
-            border: "1px solid var(--neutral-800)",
-            borderRadius: "16px",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: "var(--radius-xl)",
             boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
           }}
           formatter={(value: any, name: any) => {
