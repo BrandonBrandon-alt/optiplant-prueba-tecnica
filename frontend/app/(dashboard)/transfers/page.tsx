@@ -585,7 +585,7 @@ function TransfersContent() {
                             borderRadius: "10px",
                             border: currentPage === item ? "none" : "1px solid var(--border-default)",
                             background: currentPage === item ? "var(--brand-500)" : "var(--bg-card)",
-                            color: currentPage === item ? "white" : "var(--neutral-300)",
+                            color: currentPage === item ? "#f2f0e3" : "var(--neutral-300)",
                             cursor: "pointer",
                             fontSize: "13px",
                             fontWeight: 600,
