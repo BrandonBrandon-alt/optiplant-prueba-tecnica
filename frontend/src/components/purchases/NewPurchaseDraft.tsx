@@ -64,7 +64,7 @@ const CartItemRow = ({ item, actions }: { item: any, actions: any }) => (
     </div>
 
     <div className="flex items-center gap-3">
-      <div className="w-32">
+      <div className="w-[145px]">
         <QuantitySelector 
           value={item.quantity} 
           onIncrease={() => actions.updateQuantity(item.productId, 1)} 
@@ -223,12 +223,14 @@ export default function NewPurchaseDraft({
               <div>
                 <h2 className="font-black text-[var(--neutral-50)] text-base tracking-tight uppercase">Resumen de Negociación</h2>
                 {cart.length > 0 && (
-                  <button 
-                    className="text-[10px] font-black text-[var(--neutral-500)] hover:text-[var(--color-danger)] transition-colors uppercase tracking-widest" 
-                    onClick={cartActions.clearCart}
-                  >
-                    Anular Selección
-                  </button>
+                   <button 
+                     className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[9px] font-black text-[var(--neutral-500)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/5 transition-all uppercase tracking-widest border border-transparent hover:border-[var(--color-danger)]/20" 
+                     onClick={cartActions.clearCart}
+                     title="Vaciar todos los productos del borrador"
+                   >
+                     <Trash2 size={10} />
+                     Vaciar Carrito
+                   </button>
                 )}
               </div>
             </div>

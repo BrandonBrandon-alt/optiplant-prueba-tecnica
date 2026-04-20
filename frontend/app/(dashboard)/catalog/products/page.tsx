@@ -5,7 +5,7 @@ import { apiClient } from "@/api/client";
 import type { components } from "@/api/schema";
 import { getSession } from "@/api/auth";
 import { useRouter } from "next/navigation";
-import { Package, Plus, Edit, Trash2, Search, Tag, Truck, DollarSign, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { Package, Plus, Edit, Trash2, Search, Tag, Truck, DollarSign, ChevronDown, ChevronUp, RefreshCw, XCircle } from "lucide-react";
 
 import Select from "@/components/ui/Select";
 import Badge from "@/components/ui/Badge";
@@ -59,10 +59,9 @@ export default function MasterProductsPage() {
     costoPromedio: "" as number | "",
     precioVenta: "" as number | "",
     unitId: 0,
-    supplierIds: [] as number[],
     activo: true
   });
-  const [selectedSupplierId, setSelectedSupplierId] = useState<string>("");
+  const [selectedSupplierIds, setSelectedSupplierIds] = useState<number[]>([]);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -104,10 +103,12 @@ export default function MasterProductsPage() {
         costoPromedio: product.costoPromedio ?? "",
         precioVenta: product.precioVenta ?? "",
         unitId: product.unitId ?? 0,
-        supplierIds: (product as any).proveedores?.map((sp: any) => sp.id) ?? [],
         activo: product.activo ?? true
       });
-      setSelectedSupplierId((product as any).proveedores?.[0]?.id?.toString() ?? "");
+      // FIX: Normalizar IDs a número al cargar desde el producto
+      setSelectedSupplierIds(
+        (product as any).proveedores?.map((sp: any) => Number(sp.id)) ?? []
+      );
 
       // Cargar precios por lista existentes para este producto
       if (product.id && priceLists.length > 0) {
@@ -139,10 +140,9 @@ export default function MasterProductsPage() {
         costoPromedio: "", 
         precioVenta: "", 
         unitId: units[0]?.id ?? 0,
-        supplierIds: [],
         activo: true
       });
-      setSelectedSupplierId("");
+      setSelectedSupplierIds([]);
       const defaults: Record<number, string> = {};
       priceLists.forEach(l => { defaults[l.id] = ""; });
       setPriceListValues(defaults);
@@ -157,6 +157,11 @@ export default function MasterProductsPage() {
       try {
         let savedProductId: number | undefined = editingProduct?.id;
 
+        if (selectedSupplierIds.length === 0) {
+          showToast("Debe asociar al menos un proveedor al producto.", "warning", "Validación requerida");
+          return;
+        }
+
         if (editingProduct) {
           await apiClient.PUT("/api/catalog/products/{id}", {
             params: { path: { id: editingProduct.id! } },
@@ -164,7 +169,7 @@ export default function MasterProductsPage() {
               ...formData,
               costoPromedio: Number(formData.costoPromedio) || 0,
               precioVenta: Number(formData.precioVenta) || 0,
-              supplierIds: selectedSupplierId ? [parseInt(selectedSupplierId)] : [],
+              supplierIds: selectedSupplierIds,
               activo: formData.activo
             } as any,
           });
@@ -175,7 +180,7 @@ export default function MasterProductsPage() {
               ...formData,
               costoPromedio: Number(formData.costoPromedio) || 0,
               precioVenta: Number(formData.precioVenta) || 0,
-              supplierIds: selectedSupplierId ? [parseInt(selectedSupplierId)] : []
+              supplierIds: selectedSupplierIds
             } as any 
           });
           savedProductId = (res.data as any)?.id;
@@ -193,10 +198,9 @@ export default function MasterProductsPage() {
                 body: { precio }
               });
             } else if (!rawVal || rawVal === "") {
-              // Si se borra el campo, eliminar precio de la lista (fallback a precio base)
               await apiClient.DELETE("/api/v1/price-lists/{id}/products/{productId}/price" as any, {
                 params: { path: { id: lista.id, productId: savedProductId } }
-              }).catch(() => {}); // Ignorar error si no existía
+              }).catch(() => {});
             }
           }));
         }
@@ -250,6 +254,22 @@ export default function MasterProductsPage() {
     return 0;
   });
 
+  // FIX: Helper para agregar proveedor con normalización de tipo
+  const handleAddSupplier = (val: string) => {
+    if (!val) return;
+    const id = Number(val);
+    setSelectedSupplierIds(prev => {
+      const normalized = prev.map(Number);
+      if (normalized.includes(id)) return prev;
+      return [...prev, id];
+    });
+  };
+
+  // FIX: Helper para eliminar proveedor con normalización de tipo
+  const handleRemoveSupplier = (id: number) => {
+    setSelectedSupplierIds(prev => prev.filter(sid => Number(sid) !== Number(id)));
+  };
+
   const columns: Column<ProductResponse>[] = [
     {
       header: "SKU",
@@ -285,9 +305,15 @@ export default function MasterProductsPage() {
     {
       header: "Proveedor",
       key: "proveedores",
+      width: "220px",
       render: (p: ProductResponse) => {
         const provs = p.proveedores || [];
-        if (provs.length === 0) return <span style={{ color: "var(--neutral-500)", fontStyle: "italic", fontSize: "12px" }}>Sin proveedor</span>;
+        if (provs.length === 0) return (
+          <div className="flex items-center gap-1.5 text-[var(--color-danger)] animate-pulse">
+            <XCircle size={12} />
+            <span style={{ fontStyle: "italic", fontSize: "11px", fontWeight: 700 }}>SIN PROVEEDOR</span>
+          </div>
+        );
         return (
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--neutral-100)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "150px" }}>
@@ -444,16 +470,86 @@ export default function MasterProductsPage() {
                 ...units.map(u => ({ value: u.id!.toString(), label: `${u.nombre} (${u.abreviatura})` }))
               ]}
             />
+          </div>
+
+          {/* ── Gestión Multi-Proveedor ─────────────────────────────────── */}
+          <div style={{ 
+            display: "flex", 
+            flexDirection: "column", 
+            gap: "10px", 
+            padding: "16px", 
+            background: "rgba(255,255,255,0.02)", 
+            border: "1px solid var(--neutral-800)", 
+            borderRadius: "16px" 
+          }}>
+            <div style={{ display: "flex", justifyContent: "between", alignItems: "center" }}>
+              <label style={{ fontSize: "12px", fontWeight: 800, color: "var(--neutral-400)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Red de Suministro (Proveedores)
+              </label>
+              {selectedSupplierIds.length === 0 && (
+                <Badge variant="warning">OBLIGATORIO</Badge>
+              )}
+            </div>
+
+            {/* FIX: Usar handleAddSupplier y filtrar con Number() para evitar type mismatch */}
             <Select
-              label="Proveedor Principal"
-              value={selectedSupplierId}
-              onChange={(val: string) => setSelectedSupplierId(val)}
+              value=""
+              onChange={handleAddSupplier}
+              placeholder="Asociar otro proveedor..."
               icon={<Truck size={15} />}
-              options={[
-                { value: "", label: "Sin proveedor" },
-                ...suppliers.map(s => ({ value: s.id!.toString(), label: s.nombre ?? "" }))
-              ]}
+              options={suppliers
+                .filter(s => !selectedSupplierIds.map(Number).includes(Number(s.id)))
+                .map(s => ({ value: s.id!.toString(), label: s.nombre ?? "" }))
+              }
             />
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "4px" }}>
+              {selectedSupplierIds.map(id => {
+                const s = suppliers.find(sup => Number(sup.id) === Number(id));
+                return (
+                  <div 
+                    key={id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "6px 12px",
+                      background: "var(--bg-card)",
+                      border: "1px solid var(--neutral-700)",
+                      borderRadius: "10px",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "var(--neutral-100)",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    <Truck size={12} className="text-[var(--brand-400)]" />
+                    {s?.nombre}
+                    {/* FIX: Usar handleRemoveSupplier con forma funcional */}
+                    <button 
+                      type="button"
+                      onClick={() => handleRemoveSupplier(id)}
+                      style={{
+                        marginLeft: "4px",
+                        padding: "2px",
+                        color: "var(--neutral-500)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        display: "flex"
+                      }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                );
+              })}
+              {selectedSupplierIds.length === 0 && (
+                <p style={{ fontSize: "12px", fontStyle: "italic", color: "var(--neutral-500)", padding: "4px" }}>
+                  No hay proveedores asociados. Use el selector arriba para añadir.
+                </p>
+              )}
+            </div>
           </div>
 
           {/* ── Control de Activación (Solo en edición) ─────────────────── */}

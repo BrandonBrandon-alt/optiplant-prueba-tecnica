@@ -93,7 +93,8 @@ public class ProductEntity {
                 .salePrice(product.getSalePrice())
                 .unit(product.getUnitId() != null ? UnitOfMeasureEntity.builder().id(product.getUnitId()).build() : null)
                 .createdAt(product.getCreatedAt())
-                .active(product.getActive())
+                .active(product.getActive() != null ? product.getActive() : true)
+                .suppliers(new ArrayList<>())
                 .build();
     }
 }

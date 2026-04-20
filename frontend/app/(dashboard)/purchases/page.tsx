@@ -206,14 +206,44 @@ function PurchasesContent() {
   };
 
   useEffect(() => {
-    if (productIdPreselected && products.length > 0) {
-      const prodId = parseInt(productIdPreselected);
-      const prod = products.find(p => p.id === prodId);
-      if (prod) {
-        cartActions.addToCart(prod);
+    async function prefillProduct() {
+      if (productIdPreselected) {
+        const prodId = parseInt(productIdPreselected);
+        
+        // If already in list, use it; otherwise fetch it
+        let prod = products.find(p => p.id === prodId);
+        
+        if (!prod) {
+          try {
+            const { data, error } = await apiClient.GET("/api/catalog/products/{id}", {
+              params: { path: { id: prodId } }
+            });
+            if (data) prod = data as Product;
+          } catch (err) {
+            console.error("Error pre-filling product:", err);
+          }
+        }
+
+        if (prod) {
+          // Check if already in cart to avoid duplicates on every re-render
+          setCart(prev => {
+            const exists = prev.some(item => item.productId === prodId);
+            if (exists) return prev;
+            return [...prev, {
+              productId: prod!.id,
+              nombre: prod!.nombre,
+              sku: prod!.sku,
+              quantity: 1,
+              unitPrice: prod!.costoPromedio || 0,
+              discountPct: 0
+            }];
+          });
+        }
       }
     }
-  }, [productIdPreselected, products]);
+    
+    prefillProduct();
+  }, [productIdPreselected, products]); // Dependency on products helps if they load later
 
   useEffect(() => {
     if (branchIdPreselected) {

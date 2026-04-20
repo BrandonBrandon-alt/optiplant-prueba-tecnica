@@ -2,7 +2,6 @@ package co.com.zenvory.inventario.catalog.infrastructure.adapter.out.persistence
 
 import co.com.zenvory.inventario.catalog.application.port.out.ProductRepositoryPort;
 import co.com.zenvory.inventario.catalog.domain.model.Product;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,11 +60,12 @@ public class ProductPersistenceAdapter implements ProductRepositoryPort {
     public Product save(Product product) {
         // 1. Obtener o crear la entidad base
         ProductEntity entity;
-        if (product.getId() != null) {
+        boolean isNew = product.getId() == null;
+
+        if (!isNew) {
             entity = jpaRepository.findById(product.getId())
                     .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + product.getId()));
             
-            System.out.println("[DEBUG] Updating Product ID: " + product.getId() + " - New Active state: " + product.getActive());
             // Actualizar campos básicos
             entity.setSku(product.getSku());
             entity.setName(product.getName());
@@ -79,11 +79,13 @@ public class ProductPersistenceAdapter implements ProductRepositoryPort {
             entity.getSuppliers().clear();
         } else {
             entity = ProductEntity.fromDomain(product);
-            entity.setCreatedAt(product.getCreatedAt() != null ? product.getCreatedAt() : java.time.LocalDateTime.now());
+            entity.setCreatedAt(java.time.LocalDateTime.now());
+            // Guardar para generar ID antes de asociar proveedores
+            entity = jpaRepository.save(entity);
         }
 
         // 2. Sincronizar proveedores desde los IDs del dominio
-        if (product.getSupplierIds() != null) {
+        if (product.getSupplierIds() != null && !product.getSupplierIds().isEmpty()) {
             for (Long supplierId : product.getSupplierIds()) {
                 SupplierEntity supplierRef = supplierRepository.getReferenceById(supplierId);
                 
@@ -101,7 +103,7 @@ public class ProductPersistenceAdapter implements ProductRepositoryPort {
             }
         }
 
-        // 3. Guardar y retornar
+        // 3. Guardar cambios finales (relaciones) y retornar
         return jpaRepository.save(entity).toDomain();
     }
 
