@@ -6,7 +6,15 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
 /**
- * DTO que captura los términos comerciales de un proveedor para un producto.
+ * DTO (Data Transfer Object) que captura los términos comerciales específicos de un proveedor para un producto.
+ * 
+ * <p>Esta estructura se utiliza anidada dentro de la creación o edición de productos 
+ * para definir la matriz de suministros y sus condiciones económicas y logísticas.</p>
+ *
+ * @param supplierId Identificador único del proveedor.
+ * @param negotiatedPrice Costo de compra pactado fuera de lista.
+ * @param deliveryDays Plazo de entrega garantizado por el proveedor.
+ * @param preferred Marca para identificar la fuente de suministro primaria.
  */
 public record ProductSupplierRequest(
     @NotNull(message = "El ID del proveedor es obligatorio")
@@ -23,3 +31,4 @@ public record ProductSupplierRequest(
     @NotNull(message = "Debe indicar si es el proveedor preferido")
     Boolean preferred
 ) {}
+

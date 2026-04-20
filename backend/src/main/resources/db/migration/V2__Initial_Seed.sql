@@ -95,7 +95,8 @@ ON CONFLICT (producto_id, unidad_id) DO NOTHING;
 -- --------------------------------------------------------
 INSERT INTO lista_precios (id, nombre, descripcion, activa) VALUES 
     (1, 'Público General', 'Precio estándar de mostrador', true),
-    (2, 'Constructor Mayorista', 'Precio para compras al por mayor', true)
+    (2, 'Constructor Mayorista', 'Precio para compras al por mayor', true),
+    (3, 'VIP', 'Precio para clientes VIP', true)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO precio_por_lista (lista_id, producto_id, precio) VALUES 

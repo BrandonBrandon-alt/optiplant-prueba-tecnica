@@ -4,11 +4,19 @@ import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 
 /**
- * DTO de entrada para crear o actualizar un producto en el catálogo.
+ * DTO (Data Transfer Object) de entrada para la creación o actualización de productos.
+ * 
+ * <p>Define la estructura de datos que el cliente debe enviar en las peticiones HTTP.
+ * Incluye metadatos de validación de Bean Validation para asegurar la integridad sintáctica 
+ * de los datos antes de alcanzar la capa de aplicación.</p>
  *
- * <p>Las validaciones se aplican aquí (capa de infraestructura web) porque
- * son reglas del protocolo HTTP, no invariantes de negocio del dominio.
- * El controlador activa estas validaciones con {@code @Valid}.</p>
+ * @param sku Código único de identificación logística.
+ * @param nombre Nombre descriptivo del producto.
+ * @param costoPromedio Valor ponderado de adquisición.
+ * @param precioVenta Valor sugerido para el mercado.
+ * @param unitId Referencia a la unidad de medida principal.
+ * @param suppliers Colección de proveedores y condiciones comerciales vinculadas.
+ * @param activo Estado de disponibilidad del producto.
  */
 public record ProductRequest(
 
@@ -36,3 +44,4 @@ public record ProductRequest(
         Boolean activo
 
 ) {}
+

@@ -10,23 +10,11 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Adaptador de salida (Output Adapter) que implementa
- * {@link ProductRepositoryPort}
- * usando Spring Data JPA.
- *
- * <p>
- * Su única responsabilidad es traducir entre el modelo de dominio
- * ({@link Product})
- * y la entidad de persistencia ({@link ProductEntity}), delegando las
- * operaciones
- * CRUD al repositorio JPA.
- * </p>
- *
- * <p>
- * Si en el futuro se necesita cambiar la tecnología de persistencia (ej:
- * MongoDB),
- * solo se reemplaza esta clase, sin tocar el dominio ni la aplicación.
- * </p>
+ * Adaptador de salida (Secondary Adapter) para la persistencia de productos.
+ * 
+ * <p>Implementa {@link ProductRepositoryPort} utilizando repositorios JPA.
+ * Gestiona la persistencia compleja de productos, incluyendo la sincronización 
+ * de la tabla asociativa con proveedores (relación Many-to-Many enriquecida).</p>
  */
 @Component
 public class ProductPersistenceAdapter implements ProductRepositoryPort {
@@ -34,6 +22,11 @@ public class ProductPersistenceAdapter implements ProductRepositoryPort {
     private final JpaProductRepository jpaRepository;
     private final JpaSupplierRepository supplierRepository;
 
+    /**
+     * Constructor para inyección de dependencias.
+     * @param jpaRepository Repositorio JPA de productos.
+     * @param supplierRepository Repositorio JPA de proveedores (requerido para referencias).
+     */
     public ProductPersistenceAdapter(JpaProductRepository jpaRepository, JpaSupplierRepository supplierRepository) {
         this.jpaRepository = jpaRepository;
         this.supplierRepository = supplierRepository;
@@ -62,18 +55,24 @@ public class ProductPersistenceAdapter implements ProductRepositoryPort {
         return jpaRepository.existsBySku(sku);
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>Este método realiza una sincronización manual de la colección de proveedores 
+     * para mantener la integridad referencial y aplicar correctamente los cambios 
+     * (altas, bajas y modificaciones) en la relación Many-to-Many.</p>
+     */
     @Override
     @Transactional
     public Product save(Product product) {
-        // 1. Obtener o preparar la entidad base
         ProductEntity entity;
         boolean isNew = product.getId() == null;
 
+        // 1. Carga o inicialización de la entidad
         if (!isNew) {
             entity = jpaRepository.findById(product.getId())
                     .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + product.getId()));
 
-            // Actualizar campos básicos
+            // Sincronización de atributos básicos
             entity.setSku(product.getSku());
             entity.setName(product.getName());
             entity.setAverageCost(product.getAverageCost());
@@ -87,44 +86,41 @@ public class ProductPersistenceAdapter implements ProductRepositoryPort {
             if (entity.getSuppliers() == null) {
                 entity.setSuppliers(new java.util.ArrayList<>());
             }
-            // Guardar para generar ID antes de asociar proveedores (necesario por productId
-            // no nulo)
+            // Persistencia inicial para generar ID necesario en las claves foráneas de la relación
             entity = jpaRepository.save(entity);
         }
 
-        // 2. Sincronizar proveedores desde los detalles del dominio
+        // 2. Sincronización de la relación con Proveedores (ProductSupplierEntity)
         if (product.getSuppliersDetails() != null && !product.getSuppliersDetails().isEmpty()) {
 
-            // A. Crear un Map rápido de los datos que vienen del dominio (por ID de
-            // proveedor)
+            // Mapeo indexado de los detalles entrantes para optimizar la búsqueda
             java.util.Map<Long, co.com.zenvory.inventario.catalog.domain.model.ProductSupplierDetail> incomingDetails = product
                     .getSuppliersDetails().stream()
                     .collect(java.util.stream.Collectors.toMap(
                             co.com.zenvory.inventario.catalog.domain.model.ProductSupplierDetail::supplierId,
                             detail -> detail));
 
-            // B. Recorrer la lista actual de la base de datos para actualizar o borrar
+            // Procesamiento de registros existentes: Actualización coordinada o eliminación
             java.util.Iterator<ProductSupplierEntity> iterator = entity.getSuppliers().iterator();
             while (iterator.hasNext()) {
                 ProductSupplierEntity existingRelation = iterator.next();
                 Long existingSupplierId = existingRelation.getSupplierId();
 
                 if (incomingDetails.containsKey(existingSupplierId)) {
-                    // CASO 1: El proveedor ya existía. ACTUALIZAMOS sus datos.
+                    // CASO: El vínculo ya existe -> Actualizamos condiciones comerciales
                     var incomingDetail = incomingDetails.get(existingSupplierId);
                     existingRelation.setNegotiatedPrice(incomingDetail.negotiatedPrice());
                     existingRelation.setDeliveryDays(incomingDetail.deliveryDays());
                     existingRelation.setPreferred(incomingDetail.preferred());
 
-                    // Lo sacamos del Map porque ya lo procesamos
-                    incomingDetails.remove(existingSupplierId);
+                    incomingDetails.remove(existingSupplierId); // Marcado como procesado
                 } else {
-                    // CASO 2: El proveedor estaba en BD pero ya no viene en la petición. BORRAMOS.
+                    // CASO: El vínculo ya no está en la petición -> Eliminamos relación
                     iterator.remove();
                 }
             }
 
-            // C. Lo que quedó en el Map son proveedores NUEVOS. INSERTAMOS.
+            // Procesamiento de registros nuevos: Inserción de nuevas duplas producto-proveedor
             for (co.com.zenvory.inventario.catalog.domain.model.ProductSupplierDetail newDetail : incomingDetails
                     .values()) {
                 SupplierEntity supplierRef = supplierRepository.getReferenceById(newDetail.supplierId());
@@ -144,13 +140,13 @@ public class ProductPersistenceAdapter implements ProductRepositoryPort {
             }
 
         } else {
-            // Si la petición viene sin proveedores, limpiamos todo
+            // Limpieza total si la petición no incluye proveedores
             if (entity.getSuppliers() != null) {
                 entity.getSuppliers().clear();
             }
         }
 
-        // 3. Guardar cambios finales (relaciones) y retornar
+        // 3. Persistencia final y reconversión a dominio
         return jpaRepository.save(entity).toDomain();
     }
 

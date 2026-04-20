@@ -156,7 +156,7 @@ export default function MasterProductsPage() {
       const defaults: Record<number, string> = {};
       priceLists.forEach(l => { defaults[l.id] = ""; });
       setPriceListValues(defaults);
-      setShowPriceLists(false);
+      setShowPriceLists(true);
     }
     setShowModal(true);
   };
@@ -583,7 +583,7 @@ export default function MasterProductsPage() {
             )}
           </div>
 
-          {showPriceLists && priceLists.length > 0 && (
+          {priceLists.length > 0 && (
             <div style={{ marginTop: "10px" }}>
               <h4 style={{ fontSize: "13px", fontWeight: 700, color: "var(--neutral-400)", marginBottom: "10px" }}>Precios Especiales</h4>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>

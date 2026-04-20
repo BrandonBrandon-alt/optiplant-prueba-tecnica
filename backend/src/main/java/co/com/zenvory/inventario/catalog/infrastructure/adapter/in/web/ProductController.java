@@ -15,18 +15,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Adaptador de entrada (Input Adapter) que expone los casos de uso
- * del catálogo de productos como una API REST.
- *
- * <p>Sus responsabilidades son:
- * <ol>
- *   <li>Recibir y validar la petición HTTP ({@code @Valid}).</li>
- *   <li>Traducir el DTO de entrada al modelo de dominio.</li>
- *   <li>Delegar la ejecución al puerto de entrada ({@link ProductUseCase}).</li>
- *   <li>Traducir el modelo de dominio al DTO de respuesta.</li>
- * </ol>
- *
- * <p>No contiene lógica de negocio.</p>
+ * Adaptador de entrada (Primary Adapter) para la gestión del catálogo de productos.
+ * 
+ * <p>Expone endpoints REST para la consulta y administración de la maestra de artículos.
+ * Actúa como orquestador entre el protocolo HTTP y los casos de uso definidos en el 
+ * dominio, gestionando la validación y transformación de datos.</p>
  */
 @RestController
 @RequestMapping("/api/catalog/products")
@@ -34,13 +27,20 @@ public class ProductController {
 
     private final ProductUseCase productUseCase;
 
+    /**
+     * Constructor para inyección de dependencias.
+     * 
+     * @param productUseCase Puerto de entrada para la lógica de negocio de productos.
+     */
     public ProductController(ProductUseCase productUseCase) {
         this.productUseCase = productUseCase;
     }
 
+
     /**
-     * GET /api/catalog/products
-     * Retorna la lista completa de productos del catálogo.
+     * Obtiene el listado completo de productos del catálogo.
+     * 
+     * @return Lista de todos los productos registrados.
      */
     @GetMapping
     public ResponseEntity<List<ProductResponse>> getAll() {
@@ -51,8 +51,11 @@ public class ProductController {
     }
 
     /**
-     * GET /api/catalog/products/{id}
-     * Retorna un producto por su ID. Devuelve 404 si no existe.
+     * Busca un producto por su identificador único.
+     * 
+     * @param id Identificador primario del producto.
+     * @return Datos detallados del producto solicitado.
+     * @status 404 Not Found si no existe.
      */
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> getById(@PathVariable Long id) {
@@ -60,8 +63,11 @@ public class ProductController {
     }
 
     /**
-     * POST /api/catalog/products
-     * Crea un nuevo producto. Devuelve 201 con el producto creado.
+     * Registra un nuevo producto en el catálogo.
+     * 
+     * @param request Datos del nuevo producto.
+     * @return El producto guardado con su ID y metadatos.
+     * @status 201 Created si el registro es exitoso.
      */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -71,8 +77,11 @@ public class ProductController {
     }
 
     /**
-     * PUT /api/catalog/products/{id}
-     * Actualiza un producto existente. Devuelve 404 si no existe.
+     * Actualiza la información comercial o técnica de un producto.
+     * 
+     * @param id ID del producto a modificar.
+     * @param request Nuevos datos del producto.
+     * @return El producto actualizado.
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -84,9 +93,10 @@ public class ProductController {
     }
 
     /**
-     * DELETE /api/catalog/products/{id}
-     * Elimina un producto por ID. Devuelve 204 sin contenido.
-     * Devuelve 404 si el producto no existe.
+     * Elimina un producto del catálogo (eliminación lógica según políticas de negocio).
+     * 
+     * @param id ID del producto a retirar.
+     * @return Respuesta vacía confirmando la operación.
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -95,8 +105,9 @@ public class ProductController {
         return ResponseEntity.noContent().build();
     }
 
-    // ── Mappers privados ────────────────────────────────────────────────────
-
+    /**
+     * Mapea un DTO de solicitud al modelo de dominio {@link Product}.
+     */
     private Product mapToDomain(ProductRequest req) {
         return Product.builder()
                 .sku(req.sku())
@@ -117,6 +128,9 @@ public class ProductController {
                 .build();
     }
 
+    /**
+     * Mapea el modelo de dominio {@link Product} al DTO de respuesta.
+     */
     private ProductResponse mapToResponse(Product product) {
         return ProductResponse.builder()
                 .id(product.getId())
@@ -132,3 +146,4 @@ public class ProductController {
                 .build();
     }
 }
+
