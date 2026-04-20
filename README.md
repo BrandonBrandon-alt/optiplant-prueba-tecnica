@@ -1,113 +1,236 @@
-flowchart LR
-%% Definición de Actores
-Admin(["Administrador"])
-Gerente(["Gerente de Sucursal"])
-Operador(["Operador de Inventario"])
-Cajero(["Cajero / Vendedor"])
+# Zen Inventory - ERP de Gestión de Inventarios Multi-Sucursal
 
-    %% Sistema Zen Inventory
-    subgraph "Zen Inventory ERP"
-        UC1(Gestión de Usuarios y Sedes)
-        UC2(Catálogo, Precios y Proveedores)
-        UC3(Ventas y Facturación)
-        UC4(Gestión de Inventario y Alertas)
-        UC5(Traslados entre Sucursales)
-        UC6(Órdenes de Compra)
-        UC7(Solicitudes de Devolución)
+Zen Inventory es una plataforma integral diseñada para la gestión logística y comercial de empresas con múltiples sedes. El sistema permite el control en tiempo real de existencias, ventas personalizadas por sede, traslados entre sucursales y procesos de compra a proveedores, todo bajo una arquitectura robusta y escalable.
+
+---
+
+## Características Principales
+
+### Gestión de Inventario
+
+- Control de stock por sucursal con sistema de alertas de stock mínimo.
+- Historial detallado de movimientos (Entradas, Salidas, Ajustes, Ventas, Traslados).
+- Gestión de unidades de medida y proveedores por producto.
+
+### Ventas y Facturación (POS)
+
+- Múltiples listas de precios (Base, Global, por Cliente/Sede).
+- Aplicación de descuentos por ítem y descuentos globales.
+- Cálculo de impuestos y totales centralizado en el backend.
+- Registro de clientes y anulación de facturas con reversión automática de stock.
+
+### Logística y Traslados
+
+- Proceso de traslado entre sedes con cadena de aprobación (Sede Destino -> Sede Origen).
+- Control de estados: Pendiente, En Preparación, En Tránsito, Recibido.
+- Gestión de novedades en recepción (Mermas y Reclamos).
+
+### Compras y Recepción
+
+- Órdenes de compra a proveedores.
+- Recepción de mercancía con actualización automática de Inventario y Costo Promedio Ponderado (CPP).
+
+### Análisis y Reportes
+
+- Dashboard con indicadores clave de rendimiento (KPIs).
+- Análisis de productos más vendidos y niveles de inventario crítico.
+
+---
+
+## Arquitectura del Sistema
+
+El backend está construido bajo el patrón de **Arquitectura Hexagonal (Puertos y Adaptadores)**, asegurando que la lógica de negocio esté completamente aislada de la infraestructura (Base de datos, API, etc.).
+
+```mermaid
+flowchart TB
+    subgraph ClientLayer ["Capa de Cliente (Frontend)"]
+        direction TB
+        UI["Interfaz de Usuario\n(Next.js + React)"]
+        Components["Componentes Reutilizables\n(Shadcn UI + Tailwind)"]
+        Services["Servicios de Consumo API\n(Axios)"]
+        UI --> Components
+        Components --> Services
     end
 
-    %% Relaciones Admin
-    Admin ---> UC1
-    Admin ---> UC2
-    Admin ---> UC4
-    Admin ---> UC6
-
-    %% Relaciones Gerente
-    Gerente ---> UC2
-    Gerente ---> UC4
-    Gerente ---> UC5
-    Gerente ---> UC6
-    Gerente ---> UC7
-
-    %% Relaciones Operador
-    Operador ---> UC4
-    Operador ---> UC5
-
-    %% Relaciones Cajero
-    Cajero ---> UC3
-    Cajero ---> UC7
-
-
-    ## 2. Flujo de Transferencia entre Sucursales
-
-    flowchart TD
-    subgraph "Sucursal Origen"
-        O1([Inicio: Bodeguero Origen]) --> O2(Crear Solicitud de Traslado)
-        O2 --> O3{¿Validar Stock?}
-        O3 -- Insuficiente --> O4([Rechazar Solicitud])
-        O3 -- OK --> O5(Gerente: Autorizar Traslado)
-        O5 --> O6(Despachar Mercancía)
+    subgraph InfrastructureIn ["Infraestructura Perimetral"]
+        LB["HAProxy / Reverse Proxy\n(Balanceo / SSL)"]
     end
 
-    subgraph "Ruta Logística"
-        O6 --> L1(Transporte en Tránsito)
+    subgraph BackendLayer ["Capa de Backend (Spring Boot)"]
+        direction TB
+        subgraph AdaptersIn ["Adaptadores de Entrada (Inbound)"]
+            REST["REST Controllers\n(Web Adapters)"]
+            Security["Spring Security\n(JWT Filters)"]
+        end
+
+        subgraph Application ["Capa de Aplicación"]
+            PortsIn["Puertos de Entrada\n(Interfaces UseCase)"]
+            ServicesApp["Implementación de Servicios\n(Casos de Uso)"]
+        end
+
+        subgraph Domain ["Capa de Dominio (Core)"]
+            Entities["Entidades de Dominio"]
+            VO["Value Objects / Exceptions"]
+            Logic["Reglas de Negocio"]
+        end
+
+        subgraph AdaptersOut ["Adaptadores de Salida (Outbound)"]
+            PortsOut["Puertos de Salida\n(Interfaces Repository)"]
+            Persistence["Persistencia\n(JPA Adapters)"]
+        end
+
+        REST --> Security
+        Security --> PortsIn
+        PortsIn --> ServicesApp
+        ServicesApp --> Domain
+        Domain --> PortsOut
+        PortsOut --> Persistence
     end
 
-    subgraph "Sucursal Destino"
-        L1 --> D1(Bodeguero Destino: Recibir Mercancía)
-        D1 --> D2{¿Hay Faltantes?}
-        D2 -- Sí --> D3(Registrar Novedad / Ajuste)
-        D2 -- No --> D4(Confirmar Recepción Completa)
-        D3 --> D5(Actualizar Inventario Destino)
-        D4 --> D5
-        D5 --> D6([Fin: Traslado Completado])
+    subgraph DataLayer ["Capa de Datos"]
+        DB[("PostgreSQL 16\n(Persistencia Relacional)")]
+        Migrations["Flyway\n(Migraciones de Esquema)"]
     end
 
+    %% Relaciones Cross-Layer
+    Services <-->|HTTPS / REST| LB
+    LB <--> REST
+    Persistence <-->|JDBC/Hibernate| DB
+    Migrations -->|Versionado| DB
 
-    ## 3. Flujo de Venta
+    %% Estilos
+    style Domain fill:#f9f,stroke:#333,stroke-width:2px
+    style Application fill:#ccf,stroke:#333,stroke-width:1px
+    style BackendLayer fill:#f5f5f5,stroke:#333
+```
 
-    flowchart TD
-    V1([Inicio: Vendedor]) --> V2(Escanear / Buscar Producto)
-    V2 --> V3{¿Stock > 0?}
-    V3 -- No --> V4(Alerta: Stock Insuficiente) --> V2
-    V3 -- Sí --> V5(Seleccionar Lista de Precios)
-    V5 --> V6(Aplicar Descuentos / Calcular Subtotal)
-    V6 --> V7{¿Añadir más productos?}
-    V7 -- Sí --> V2
-    V7 -- No --> V8(Procesar Pago y Facturación)
-    V8 --> V9(Descontar Stock Local)
-    V9 --> V10{¿Stock < Stock Mínimo?}
-    V10 -- Sí --> V11(Generar Alerta de Stock)
-    V10 -- No --> V12([Completar Venta])
-    V11 --> V12
+---
 
+## Flujos de Procesos
 
-    ##Diagrama de Arquitectura (Vista Técnica)
+### 1. Flujo de Transferencia entre Sucursales
 
-    flowchart TD
-    Client["Navegador Web / UI React"]
+Garantiza que el movimiento de mercancía entre sedes sea autorizado por ambas partes.
 
-    subgraph "Infraestructura Perimetral"
-        HAProxy["HAProxy Load Balancer\n(Puerto 80/443)"]
-    end
+```mermaid
+flowchart TD
+    Start([Inicio]) --> Solicitud[Un usuario solicita productos de otra sede]
+    Solicitud --> Pendiente[Estado: Pendiente de Aprobación]
 
-    subgraph "Backend - Spring Boot (Java 21)"
-        API["Capa de Presentación\n(Controladores REST)"]
-        Security["Filtros de Seguridad\n(Spring Security + JWT)"]
-        Service["Capa de Aplicación / Dominio\n(Lógica de Negocio)"]
-        Persistence["Capa de Infraestructura\n(Spring Data JPA / Adapters)"]
+    Pendiente -- "Gerente de Sede Destino aprueba" --> Ap_Destino[Estado: Aprobado por Sucursal que Recibe]
+    Ap_Destino -- "Gerente de Sede Origen autoriza y prepara" --> Preparacion[Estado: En Preparación para Despacho]
 
-        API --> Security
-        Security --> Service
-        Service --> Persistence
-    end
+    Preparacion -- "Bodeguero Genera Despacho" --> Transito[Estado: Mercancía en Tránsito]
 
-    subgraph "Capa de Datos"
-        DB[("PostgreSQL 16\n(inventario_multisucursal)")]
-        Flyway["Flyway\n(Migraciones V1 a V41)"]
-    end
+    Transito -- "Llega a la Sucursal Destino" --> Recepcion{¿La mercancía coincide?}
 
-    Client <-->|HTTPS / JSON| HAProxy
-    HAProxy <-->|HTTP| API
-    Persistence <-->|JDBC / Hibernate| DB
-    Flyway -->|DDL / DML| DB
+    Recepcion -- Sí --> Entregado[Estado: Entregado y Finalizado]
+    Recepcion -- No --> Novedad[Estado: Recibido con Novedad / Faltante]
+
+    Novedad -- "Revisión Administrativa" --> Resolucion{Resolución}
+    Resolucion -- "Aceptar como Merma" --> Entregado
+    Resolucion -- "Generar Reclamo" --> Reclamo[Estado: En Proceso de Reclamo]
+
+    Pendiente & Ap_Destino & Preparacion -- "Anular Proceso" --> Cancelado[Estado: Cancelado]
+    Pendiente & Transito -- "Rechazar por Sede" --> Rechazado[Estado: Rechazado]
+```
+
+### 2. Flujo de Venta (POS)
+
+Optimizado para transacciones rápidas con validación de stock en tiempo real.
+
+```mermaid
+flowchart TD
+    POS([Cajero]) --> Busqueda[Buscar Producto y Cantidad]
+    Busqueda --> Precios[Cálculo Automático de Precios y Descuentos]
+    Precios --> Validacion{¿Hay existencias?}
+
+    Validacion -- No --> Alerta[Notificar Stock Insuficiente] --> Busqueda
+    Validacion -- Sí --> Totales[Cálculo de Totales, IVA y Descuentos Globales]
+
+    Totales --> Facturacion[Generar Factura y Registrar Venta]
+    Facturacion --> Inventario[Descuento Automático de Stock Local]
+    Inventario --> MonitorStock{¿Queda poca mercancía?}
+
+    MonitorStock -- Sí --> AlertRep[Generar Alerta Automática de Reposición]
+    MonitorStock -- No --> Fin([Venta Completada])
+    AlertRep --> Fin
+```
+
+---
+
+## Stack Tecnológico
+
+| Componente            | Tecnología                                              |
+| :-------------------- | :------------------------------------------------------ |
+| **Backend**           | Java 21, Spring Boot 3.5, Spring Security, JWT          |
+| **Frontend**          | Next.js 14 (App Router), React, Tailwind CSS, Shadcn UI |
+| **Base de Datos**     | PostgreSQL 16                                           |
+| **Persistencia**      | Spring Data JPA, Hibernate                              |
+| **Migraciones**       | Flyway                                                  |
+| **Documentación API** | Springdoc OpenAPI (Swagger)                             |
+| **Contenerización**   | Docker, Docker Compose                                  |
+
+---
+
+## Instalación y Configuración
+
+### Prerrequisitos
+
+- Docker y Docker Compose instalados.
+- Java 21+ (si se corre fuera de Docker).
+- Node.js 20+ (si se corre fuera de Docker).
+
+### 1. Clonar el Repositorio
+
+```bash
+git clone https://github.com/tu-usuario/optiplant-prueba-tecnica.git
+cd optiplant-prueba-tecnica
+```
+
+### 2. Ejecución con Docker (Recomendado)
+
+Para levantar todo el ecosistema (DB, Backend, Frontend, pgAdmin):
+
+```bash
+docker-compose up --build -d
+```
+
+- **Frontend:** `http://localhost:3000`
+- **Backend API:** `http://localhost:8080/api`
+- **pgAdmin:** `http://localhost:5050`
+
+### 3. Ejecución en Modo Desarrollo (Local)
+
+**Backend:**
+
+```bash
+cd backend
+./mvnw clean spring-boot:run
+```
+
+**Frontend:**
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+---
+
+## Documentación de la API
+
+Una vez el backend esté en ejecución, puedes acceder a la documentación interactiva en:
+`http://localhost:8080/api/swagger-ui.html`
+
+---
+
+## Seguridad y Roles
+
+La autenticación se maneja vía **JWT (JSON Web Tokens)**. Los roles principales definidos son:
+
+- `ADMIN`: Acceso total al sistema.
+- `MANAGER`: Gestión de sucursal y aprobaciones de compra/traslado.
+- `OPERATOR`: Gestión de movimientos de bodega y despachos.
+- `CASHIER`: Punto de venta y atención al cliente.
