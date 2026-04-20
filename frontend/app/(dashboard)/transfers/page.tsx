@@ -62,6 +62,7 @@ function TransfersContent() {
   const searchParams = useSearchParams();
   const productIdPreselected = searchParams.get("productId");
   const branchIdPreselected = searchParams.get("branchId");
+  const typePreselected = searchParams.get("type") as "INBOUND" | "OUTBOUND" | null;
 
   // Modal states
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -593,6 +594,7 @@ function TransfersContent() {
       <NewTransferModal 
         open={isNewModalOpen} onClose={() => setIsNewModalOpen(false)} onSuccess={fetchTransfers}
         currentBranchId={myBranchId} isAdmin={isAdmin} isManager={isManager} initialProductId={productIdPreselected}
+        initialType={typePreselected}
         branches={branchesList}
       />
       <ReceiveTransferModal
