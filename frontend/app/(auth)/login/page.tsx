@@ -166,9 +166,11 @@ export default function LoginPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             {[
               { role: "Admin",    email: "admin@zeninventory.co",    pw: "admin123",    dot: "var(--brand-500)" },
-              { role: "Gerente",  email: "gerente@zeninventory.co",  pw: "gerente123",  dot: "var(--neutral-400)" },
-              { role: "Operador", email: "operador@zeninventory.co", pw: "operador123", dot: "var(--neutral-500)" },
-              { role: "Operador", email: "inventario@zeninventory.co", pw: "operador123", dot: "var(--neutral-500)" },
+              { role: "Gerentenorte",  email: "gerenten@zeninventory.co",  pw: "123456",  dot: "var(--color-warning)" },
+              { role: "Gerentesur", email: "gerentes@gmail.com", pw: "123456", dot: "var(--color-warning)" },
+              { role: "Operador norte", email: "operadorc@zeninventory.co", pw: "123456", dot: "var(--color-success)" },
+              { role: "Operador sur", email: "operadors@zeninventory.co", pw: "123456", dot: "var(--color-success)" },
+
             ].map(({ role, email, pw, dot }) => (
               <div
                 key={role}
