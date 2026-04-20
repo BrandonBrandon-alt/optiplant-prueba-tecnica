@@ -1,7 +1,15 @@
 package co.com.zenvory.inventario.catalog.domain.model;
 
+import java.math.BigDecimal;
+
 /**
  * Resumen de un proveedor asociado a un producto.
  * Usado para la visualización en listas sin cargar toda la entidad.
  */
-public record SupplierSummary(Long id, String nombre) {}
+public record SupplierSummary(
+    Long id, 
+    String nombre, 
+    BigDecimal precioPactado, 
+    Boolean preferido, 
+    Integer tiempoEntregaDias
+) {}

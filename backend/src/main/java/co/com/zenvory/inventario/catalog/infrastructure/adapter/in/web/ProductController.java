@@ -2,6 +2,7 @@ package co.com.zenvory.inventario.catalog.infrastructure.adapter.in.web;
 
 import co.com.zenvory.inventario.catalog.application.port.in.ProductUseCase;
 import co.com.zenvory.inventario.catalog.domain.model.Product;
+import co.com.zenvory.inventario.catalog.domain.model.ProductSupplierDetail;
 import co.com.zenvory.inventario.catalog.infrastructure.adapter.in.web.dto.ProductRequest;
 import co.com.zenvory.inventario.catalog.infrastructure.adapter.in.web.dto.ProductResponse;
 import jakarta.validation.Valid;
@@ -103,7 +104,15 @@ public class ProductController {
                 .averageCost(req.costoPromedio())
                 .salePrice(req.precioVenta())
                 .unitId(req.unitId())
-                .supplierIds(req.supplierIds())
+                .suppliersDetails(req.suppliers() != null ? 
+                    req.suppliers().stream()
+                        .map(s -> ProductSupplierDetail.builder()
+                            .supplierId(s.supplierId())
+                            .negotiatedPrice(s.negotiatedPrice())
+                            .deliveryDays(s.deliveryDays())
+                            .preferred(s.preferred())
+                            .build())
+                        .collect(Collectors.toList()) : new java.util.ArrayList<>())
                 .active(req.activo())
                 .build();
     }

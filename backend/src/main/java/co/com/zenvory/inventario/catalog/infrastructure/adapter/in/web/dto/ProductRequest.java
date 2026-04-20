@@ -22,17 +22,17 @@ public record ProductRequest(
         String nombre,
 
         @NotNull(message = "El costo promedio es obligatorio")
-        @DecimalMin(value = "0.0", inclusive = false, message = "El costo promedio debe ser mayor a 0")
+        @DecimalMin(value = "0.0", inclusive = true, message = "El costo promedio no puede ser negativo")
         @Digits(integer = 10, fraction = 2, message = "El costo promedio debe tener máximo 10 enteros y 2 decimales")
         BigDecimal costoPromedio,
 
         @NotNull(message = "El precio de venta es obligatorio")
-        @DecimalMin(value = "0.0", inclusive = false, message = "El precio de venta debe ser mayor a 0")
+        @DecimalMin(value = "0.0", inclusive = true, message = "El precio de venta no puede ser negativo")
         @Digits(integer = 10, fraction = 2, message = "El precio de venta debe tener máximo 10 enteros y 2 decimales")
         BigDecimal precioVenta,
 
         Long unitId,
-        java.util.List<Long> supplierIds,
+        java.util.List<@jakarta.validation.Valid ProductSupplierRequest> suppliers,
         Boolean activo
 
 ) {}

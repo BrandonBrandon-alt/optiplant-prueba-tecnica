@@ -78,7 +78,22 @@ public class ProductEntity {
                 .active(this.active)
                 .suppliers(this.suppliers != null ? 
                     this.suppliers.stream()
-                        .map(ps -> new SupplierSummary(ps.getSupplierId(), ps.getSupplier() != null ? ps.getSupplier().getName() : "Proveedor #" + ps.getSupplierId()))
+                        .map(ps -> new SupplierSummary(
+                            ps.getSupplierId(), 
+                            ps.getSupplier() != null ? ps.getSupplier().getName() : "Proveedor #" + ps.getSupplierId(),
+                            ps.getNegotiatedPrice(),
+                            ps.getPreferred(),
+                            ps.getDeliveryDays()
+                        ))
+                        .collect(Collectors.toList()) : new ArrayList<>())
+                .suppliersDetails(this.suppliers != null ?
+                    this.suppliers.stream()
+                        .map(ps -> co.com.zenvory.inventario.catalog.domain.model.ProductSupplierDetail.builder()
+                            .supplierId(ps.getSupplierId())
+                            .negotiatedPrice(ps.getNegotiatedPrice())
+                            .deliveryDays(ps.getDeliveryDays())
+                            .preferred(ps.getPreferred())
+                            .build())
                         .collect(Collectors.toList()) : new ArrayList<>())
                 .build();
     }

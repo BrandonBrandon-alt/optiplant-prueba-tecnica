@@ -61,7 +61,7 @@ public class AlertService implements AlertUseCase {
      */
     @Override
     @Transactional
-    @Scheduled(fixedDelayString = "3600000")
+    @Scheduled(fixedDelayString = "300000", initialDelayString = "30000")
     public void scanForAlerts() {
         List<LocalInventory> lowStockInventories = inventoryUseCase.getLowStockInventories();
         for (LocalInventory inv : lowStockInventories) {

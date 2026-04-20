@@ -47,9 +47,9 @@ public class Product {
     /** Fecha en que el producto fue registrado en el sistema. */
     private LocalDateTime createdAt;
 
-    /** IDs de los proveedores asociados (usado principalmente para creación/actualización). */
+    /** Detalles de la relación comercial con los proveedores. */
     @Builder.Default
-    private List<Long> supplierIds = new ArrayList<>();
+    private List<ProductSupplierDetail> suppliersDetails = new ArrayList<>();
 
     /** Detalles resumidos de los proveedores asociados (usado para visualización). */
     @Builder.Default

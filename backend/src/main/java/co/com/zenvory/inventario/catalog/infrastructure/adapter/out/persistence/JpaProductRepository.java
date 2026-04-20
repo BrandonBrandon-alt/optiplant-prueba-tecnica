@@ -26,12 +26,11 @@ public interface JpaProductRepository extends JpaRepository<ProductEntity, Long>
     /** Trae todos los productos cargando su unidad en una sola consulta. */
     @Override
     @NonNull
-    @Query("SELECT p FROM ProductEntity p JOIN FETCH p.unit")
+    @Query("SELECT p FROM ProductEntity p JOIN FETCH p.unit LEFT JOIN FETCH p.suppliers")
     List<ProductEntity> findAll();
 
-    /** Trae un producto por ID cargando su unidad. */
     @Override
     @NonNull
-    @Query("SELECT p FROM ProductEntity p JOIN FETCH p.unit WHERE p.id = :id")
+    @Query("SELECT p FROM ProductEntity p JOIN FETCH p.unit LEFT JOIN FETCH p.suppliers WHERE p.id = :id")
     Optional<ProductEntity> findById(@NonNull Long id);
 }

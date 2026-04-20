@@ -1,77 +1,113 @@
-# Zen Inventory - Sistema de Inventario Multi-Sucursal
+flowchart LR
+%% Definición de Actores
+Admin(["Administrador"])
+Gerente(["Gerente de Sucursal"])
+Operador(["Operador de Inventario"])
+Cajero(["Cajero / Vendedor"])
 
-Este proyecto es una solución integral para la gestión de inventarios en organizaciones con múltiples sedes. Diseñado bajo los más altos estándares de arquitectura de software, permite una operación autónoma por sucursal mientras mantiene una visión consolidada para el Administrador Global.
+    %% Sistema Zen Inventory
+    subgraph "Zen Inventory ERP"
+        UC1(Gestión de Usuarios y Sedes)
+        UC2(Catálogo, Precios y Proveedores)
+        UC3(Ventas y Facturación)
+        UC4(Gestión de Inventario y Alertas)
+        UC5(Traslados entre Sucursales)
+        UC6(Órdenes de Compra)
+        UC7(Solicitudes de Devolución)
+    end
 
-## 1. Arquitectura del Sistema
+    %% Relaciones Admin
+    Admin ---> UC1
+    Admin ---> UC2
+    Admin ---> UC4
+    Admin ---> UC6
 
-El sistema implementa una **Arquitectura Hexagonal (Ports & Adapters)**, garantizando una separación clara entre la lógica de negocio y las dependencias externas.
+    %% Relaciones Gerente
+    Gerente ---> UC2
+    Gerente ---> UC4
+    Gerente ---> UC5
+    Gerente ---> UC6
+    Gerente ---> UC7
 
-### Capas del Proyecto:
-- **Capa de Dominio**: Modelos de negocio puros (`Inventory`, `Product`, `Transfer`) sin dependencias de frameworks.
-- **Capa de Aplicación**: Casos de uso (`InventoryUseCase`, `TransferUseCase`) definidos mediante interfaces (Ports).
-- **Capa de Infraestructura**: Adaptadores para persistencia (PostgreSQL/JPA), API REST y seguridad (JWT).
-- **Frontend**: Single Page Application (SPA) responsiva desarrollada con Next.js y TypeScript.
+    %% Relaciones Operador
+    Operador ---> UC4
+    Operador ---> UC5
 
-### Decisiones Técnicas:
-- **Backend: Java/Spring Boot**: Elegido por su robustez en transacciones y soporte nativo para arquitectura multicapa.
-- **Base de Datos: PostgreSQL**: Motor relacional que garantiza la integridad de los datos financieros y de trazabilidad.
-- **Seguridad: JWT**: Implementación de tokens para autenticación sin estado, necesaria para la escalabilidad.
-- **Sincronización**: Procesamiento en tiempo real mediante transacciones atómicas que aseguran que el stock nunca "desaparezca" durante traslados.
+    %% Relaciones Cajero
+    Cajero ---> UC3
+    Cajero ---> UC7
 
-## 2. Módulos Implementados
 
-1.  **Dashboard Administrativo**: KPIs globales de ventas, valorización de inventario y comparativa de sucursales.
-2.  **Gestión de Inventario**: CRUD completo con alertas de stock mínimo automático.
-3.  **Auditoría y Trazabilidad**: (Funcionalidad Adicional) Registro inmutable de cada movimiento realizado en la red.
-4.  **Traslados Inteligentes**: Ciclo completo de Solicitud -> Envío -> Recepción (Total o Parcial).
-5.  **Catálogo Maestro de Productos**: Gestión centralizada de unidades de medida y costos promedio ponderados.
-6.  **Gestión de Ventas y Compras**: Registro de transacciones con afectación automática de inventario.
+    ## 2. Flujo de Transferencia entre Sucursales
 
-## 3. Diagramas de Ingeniería
+    flowchart TD
+    subgraph "Sucursal Origen"
+        O1([Inicio: Bodeguero Origen]) --> O2(Crear Solicitud de Traslado)
+        O2 --> O3{¿Validar Stock?}
+        O3 -- Insuficiente --> O4([Rechazar Solicitud])
+        O3 -- OK --> O5(Gerente: Autorizar Traslado)
+        O5 --> O6(Despachar Mercancía)
+    end
 
-### Arquitectura de Capas
-```mermaid
-graph TD
-    UI[Frontend Next.js] -->|API REST| Controller[Adapters In: Web Controllers]
-    Controller -->|Port In| Service[Application: Services/UseCases]
-    Service -->|Port Out| Repo[Adapters Out: Persistence Ports]
-    Repo -->|JPA| DB[(PostgreSQL)]
-    Service -.-> Domain[Domain: Models]
-```
+    subgraph "Ruta Logística"
+        O6 --> L1(Transporte en Tránsito)
+    end
 
-### Flujo de Traslado (Sección 3.4)
-```mermaid
-sequenceDiagram
-    participant D as Sucursal Destino
-    participant O as Sucursal Origen
-    participant S as Sistema (Backend)
-    
-    D->>S: Crea Solicitud de Traslado
-    S->>O: Notifica Pedido
-    O->>S: Confirma y Despacha (En Tránsito)
-    S-->>D: Actualiza Estado
-    D->>S: Confirma Recepción
-    S-->>S: Actualiza Stock de Ambas Sedes
-```
+    subgraph "Sucursal Destino"
+        L1 --> D1(Bodeguero Destino: Recibir Mercancía)
+        D1 --> D2{¿Hay Faltantes?}
+        D2 -- Sí --> D3(Registrar Novedad / Ajuste)
+        D2 -- No --> D4(Confirmar Recepción Completa)
+        D3 --> D5(Actualizar Inventario Destino)
+        D4 --> D5
+        D5 --> D6([Fin: Traslado Completado])
+    end
 
-## 4. Instalación y Ejecución
 
-El proyecto está completamente contenedorizado para ejecutarse en entornos Linux, macOS o Windows.
+    ## 3. Flujo de Venta
 
-**Requisitos**: Docker y Docker Compose instalados.
+    flowchart TD
+    V1([Inicio: Vendedor]) --> V2(Escanear / Buscar Producto)
+    V2 --> V3{¿Stock > 0?}
+    V3 -- No --> V4(Alerta: Stock Insuficiente) --> V2
+    V3 -- Sí --> V5(Seleccionar Lista de Precios)
+    V5 --> V6(Aplicar Descuentos / Calcular Subtotal)
+    V6 --> V7{¿Añadir más productos?}
+    V7 -- Sí --> V2
+    V7 -- No --> V8(Procesar Pago y Facturación)
+    V8 --> V9(Descontar Stock Local)
+    V9 --> V10{¿Stock < Stock Mínimo?}
+    V10 -- Sí --> V11(Generar Alerta de Stock)
+    V10 -- No --> V12([Completar Venta])
+    V11 --> V12
 
-1.  Clonar el repositorio.
-2.  Ejecutar el siguiente comando en la raíz:
-    ```bash
-    docker compose up --build -d
-    ```
-3.  Acceder a la aplicación:
-    - **Frontend**: http://localhost:3000
-    - **Backend API**: http://localhost:8080/swagger-ui.html (Documentación OpenAPI)
 
-### Credenciales de Prueba:
-- **Admin**: `admin@zeninventory.co` / `admin123`
-- **Operador**: `sede.norte@zeninventory.co` / `password123`
+    ##Diagrama de Arquitectura (Vista Técnica)
 
-## 5. Justificación del Uso de IA
-Consulte el archivo [AI_USAGE.md](file:///home/yep/optiplant-prueba-tecnica/AI_USAGE.md) para ver la documentación detallada sobre cómo se utilizó la Inteligencia Artificial para potenciar el desarrollo de este proyecto.
+    flowchart TD
+    Client["Navegador Web / UI React"]
+
+    subgraph "Infraestructura Perimetral"
+        HAProxy["HAProxy Load Balancer\n(Puerto 80/443)"]
+    end
+
+    subgraph "Backend - Spring Boot (Java 21)"
+        API["Capa de Presentación\n(Controladores REST)"]
+        Security["Filtros de Seguridad\n(Spring Security + JWT)"]
+        Service["Capa de Aplicación / Dominio\n(Lógica de Negocio)"]
+        Persistence["Capa de Infraestructura\n(Spring Data JPA / Adapters)"]
+
+        API --> Security
+        Security --> Service
+        Service --> Persistence
+    end
+
+    subgraph "Capa de Datos"
+        DB[("PostgreSQL 16\n(inventario_multisucursal)")]
+        Flyway["Flyway\n(Migraciones V1 a V41)"]
+    end
+
+    Client <-->|HTTPS / JSON| HAProxy
+    HAProxy <-->|HTTP| API
+    Persistence <-->|JDBC / Hibernate| DB
+    Flyway -->|DDL / DML| DB
