@@ -32,21 +32,21 @@
         <dl class="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-x-4 gap-y-5 sm:gap-x-6 lg:grid-cols-4 lg:divide-x lg:divide-line">
           @if (canSeeMoney()) {
             <div class="lg:pr-6">
-              <dt class="text-sm text-fg-subtle">Ingresos</dt>
+              <dt class="text-sm text-fg-subtle">Ingresos <app-hint label="Ingresos" text="Total vendido en el periodo elegido (ventas completadas; no cuenta las anuladas)." /></dt>
               <dd class="mt-1 font-title text-2xl font-bold break-words text-fg sm:text-3xl">@for (v of [formatMoneyCompact(data.summary.revenue)]; track v) {<span class="inline-block animate-kpi-in">{{ v }}</span>}</dd>
             </div>
           }
           <div class="lg:px-6">
-            <dt class="text-sm text-fg-subtle">Unidades vendidas</dt>
+            <dt class="text-sm text-fg-subtle">Unidades vendidas <app-hint label="Unidades vendidas" text="Cantidad de productos que salieron en las ventas del periodo, sumando todas las unidades." /></dt>
             <dd class="mt-1 font-title text-2xl font-bold break-words text-fg sm:text-3xl">@for (v of [formatQuantity(data.summary.units)]; track v) {<span class="inline-block animate-kpi-in">{{ v }}</span>}</dd>
           </div>
           @if (canSeeMoney()) {
             <div class="lg:px-6">
-              <dt class="text-sm text-fg-subtle">Ticket promedio</dt>
+              <dt class="text-sm text-fg-subtle">Valor promedio por venta <app-hint label="Valor promedio por venta" text="Lo que se vende en promedio en cada venta: ingresos del periodo ÷ número de ventas. Sirve para ver cuánto gasta un cliente por compra." /></dt>
               <dd class="mt-1 font-title text-2xl font-bold break-words text-fg sm:text-3xl">@for (v of [formatMoneyCompact(data.summary.averageTicket)]; track v) {<span class="inline-block animate-kpi-in">{{ v }}</span>}</dd>
             </div>
             <div class="lg:pl-6">
-              <dt class="text-sm text-fg-subtle">Valor del inventario</dt>
+              <dt class="text-sm text-fg-subtle">Valor del inventario <app-hint label="Valor del inventario" text="Lo que cuesta la mercancía que hay hoy en las bodegas: existencias × costo promedio de cada producto. No depende del periodo." /></dt>
               <dd class="mt-1 font-title text-2xl font-bold break-words text-fg sm:text-3xl">@for (v of [formatMoneyCompact(data.summary.inventoryValue)]; track v) {<span class="inline-block animate-kpi-in">{{ v }}</span>}</dd>
             </div>
           }
@@ -57,7 +57,8 @@
     </section>
 
     @if (canSeeMoney()) {
-      <app-card title="Ingresos" description="Ventas por día en el periodo elegido" variant="plain" [attr.aria-busy]="overview.loading()">
+      <app-card title="Ingresos" description="Ventas por día en el periodo elegido"
+        hint="Total vendido cada día del periodo. Pasa el cursor por la gráfica para ver el valor de cada día." variant="plain" [attr.aria-busy]="overview.loading()">
         @if (overview.data(); as data) {
           <!-- Al cambiar de periodo la gráfica anterior se queda atenuada, con una barra de progreso, hasta que llega la nueva. -->
           @if (overview.loading()) {
@@ -81,7 +82,8 @@
     }
 
     <div class="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-2">
-      <app-card title="Por atender" description="Reposición y traslados que esperan una acción">
+      <app-card title="Por atender" description="Reposición y traslados que esperan una acción"
+        hint="Productos cuya existencia está en o bajo el mínimo que definiste, y traslados que esperan que alguien actúe.">
         @if (replenishment.error(); as message) {
           <app-alert variant="danger">{{ message }}</app-alert>
         } @else if (replenishment.data(); as items) {
@@ -123,7 +125,8 @@
         }
       </app-card>
 
-      <app-card title="Más vendidos" description="Unidades en el periodo" variant="plain" [attr.aria-busy]="overview.loading()">
+      <app-card title="Más vendidos" description="Unidades en el periodo"
+        hint="Los productos con más unidades vendidas en el periodo elegido." variant="plain" [attr.aria-busy]="overview.loading()">
         @if (overview.data()) {
           <div class="transition-opacity duration-300" [class.opacity-45]="overview.loading()">
             <app-bar-list [items]="topProducts()" [format]="formatQuantity" emptyText="Sin ventas en este periodo" />
@@ -135,7 +138,8 @@
     </div>
 
     <div class="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-2">
-      <app-card title="Traslados en curso" variant="plain">
+      <app-card title="Traslados en curso"
+        hint="Traslados entre sucursales que aún no terminan: pedidos, en preparación o en camino." variant="plain">
         @if (transfers.error(); as message) {
           <app-alert variant="danger">{{ message }}</app-alert>
         } @else if (transfers.data(); as items) {
@@ -157,7 +161,8 @@
       </app-card>
 
       @if (isAdmin()) {
-        <app-card title="Por sede" description="Ingresos del periodo" variant="plain" [attr.aria-busy]="overview.loading()">
+        <app-card title="Por sede" description="Ingresos del periodo"
+        hint="Cuánto vendió cada sucursal en el periodo, para compararlas." variant="plain" [attr.aria-busy]="overview.loading()">
           @if (overview.data()) {
             <div class="transition-opacity duration-300" [class.opacity-45]="overview.loading()">
               <app-bar-list [items]="branchBars()" [format]="formatMoneyCompact" emptyText="Sin ventas en este periodo" />
@@ -167,7 +172,7 @@
           }
         </app-card>
       } @else if (canSeeMoney()) {
-        <app-card title="Meses recientes" description="Ingresos por mes" variant="plain">
+        <app-card title="Meses recientes" description="Ingresos por mes" hint="Total vendido en cada uno de los últimos meses, para ver la tendencia." variant="plain">
           @if (monthly.error(); as message) {
             <app-alert variant="danger">{{ message }}</app-alert>
           } @else if (monthly.data()) {
@@ -180,7 +185,7 @@
     </div>
 
     @if (isAdmin()) {
-      <app-card title="Meses recientes" description="Ingresos por mes" variant="plain">
+      <app-card title="Meses recientes" description="Ingresos por mes" hint="Total vendido en cada uno de los últimos meses, para ver la tendencia." variant="plain">
         @if (monthly.error(); as message) {
           <app-alert variant="danger">{{ message }}</app-alert>
         } @else if (monthly.data()) {
@@ -191,7 +196,8 @@
       </app-card>
     }
 
-    <app-card title="Sin movimiento" description="Productos con existencias que no se han vendido" variant="plain">
+    <app-card title="Sin movimiento" description="Productos con existencias que no se han vendido"
+        hint="Productos que tienen existencias pero no registran ninguna venta. Los días indican cuánto llevan sin moverse." variant="plain">
       @if (rotation.error(); as message) {
         <app-alert variant="danger">{{ message }}</app-alert>
       } @else if (rotation.data()) {

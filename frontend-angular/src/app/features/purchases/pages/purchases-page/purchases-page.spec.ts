@@ -229,6 +229,15 @@ describe('PurchasesPage', () => {
       await vi.waitFor(() => expect(hit).toBe('2'));
     });
 
+    it('una orden aún sin recibir no ofrece pagar y explica que primero se recibe la mercancía', async () => {
+      useSession('MANAGER', 10);
+      stub();
+      await renderPage();
+      const dialog = await openDetail(2);
+      expect(within(dialog).queryByRole('button', { name: 'Registrar pago' })).not.toBeInTheDocument();
+      expect(dialog).toHaveTextContent('Los pagos se registran una vez que la mercancía se recibe');
+    });
+
     it('registrar un pago envía monto, método y referencia, y ofrece el saldo completo por defecto', async () => {
       useSession('MANAGER', 10);
       stub();

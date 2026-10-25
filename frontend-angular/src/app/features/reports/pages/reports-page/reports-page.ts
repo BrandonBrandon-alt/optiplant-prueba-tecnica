@@ -10,6 +10,7 @@ import { formatMoney, formatQuantity } from '@shared/format/format';
 import { codecs, persistedFilter } from '@shared/filters/persisted-filter';
 import { PrintService } from '@shared/print/print.service';
 import { Button } from '@shared/ui/button/button';
+import { Hint } from '@shared/ui/hint/hint';
 import { Card } from '@shared/ui/card/card';
 import { DataTable, type TableColumn } from '@shared/ui/data-table/data-table';
 import { DatePicker } from '@shared/ui/date-picker/date-picker';
@@ -30,7 +31,7 @@ const today = (): Date => {
  */
 @Component({
   selector: 'app-reports-page',
-  imports: [Card, Button, DataTable, DatePicker, Select, LucideFileDown],
+  imports: [Card, Hint, Button, DataTable, DatePicker, Select, LucideFileDown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block p-(--page-padding)' },
   templateUrl: './reports-page.html',
@@ -99,7 +100,7 @@ export class ReportsPage {
     { key: 'seller', header: 'Vendedor', primary: true, sortable: true },
     { key: 'sales', header: 'Ventas', align: 'end', sortable: true },
     { key: 'units', header: 'Unidades', align: 'end', sortable: true, display: (r) => formatQuantity(r.units) },
-    { key: 'average', header: 'Ticket promedio', align: 'end', sortable: true, display: (r) => formatMoney(r.average), export: (r) => r.average },
+    { key: 'average', header: 'Valor promedio por venta', align: 'end', sortable: true, display: (r) => formatMoney(r.average), export: (r) => r.average },
     { key: 'total', header: 'Total', align: 'end', sortable: true, display: (r) => formatMoney(r.total), export: (r) => r.total },
   ];
   protected readonly productColumns: readonly TableColumn<ProductSummary>[] = [

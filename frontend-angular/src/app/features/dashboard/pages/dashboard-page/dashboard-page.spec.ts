@@ -61,7 +61,7 @@ describe('DashboardPage', () => {
     expect(await screen.findByText('Todo en orden: no hay nada pendiente.')).toBeTruthy();
   });
 
-  it('el administrador ve ingresos, ticket, valor del inventario y la comparación por sede', async () => {
+  it('el administrador ve ingresos, valor promedio por venta, valor del inventario y la comparación por sede', async () => {
     useSession('ADMIN');
     stub();
     await renderPage();
@@ -69,6 +69,18 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Valor del inventario')).toBeTruthy();
     expect(screen.getByText('Por sede')).toBeTruthy();
     expect(screen.getByText('7 ventas')).toBeTruthy();
+  });
+
+  it('cada cifra del panel tiene un icono de ayuda que la explica', async () => {
+    useSession('ADMIN');
+    stub();
+    await renderPage();
+    await screen.findByText('Ingresos', { selector: 'dt' });
+    await userEvent.hover(screen.getByRole('button', { name: 'Qué significa: Valor promedio por venta' }));
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('ingresos del periodo ÷ número de ventas');
+    for (const name of ['Ingresos', 'Unidades vendidas', 'Valor del inventario', 'Más vendidos', 'Sin movimiento']) {
+      expect(screen.getAllByRole('button', { name: `Qué significa: ${name}` }).length).toBeGreaterThan(0);
+    }
   });
 
   it('el operador de inventario no ve cifras financieras', async () => {

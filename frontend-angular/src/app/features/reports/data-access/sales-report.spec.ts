@@ -19,7 +19,7 @@ const sale = (extra: Partial<ReportSale> = {}): ReportSale => ({
 const day = (d: number) => new Date(2026, 9, d);
 
 describe('buildSalesReport', () => {
-  it('suma totales, unidades y ticket promedio de las ventas del periodo', () => {
+  it('suma totales, unidades y valor promedio por venta de las ventas del periodo', () => {
     const r = buildSalesReport([sale(), sale({ subtotal: 3000, total: 3000, lines: [{ productName: 'Tuerca', quantity: 3, subtotal: 3000 }] })], day(15), day(15));
     expect(r).toMatchObject({ sales: 2, units: 5, subtotal: 4000, total: 4000, average: 2000, discount: 0 });
   });

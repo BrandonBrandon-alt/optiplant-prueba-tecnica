@@ -114,6 +114,9 @@
               </div>
             } @else {
               <p class="mt-2 text-sm text-fg-subtle">Aún no se ha registrado ningún pago.</p>
+              @if (p.reception !== 'RECEIVED_TOTAL' && p.reception !== 'RECEIVED_PARTIAL') {
+                <p class="mt-1 text-sm text-fg-subtle">Los pagos se registran una vez que la mercancía se recibe (total o parcialmente).</p>
+              }
             }
           </section>
         }

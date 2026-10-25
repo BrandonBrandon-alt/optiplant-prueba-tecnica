@@ -79,7 +79,8 @@ Prioridad: **A** = esencial para el funcionamiento, **M** = importante, **B** = 
 | RF-12 | Consultar las existencias de cada producto por sucursal (cantidad actual, comprometida y disponible) | Todos | A | Implementado |
 | RF-13 | Registrar cada entrada o salida de stock como movimiento (kardex) con tipo, motivo, cantidad, saldo resultante, usuario y documento de origen | Sistema | A | Implementado |
 | RF-14 | Consultar el kardex de un producto en una sucursal | Todos | A | Implementado |
-| RF-62 | Poder filtrar el historial de movimientos (kardex) por uno o varios productos con un selector de varias opciones que incluye búsqueda dentro del propio campo | Todos | B | Implementado |
+| RF-62 | Filtrar el historial de movimientos (kardex) por uno o varios productos, por tipo (ingreso o retiro), por uno o varios motivos, por rango de fechas y por texto (producto, motivo u observación), con los filtros aplicados visibles y la opción de quitarlos; los selectores de varias opciones incluyen búsqueda dentro del propio campo | Todos | B | Implementado |
+| RF-63 | Explicar con ayudas emergentes (icono de ayuda con descripción, también por teclado) qué significa cada cifra y cada sección del panel, y el valor promedio por venta del reporte de ventas | Todos | B | Implementado |
 | RF-15 | Permitir ajustes manuales de entrada o salida (merma, ajuste positivo o negativo) | ADMIN, MANAGER, OPERADOR | M | Implementado |
 | RF-16 | Definir el stock mínimo de un producto por sucursal | ADMIN, MANAGER | A | Implementado |
 | RF-17 | Convertir automáticamente a la unidad base los movimientos hechos en otra presentación | Sistema | M | Implementado |
@@ -229,7 +230,7 @@ Se declara para no presentar como hecho lo que no lo está:
 
 | Pantalla (ruta) | Roles | Requisitos |
 |---|---|---|
-| Panel (`/dashboard`) | Todos | RF-47, RF-48 |
+| Panel (`/dashboard`) | Todos | RF-47, RF-48, RF-63 |
 | Inventario (`/inventory`) | Todos | RF-12 a RF-18, RF-62 |
 | Alertas (`/alerts`) | ADMIN, MANAGER, OPERADOR | RF-43 a RF-46 |
 | Traslados (`/transfers`) | ADMIN, MANAGER, OPERADOR | RF-28 a RF-35, RF-59 a RF-61 |

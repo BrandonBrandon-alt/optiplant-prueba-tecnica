@@ -8,6 +8,7 @@ import { Alert } from '@shared/ui/alert/alert';
 import { UserAvatar } from '@shared/ui/avatar/user-avatar';
 import { Button } from '@shared/ui/button/button';
 import { Badge, type BadgeVariant } from '@shared/ui/badge/badge';
+import { Hint } from '@shared/ui/hint/hint';
 import { Card } from '@shared/ui/card/card';
 import { AreaChart } from '@shared/ui/charts/area-chart';
 import { ChartSkeleton } from '@shared/ui/charts/chart-skeleton';
@@ -51,7 +52,7 @@ const plural = (n: number, one: string, many: string): string => `${n} ${n === 1
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [ChartSkeleton, Alert, AlertResolutionModal, Button, UserAvatar, Badge, Card, AreaChart, BarList, ColumnChart, EmptyState, Segmented, Spinner],
+  imports: [ChartSkeleton, Alert, AlertResolutionModal, Button, UserAvatar, Badge, Card, Hint, AreaChart, BarList, ColumnChart, EmptyState, Segmented, Spinner],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block p-(--page-padding)' },
   templateUrl: './dashboard-page.html',

@@ -68,7 +68,7 @@ export function buildSalesReportHtml(report: SalesReport, company: Company, bran
   <div class="kpis">
     ${kpi('Total vendido', formatMoney(report.total))}
     ${kpi('Ventas', String(report.sales))}
-    ${kpi('Ticket promedio', formatMoney(report.average))}
+    ${kpi('Valor promedio por venta', formatMoney(report.average))}
     ${kpi('Unidades', formatQuantity(report.units))}
   </div>
   <table style="margin-top:12px">
@@ -89,7 +89,7 @@ export function buildSalesReportHtml(report: SalesReport, company: Company, bran
   <h2>Ventas por vendedor</h2>
   ${
     report.bySeller.length
-      ? `<table><thead><tr><th>Vendedor</th><th class="num">Ventas</th><th class="num">Unidades</th><th class="num">Ticket promedio</th><th class="num">Total</th></tr></thead><tbody>${sellerRows}</tbody>
+      ? `<table><thead><tr><th>Vendedor</th><th class="num">Ventas</th><th class="num">Unidades</th><th class="num">Valor promedio por venta</th><th class="num">Total</th></tr></thead><tbody>${sellerRows}</tbody>
          <tfoot><tr><td>Total</td><td class="num">${report.sales}</td><td class="num">${escapeHtml(formatQuantity(report.units))}</td><td></td><td class="num">${escapeHtml(formatMoney(report.total))}</td></tr></tfoot></table>`
       : '<p class="muted">No hubo ventas en este periodo.</p>'
   }
