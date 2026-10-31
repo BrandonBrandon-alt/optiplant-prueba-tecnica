@@ -30,7 +30,7 @@ let nextId = 0;
       <svg lucideSlidersHorizontal [size]="16" aria-hidden="true"></svg>
       Más filtros
       @if (activeCount() > 0) {
-        <span class="inline-flex min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-semibold text-white" [attr.aria-label]="activeCount() + (activeCount() === 1 ? ' filtro activo' : ' filtros activos')">{{ activeCount() }}</span>
+        <span class="inline-flex min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-semibold text-brand-ink" [attr.aria-label]="activeCount() + (activeCount() === 1 ? ' filtro activo' : ' filtros activos')">{{ activeCount() }}</span>
       }
       <svg lucideChevronDown [size]="14" aria-hidden="true" class="transition-transform" [class.rotate-180]="open() && !exit.active()"></svg>
     </button>

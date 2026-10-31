@@ -156,7 +156,7 @@ let nextId = 0;
                   <span class="text-xs text-fg-subtle">Elige un día</span>
                 }
               </span>
-              <button type="button" class="cursor-pointer rounded-md bg-brand px-3 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-brand/90 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none" (click)="close(true)">Listo</button>
+              <button type="button" class="cursor-pointer rounded-md bg-brand px-3 py-1.5 text-[13px] font-semibold text-brand-ink transition-colors hover:bg-brand/90 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none" (click)="close(true)">Listo</button>
             </div>
           }
           <div class="flex items-center justify-between gap-2">
@@ -283,7 +283,7 @@ export class DatePicker implements ControlValueAccessor, FieldControl {
     return isDayDisabled(day, this.min(), this.max());
   }
   protected dayClass(day: Date): string {
-    if (this.isSelected(day)) return 'bg-brand font-semibold text-white';
+    if (this.isSelected(day)) return 'bg-brand font-semibold text-brand-ink';
     const outside = day.getMonth() !== this.viewMonth().getMonth();
     const base = outside ? 'text-fg-subtle/60 hover:bg-hover' : 'text-fg hover:bg-hover';
     return this.isToday(day) ? `${base} ring-1 ring-brand/60 font-semibold` : base;

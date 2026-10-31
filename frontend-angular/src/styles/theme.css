@@ -1,79 +1,120 @@
-/* Tokens de diseño — Zen Inventory. Oscuro por defecto, claro con [data-theme='light']. */
+/* Tokens de diseño — Zen Inventory. Paleta "eucalipto": blanco, verde botella y un toque de dorado viejo.
+   Claro por defecto, oscuro con [data-theme='dark']. Contrastes de texto ≥ 4.5:1 (WCAG AA) en ambos temas. */
 :root {
   /* Los controles nativos (barras de scroll, selects, campos de fecha) toman el tema de la app, no el del sistema. */
-  color-scheme: dark;
+  color-scheme: light;
 
-  --bg-base: #242421;
-  --bg-surface: #1f1f1c;
-  --bg-card: #2a2a26;
-  --bg-hover: #32322d;
+  --bg-base: #ffffff;
+  --bg-surface: #f2f5f3;
+  --bg-card: #ffffff;
+  --bg-hover: #e6ede9;
 
-  --brand-400: #e87c6a;
-  --brand-500: #d9634f;
-  --brand-600: #c0503c;
-  --brand-glow: rgba(217, 99, 79, 0.22);
+  --brand-400: #4b9180;
+  --brand-500: #2e7360;
+  --brand-600: #245c4d;
+  --brand-glow: rgba(46, 115, 96, 0.2);
+  /* Texto sobre un fondo `bg-brand`. */
+  --brand-ink: #ffffff;
 
-  --btn-primary-bg: #d1cfc0;
-  --btn-primary-text: #1f1f1f;
-  --btn-primary-hover-bg: #f5f4f0;
+  --btn-primary-bg: #2e7360;
+  --btn-primary-text: #ffffff;
+  --btn-primary-hover-bg: #245c4d;
 
-  --neutral-50: #f2f0e3;
-  --neutral-100: #f2f0e3;
-  --neutral-200: #cbc8bf;
-  --neutral-300: #a8a49a;
-  --neutral-400: #7c7971;
-  --neutral-500: #5a574f;
-  --neutral-600: #3d3b35;
-  --neutral-700: #2e2c27;
-  --neutral-800: #232220;
-  --neutral-900: #191917;
+  --neutral-50: #0e1a16;
+  --neutral-100: #15221d;
+  --neutral-200: #2c3b35;
+  --neutral-300: #4a5a53;
+  --neutral-400: #5f6e67;
+  --neutral-500: #9aa7a1;
+  --neutral-600: #c6cfcb;
+  --neutral-700: #dde4e0;
+  --neutral-800: #ebf0ed;
+  --neutral-900: #f6f8f7;
 
-  --border-default: rgba(255, 255, 255, 0.07);
-  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-default: rgba(21, 34, 29, 0.1);
+  --border-subtle: rgba(21, 34, 29, 0.06);
 
-  --state-danger: #e07070;
-  --state-success: #6fbf8a;
-  --state-warning: #f59e0b;
-  --state-info: #60a5fa;
+  --state-danger: #d02b20;
+  --state-success: #08804a;
+  --state-warning: #a86400;
+  --state-info: #1d6fd4;
+
+  /* Panel de marca (menú lateral y portada del login): verde botella con detalles en dorado viejo. */
+  --panel-bg: #2f5d50;
+  --panel-gold: #cfb581;
+  --panel-ink: #15302a;
 
   --page-padding: 40px;
 }
 
-:root[data-theme='light'] {
-  color-scheme: light;
+:root[data-theme='dark'] {
+  color-scheme: dark;
 
-  --bg-base: #f2f0e3;
-  --bg-surface: #eeebe4;
-  --bg-card: #f2f0e3;
-  --bg-hover: #e8e4db;
+  --bg-base: #101a17;
+  --bg-surface: #0b1411;
+  --bg-card: #16241f;
+  --bg-hover: #1e302a;
 
-  --brand-400: #c94f3a;
-  --brand-500: #b83c28;
-  --brand-600: #9e2f1e;
-  --brand-glow: rgba(185, 60, 40, 0.18);
+  --brand-400: #a6dbcb;
+  --brand-500: #7cc4ae;
+  --brand-600: #5eab94;
+  --brand-glow: rgba(124, 196, 174, 0.25);
+  --brand-ink: #0b1a15;
 
-  --btn-primary-bg: #2e2e2e;
-  --btn-primary-text: #f5f4f0;
-  --btn-primary-hover-bg: #2c2a25;
+  --btn-primary-bg: #7cc4ae;
+  --btn-primary-text: #0b1a15;
+  --btn-primary-hover-bg: #a6dbcb;
 
-  --neutral-50: #1a1917;
-  --neutral-100: #2c2a25;
-  --neutral-200: #3d3b35;
-  --neutral-300: #5a574f;
-  --neutral-400: #7c7971;
-  --neutral-500: #a8a49a;
-  --neutral-600: #cbc8bf;
-  --neutral-700: #dedbd3;
-  --neutral-800: #eceae3;
-  --neutral-900: #f5f3ee;
+  --neutral-50: #f6faf8;
+  --neutral-100: #edf3f0;
+  --neutral-200: #cdd9d4;
+  --neutral-300: #aebdb6;
+  --neutral-400: #889a92;
+  --neutral-500: #5d6f67;
+  --neutral-600: #364740;
+  --neutral-700: #24332d;
+  --neutral-800: #17221e;
+  --neutral-900: #0d1512;
 
-  --border-default: rgba(0, 0, 0, 0.1);
-  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
 
-  --state-danger: #cc4444;
-  --state-success: #2d8a52;
-  --state-warning: #c07c00;
-  --state-info: #1d72d4;
+  --state-danger: #ff7a70;
+  --state-success: #3dd68c;
+  --state-warning: #ffc233;
+  --state-info: #6cb2ff;
+
+  --panel-bg: #1f3f36;
+}
+
+/* Dentro del panel de marca los mismos tokens describen el bloque verde: texto blanco y lo activo en dorado.
+   Así sus componentes no necesitan clases propias. El dorado solo va sobre verde: sobre blanco no se lee. */
+.brand-panel {
+  color-scheme: dark;
+
+  --bg-base: var(--panel-bg);
+  /* Ítem activo y tarjetas: un verde más hondo, para que el dorado contraste (≈5:1). */
+  --bg-card: rgba(0, 0, 0, 0.2);
+  --bg-hover: rgba(255, 255, 255, 0.08);
+
+  --brand-400: var(--panel-gold);
+  --brand-500: var(--panel-gold);
+  --brand-600: var(--panel-gold);
+  --brand-glow: rgba(207, 181, 129, 0.3);
+  --brand-ink: var(--panel-ink);
+
+  --neutral-50: #ffffff;
+  --neutral-100: #ffffff;
+  --neutral-200: rgba(255, 255, 255, 0.92);
+  --neutral-300: rgba(255, 255, 255, 0.84);
+  --neutral-400: rgba(255, 255, 255, 0.72);
+  --neutral-500: rgba(255, 255, 255, 0.5);
+  --neutral-600: rgba(255, 255, 255, 0.3);
+
+  --border-default: rgba(255, 255, 255, 0.14);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+
+  --state-danger: #ffb3ad;
 }
 
 @media (max-width: 1024px) {
@@ -101,6 +142,7 @@
   --color-brand: var(--brand-500);
   --color-brand-soft: var(--brand-400);
   --color-brand-strong: var(--brand-600);
+  --color-brand-ink: var(--brand-ink);
   --color-primary: var(--btn-primary-bg);
   --color-primary-fg: var(--btn-primary-text);
   --color-primary-hover: var(--btn-primary-hover-bg);
@@ -114,8 +156,8 @@
   --radius-xl: 16px;
   --font-sans: 'Inter Variable', system-ui, -apple-system, sans-serif;
   --font-serif: 'Lora', Georgia, serif;
-  /* Títulos (h1/h2): clase `font-title`. */
-  --font-title: 'Junicode', Georgia, serif;
+  /* Títulos (h1/h2): clase `font-title`. Barlow nació de la señalización vial: encaja con una cadena de materiales de obra. */
+  --font-title: 'Barlow Semi Condensed', 'Inter Variable', system-ui, sans-serif;
 }
 
 /* Animaciones de marca (utilidades animate-*). Los keyframes solo se emiten si la utilidad se usa. */

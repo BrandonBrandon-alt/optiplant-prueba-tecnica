@@ -21,52 +21,52 @@ describe('ThemeService', () => {
     document.head.append(meta);
     try {
       const service = createService();
-      expect(meta.content).toBe('#242421');
-      service.set('light');
-      expect(meta.content).toBe('#f2f0e3');
+      expect(meta.content).toBe('#ffffff');
       service.set('dark');
-      expect(meta.content).toBe('#242421');
+      expect(meta.content).toBe('#101a17');
+      service.set('light');
+      expect(meta.content).toBe('#ffffff');
     } finally {
       meta.remove();
     }
   });
 
-  it('por defecto usa el tema oscuro y lo aplica al documento', () => {
+  it('por defecto usa el tema claro y lo aplica al documento', () => {
     const service = createService();
-    expect(service.theme()).toBe('dark');
-    expect(service.isDark()).toBe(true);
-    expect(document.documentElement.dataset['theme']).toBe('dark');
+    expect(service.theme()).toBe('light');
+    expect(service.isDark()).toBe(false);
+    expect(document.documentElement.dataset['theme']).toBe('light');
   });
 
   it('restaura el tema guardado', () => {
-    localStorage.setItem(THEME_STORAGE_KEY, 'light');
+    localStorage.setItem(THEME_STORAGE_KEY, 'dark');
     const service = createService();
-    expect(service.theme()).toBe('light');
-    expect(document.documentElement.dataset['theme']).toBe('light');
+    expect(service.theme()).toBe('dark');
+    expect(document.documentElement.dataset['theme']).toBe('dark');
   });
 
   it('ignora un valor guardado inválido', () => {
     localStorage.setItem(THEME_STORAGE_KEY, 'azul');
-    expect(createService().theme()).toBe('dark');
+    expect(createService().theme()).toBe('light');
   });
 
   it('toggle() alterna, persiste y actualiza el documento', () => {
     const service = createService();
     service.toggle();
-    expect(service.theme()).toBe('light');
-    expect(service.isDark()).toBe(false);
-    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('light');
-    expect(document.documentElement.dataset['theme']).toBe('light');
-    service.toggle();
     expect(service.theme()).toBe('dark');
+    expect(service.isDark()).toBe(true);
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
     expect(document.documentElement.dataset['theme']).toBe('dark');
+    service.toggle();
+    expect(service.theme()).toBe('light');
+    expect(document.documentElement.dataset['theme']).toBe('light');
   });
 
-  it('arranca en oscuro si localStorage lanza al leer', () => {
+  it('arranca en claro si localStorage lanza al leer', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new DOMException('denied', 'SecurityError');
     });
-    expect(createService().theme()).toBe('dark');
+    expect(createService().theme()).toBe('light');
   });
 
   it('toggle() funciona en memoria aunque no pueda persistir', () => {
@@ -75,8 +75,8 @@ describe('ThemeService', () => {
       throw new DOMException('quota', 'QuotaExceededError');
     });
     expect(() => service.toggle()).not.toThrow();
-    expect(service.theme()).toBe('light');
-    expect(document.documentElement.dataset['theme']).toBe('light');
+    expect(service.theme()).toBe('dark');
+    expect(document.documentElement.dataset['theme']).toBe('dark');
   });
 
   describe('transición animada (View Transitions)', () => {
@@ -102,6 +102,8 @@ describe('ThemeService', () => {
     }
 
     beforeEach(() => {
+      // Estos casos prueban el paso de oscuro a claro.
+      localStorage.setItem(THEME_STORAGE_KEY, 'dark');
       supportViewTransitions();
       prefersReducedMotion(false);
     });

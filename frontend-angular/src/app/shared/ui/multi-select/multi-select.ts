@@ -168,7 +168,7 @@ let nextId = 0;
             >
               <span
                 class="flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border transition-[background-color,border-color] duration-150"
-                [class]="isSelected(option) ? 'border-brand bg-brand text-white' : 'border-neutral-500 bg-card'"
+                [class]="isSelected(option) ? 'border-brand bg-brand text-brand-ink' : 'border-neutral-500 bg-card'"
                 aria-hidden="true"
               >
                 @if (isSelected(option)) {

@@ -39,7 +39,7 @@ import { type ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
         "
         aria-hidden="true"
       >
-        <svg viewBox="0 0 16 16" class="size-3.5 fill-none stroke-white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 16 16" class="size-3.5 fill-none stroke-brand-ink" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
           <path
             d="M3.5 8.5 6.7 11.6 12.5 4.8"
             pathLength="1"

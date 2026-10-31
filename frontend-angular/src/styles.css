@@ -2,30 +2,10 @@
 @import '@fontsource-variable/inter';
 @import '@fontsource/lora/400.css';
 @import '@fontsource/lora/600.css';
+/* Títulos (--font-title). */
+@import '@fontsource/barlow-semi-condensed/600.css';
+@import '@fontsource/barlow-semi-condensed/700.css';
 @import './styles/theme.css';
-
-/* Junicode (OFL) para los títulos. Solo WOFF: es lo único que necesitan los navegadores actuales. */
-@font-face {
-  font-family: 'Junicode';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('../node_modules/@typopro/web-junicode/TypoPRO-Junicode-Regular.woff') format('woff');
-}
-@font-face {
-  font-family: 'Junicode';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('../node_modules/@typopro/web-junicode/TypoPRO-Junicode-Bold.woff') format('woff');
-}
-@font-face {
-  font-family: 'Junicode';
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-  src: url('../node_modules/@typopro/web-junicode/TypoPRO-Junicode-Italic.woff') format('woff');
-}
 
 @layer base {
   /* Scroll estético y consistente en toda la app: barra fina del color neutral del tema, sin pista visible.

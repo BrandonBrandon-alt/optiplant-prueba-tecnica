@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { signal } from '@angular/core';
 import { AlertCount } from '@core/alerts/alert-count';
 import { AuthStore } from '@core/auth/session/auth-store';
-import { ThemeService } from '@core/theme/theme.service';
+import { THEME_STORAGE_KEY, ThemeService } from '@core/theme/theme.service';
 import { BranchLabelApi } from '../data-access/branch-label-api';
 import {
   SIDEBAR_DEFAULT_WIDTH,
@@ -81,6 +81,7 @@ describe('Sidebar', () => {
   });
 
   it('el botón de tema alterna entre oscuro y claro', async () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'dark');
     await renderSidebar('ADMIN');
     await userEvent.click(screen.getByRole('button', { name: 'Modo claro' }));
     expect(TestBed.inject(ThemeService).theme()).toBe('light');
