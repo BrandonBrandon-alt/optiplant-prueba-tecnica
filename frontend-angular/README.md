@@ -148,7 +148,8 @@ servidor deja ver a cada rol (el gerente, solo las de su sucursal); una venta an
 
 ## Filtros que se recuerdan
 
-Las pantallas con lista (Ventas, Auditoría, Compras, Traslados, Devoluciones, Alertas, Productos, Inventario) recuerdan
+Las pantallas con lista (Ventas, Auditoría, Compras, Traslados, Devoluciones, Alertas, Productos, Inventario, Usuarios,
+Sucursales, Proveedores) recuerdan
 sus filtros **por persona y por pantalla** en el navegador (`zen:filters:<usuario>:<pantalla>`): al volver, la lista
 sigue como se dejó. El texto de la búsqueda no se guarda. El orden de las tablas también, con `persistKey` en
 `app-data-table`.
