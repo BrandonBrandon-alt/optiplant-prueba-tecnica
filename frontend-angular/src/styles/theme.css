@@ -1,4 +1,4 @@
-/* Tokens de diseño — Zen Inventory. Paleta "eucalipto": blanco, verde botella y un toque de dorado viejo.
+/* Tokens de diseño — Zen Inventory. Paleta "eucalipto": blanco, verde botella y un acento champaña (tríada cálida con el verde).
    Claro por defecto, oscuro con [data-theme='dark']. Contrastes de texto ≥ 4.5:1 (WCAG AA) en ambos temas, también sobre el tinte de su propia pastilla. */
 :root {
   /* Los controles nativos (barras de scroll, selects, campos de fecha) toman el tema de la app, no el del sistema. */
@@ -40,9 +40,13 @@
   --state-warning: #965800;
   --state-info: #1a63c2;
 
-  /* Panel de marca (menú lateral y portada del login): verde botella con detalles en dorado viejo. */
+  /* Panel de marca (menú lateral y portada del login): verde botella con detalles en champaña. */
   --panel-bg: #2f5d50;
-  --panel-gold: #cfb581;
+  --panel-accent: #e3d3a8;
+  /* Contador de alertas sobre el panel verde (ambos temas): coral claro, no un rojo saturado. Rojo y verde son
+     complementarios: con luminosidad parecida vibran; más claro que el verde se lee como alerta sin vibrar. */
+  --alert-badge: #ff9a8f;
+  --alert-badge-ink: #3d0c07;
   --panel-ink: #15302a;
 
   --page-padding: 40px;
@@ -88,20 +92,20 @@
   --panel-bg: #2a5246;
 }
 
-/* Dentro del panel de marca los mismos tokens describen el bloque verde: texto blanco y lo activo en dorado.
-   Así sus componentes no necesitan clases propias. El dorado solo va sobre verde: sobre blanco no se lee. */
+/* Dentro del panel de marca los mismos tokens describen el bloque verde: texto blanco y lo activo en champaña.
+   Así sus componentes no necesitan clases propias. El champaña solo va sobre verde: sobre blanco no se lee. */
 .brand-panel {
   color-scheme: dark;
 
   --bg-base: var(--panel-bg);
-  /* Ítem activo y tarjetas: un verde más hondo, para que el dorado contraste (≈5:1). */
+  /* Ítem activo y tarjetas: un verde más hondo, para que el champaña contraste (≈6.6:1). */
   --bg-card: rgba(0, 0, 0, 0.2);
   --bg-hover: rgba(255, 255, 255, 0.08);
 
-  --brand-400: var(--panel-gold);
-  --brand-500: var(--panel-gold);
-  --brand-600: var(--panel-gold);
-  --brand-glow: rgba(207, 181, 129, 0.3);
+  --brand-400: var(--panel-accent);
+  --brand-500: var(--panel-accent);
+  --brand-600: var(--panel-accent);
+  --brand-glow: rgba(227, 211, 168, 0.3);
   --brand-ink: var(--panel-ink);
 
   --neutral-50: #ffffff;
@@ -151,6 +155,8 @@
   --color-success: var(--state-success);
   --color-warning: var(--state-warning);
   --color-info: var(--state-info);
+  --color-alert-badge: var(--alert-badge);
+  --color-alert-badge-ink: var(--alert-badge-ink);
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;

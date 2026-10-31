@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { fireEvent, render, screen } from '@testing-library/angular';
+import { fireEvent, render, screen, within } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { of } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -299,6 +299,14 @@ describe('Sidebar', () => {
       await renderSidebar('ADMIN');
       const link = screen.getByRole('link', { name: 'Alertas, 7 activas' });
       expect(link).toHaveTextContent('7');
+    });
+
+    it('la insignia usa el color de alerta, no el acento de marca', async () => {
+      alertTotal.set(7);
+      await renderSidebar('ADMIN');
+      const badge = within(screen.getByRole('link', { name: 'Alertas, 7 activas' })).getByText('7');
+      expect(badge).toHaveClass('bg-alert-badge', 'text-alert-badge-ink');
+      expect(badge).not.toHaveClass('bg-brand');
     });
 
     it('con una sola alerta lo dice en singular', async () => {
