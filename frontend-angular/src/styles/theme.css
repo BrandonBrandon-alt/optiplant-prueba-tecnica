@@ -1,5 +1,5 @@
 /* Tokens de diseño — Zen Inventory. Paleta "eucalipto": blanco, verde botella y un toque de dorado viejo.
-   Claro por defecto, oscuro con [data-theme='dark']. Contrastes de texto ≥ 4.5:1 (WCAG AA) en ambos temas. */
+   Claro por defecto, oscuro con [data-theme='dark']. Contrastes de texto ≥ 4.5:1 (WCAG AA) en ambos temas, también sobre el tinte de su propia pastilla. */
 :root {
   /* Los controles nativos (barras de scroll, selects, campos de fecha) toman el tema de la app, no el del sistema. */
   color-scheme: light;
@@ -34,10 +34,11 @@
   --border-default: rgba(21, 34, 29, 0.1);
   --border-subtle: rgba(21, 34, 29, 0.06);
 
-  --state-danger: #d02b20;
-  --state-success: #08804a;
-  --state-warning: #a86400;
-  --state-info: #1d6fd4;
+  --state-danger: #bf271d;
+  /* Éxito en verde oliva (≈80°), lejos del verde de marca (≈163°): un "Resuelto" no se confunde con un botón. */
+  --state-success: #55760f;
+  --state-warning: #965800;
+  --state-info: #1a63c2;
 
   /* Panel de marca (menú lateral y portada del login): verde botella con detalles en dorado viejo. */
   --panel-bg: #2f5d50;
@@ -50,10 +51,10 @@
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --bg-base: #101a17;
-  --bg-surface: #0b1411;
-  --bg-card: #16241f;
-  --bg-hover: #1e302a;
+  --bg-base: #1b2823;
+  --bg-surface: #16211d;
+  --bg-card: #23332d;
+  --bg-hover: #2c3f38;
 
   --brand-400: #a6dbcb;
   --brand-500: #7cc4ae;
@@ -69,22 +70,22 @@
   --neutral-100: #edf3f0;
   --neutral-200: #cdd9d4;
   --neutral-300: #aebdb6;
-  --neutral-400: #889a92;
-  --neutral-500: #5d6f67;
-  --neutral-600: #364740;
-  --neutral-700: #24332d;
-  --neutral-800: #17221e;
-  --neutral-900: #0d1512;
+  --neutral-400: #97a9a1;
+  --neutral-500: #66796f;
+  --neutral-600: #3f524a;
+  --neutral-700: #2e4039;
+  --neutral-800: #22312b;
+  --neutral-900: #18241f;
 
   --border-default: rgba(255, 255, 255, 0.08);
   --border-subtle: rgba(255, 255, 255, 0.05);
 
-  --state-danger: #ff7a70;
-  --state-success: #3dd68c;
+  --state-danger: #ffa39b;
+  --state-success: #b5d96a;
   --state-warning: #ffc233;
-  --state-info: #6cb2ff;
+  --state-info: #7dbcff;
 
-  --panel-bg: #1f3f36;
+  --panel-bg: #2a5246;
 }
 
 /* Dentro del panel de marca los mismos tokens describen el bloque verde: texto blanco y lo activo en dorado.
@@ -156,8 +157,8 @@
   --radius-xl: 16px;
   --font-sans: 'Inter Variable', system-ui, -apple-system, sans-serif;
   --font-serif: 'Lora', Georgia, serif;
-  /* Títulos (h1/h2): clase `font-title`. Barlow nació de la señalización vial: encaja con una cadena de materiales de obra. */
-  --font-title: 'Barlow Semi Condensed', 'Inter Variable', system-ui, sans-serif;
+  /* Títulos (h1/h2): clase `font-title`. Bricolage ("bricolaje", construir): cálida y con carácter, para una cadena de materiales de obra. */
+  --font-title: 'Bricolage Grotesque Variable', 'Inter Variable', system-ui, sans-serif;
 }
 
 /* Animaciones de marca (utilidades animate-*). Los keyframes solo se emiten si la utilidad se usa. */

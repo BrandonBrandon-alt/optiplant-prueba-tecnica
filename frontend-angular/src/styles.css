@@ -3,8 +3,8 @@
 @import '@fontsource/lora/400.css';
 @import '@fontsource/lora/600.css';
 /* Títulos (--font-title). */
-@import '@fontsource/barlow-semi-condensed/600.css';
-@import '@fontsource/barlow-semi-condensed/700.css';
+/* Con eje de tamaño óptico: más compacta en el título grande del login, más abierta en los pequeños. */
+@import '@fontsource-variable/bricolage-grotesque/opsz.css';
 @import './styles/theme.css';
 
 @layer base {

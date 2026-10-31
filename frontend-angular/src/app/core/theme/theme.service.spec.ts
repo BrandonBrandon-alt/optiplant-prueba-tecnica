@@ -23,7 +23,7 @@ describe('ThemeService', () => {
       const service = createService();
       expect(meta.content).toBe('#ffffff');
       service.set('dark');
-      expect(meta.content).toBe('#101a17');
+      expect(meta.content).toBe('#1b2823');
       service.set('light');
       expect(meta.content).toBe('#ffffff');
     } finally {

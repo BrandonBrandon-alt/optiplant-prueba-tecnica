@@ -12,7 +12,7 @@ export interface ThemeOrigin {
 export const THEME_STORAGE_KEY = 'zen_inventory_theme';
 
 /** Fondo de cada tema (igual que `--bg-base` en theme.css): es el `theme-color` de la página. */
-const THEME_COLOR: Readonly<Record<Theme, string>> = { dark: '#101a17', light: '#ffffff' };
+const THEME_COLOR: Readonly<Record<Theme, string>> = { dark: '#1b2823', light: '#ffffff' };
 
 function isTheme(value: unknown): value is Theme {
   return value === 'dark' || value === 'light';
